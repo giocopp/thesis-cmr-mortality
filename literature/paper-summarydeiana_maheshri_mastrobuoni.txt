@@ -1,0 +1,422 @@
+DEIANA, MAHESHRI, MASTROBUONI (2024)
+Migrants at Sea: Unintended Consequences of Search-and-Rescue Operations
+STUDY SHEET (WITH IDENTIFICATION CRITIQUE)
+
+==================================================
+1) INSTITUTIONAL SETTING — QUICK
+==================================================
+
+- The paper studies the Central Mediterranean route to Italy, mainly from Libya and Tunisia.
+- It focuses on how different search-and-rescue (SAR) regimes changed migrant and smuggler behavior.
+- Main policy sequence:
+  - Hermes: limited baseline
+  - Mare Nostrum: first very extensive SAR operation
+  - Triton I
+  - Triton II
+  - Themis
+- NGOs also became active near the Libyan coast from 2014 onward.
+
+- A second crucial institutional shock is the Minniti Code of Conduct on August 7, 2017.
+  - This made it harder for NGOs to operate close to Libya.
+  - The paper treats this as a sharp reduction in rescue availability near the Libyan coast.
+
+- Main substantive question:
+  - Does SAR simply save people?
+  - Or does it also generate moral hazard, by encouraging more crossings and more use of unsafe inflatable rafts, partly offsetting the intended safety gains?
+
+==================================================
+2) DATA AND DESCRIPTIVE EVIDENCE
+==================================================
+
+MAIN DATA
+
+- Arrivals / crossings:
+  - Daily irregular arrivals to Italy from the Polizia di Stato.
+  - Main outcome: attempted crossings = arrivals + deaths in transit.
+  - Average attempted crossings are about 170 per day.
+  - Strong seasonality.
+
+- Deaths:
+  - Built by cross-referencing UNITED, Missing Migrants Project, Frontex, and Migrants File.
+  - Average daily deaths are about 4.5.
+  - Fatal incident locations are used to infer likely departure geography.
+
+- Boat type:
+  - Frontex for 2013–2017.
+  - Polizia di Stato for 2016–2020.
+  - Unsafe boats are defined progressively as:
+    1. inflatable only
+    2. inflatable + unknown
+    3. inflatable + unknown + other
+
+- Departure country:
+  - Available in the later Polizia di Stato data (2016–2020), which supports the Libya vs Tunisia panel.
+
+- Sea conditions:
+  - ECMWF significant wave height at North African coastal points.
+  - Main analysis focuses especially on Tripoli.
+  - Significant wave height summarizes sea conditions relevant for crossing risk.
+
+DESCRIPTIVE PATTERNS
+
+- During more intense SAR periods, especially Triton II, inflatable boats become much more important.
+- After the Minniti Code, inflatable use falls sharply.
+- Libya-origin crossings are:
+  - much larger in volume than Tunisia-origin crossings
+  - much more likely to use inflatable boats
+- Fatal incident locations suggest a shift in departure geography from Tunisia toward Libya starting in 2013.
+- The smuggling market appears increasingly concentrated around Libya.
+
+IMPORTANT LIMITATION
+
+- The paper cannot directly observe daily Libyan Coast Guard interceptions.
+- The authors argue this matters mainly late in the sample and does not drive the main earlier findings.
+
+==================================================
+3) METHODOLOGY
+==================================================
+
+CORE IDENTIFICATION IDEA
+
+- The paper does not rely mainly on simple before/after comparisons.
+- Reason:
+  - SAR regimes change only a few times
+  - they affect the whole route
+  - rescues and crossings are endogenous strategic outcomes
+
+- Instead, the paper identifies SAR indirectly through how daily crossings react to exogenous sea conditions.
+
+THEORETICAL LOGIC
+
+- One-boat model:
+  - More SAR should increase attempts
+  - and make crossings less deterred by bad weather
+
+- Two-boat model (safe + unsafe boats):
+  - If SAR makes unsafe boats feasible,
+  - then crossings can become more weather-sensitive,
+  - because unsafe boats are especially vulnerable to waves
+
+- This two-boat prediction is the key moral-hazard result.
+
+EMPIRICAL LOGIC
+
+- If under intense SAR, and when unsafe boats are more prevalent, crossings become much more responsive to wave height,
+- then the marginal crossing is likely being undertaken on an unsafe boat.
+- This implies SAR increased attempted crossings partly by making fragile boats viable.
+
+MAIN EMPIRICAL SPECIFICATION (2013–2017)
+
+- Poisson quasi-maximum likelihood model for daily attempted crossings.
+- Main regressors:
+  - wave height
+  - wave height × PostSAR
+  - wave height × fraction unsafe boats
+  - wave height × PostSAR × fraction unsafe boats
+- Includes week-by-year fixed effects.
+- Main coefficient of interest:
+  - the triple interaction
+
+IMPORTANT NOTATION
+
+- PostSAR in the 2013–2017 time-series specification means the post-Mare Nostrum / intense-SAR era.
+- It equals 0 during Hermes (baseline low-intensity SAR period).
+- It equals 1 after October 18, 2013, when Mare Nostrum begins and rescue becomes much more far-reaching.
+
+LATER PANEL SPECIFICATION (2016–2020)
+
+- Daily panel by country of departure.
+- Uses the Minniti Code as a sharp reduction in rescue availability near Libya.
+- Compares Libya and Tunisia routes.
+- Allows wave elasticity to vary by:
+  - route
+  - SAR availability
+  - share of inflatable boats
+
+- This is the cleaner treated-vs-comparison route mechanism test.
+
+STRUCTURAL INTERPRETATION
+
+- The paper uses the estimated semielasticities to infer relative safety of unsafe vs safe boats.
+- This translates reduced-form weather responses into a statement about how dangerous inflatables are.
+
+WHAT THE STATA DOFILE ADDS
+
+- Confirms the replication mapping:
+  - Table 3:
+    - estimated from data_tab_main.dta
+    - Poisson GLM
+    - i.weekanno fixed effects
+    - Newey-West HAC standard errors
+    - bandwidth 28
+  - Table 4:
+    - ppmlhdfe on data_tab4.dta
+    - high-dimensional fixed effects
+  - Table 5:
+    - reghdfe on daily boat-share outcomes
+  - Robustness tables C3–C8:
+    - alternative estimators
+    - different clustering
+    - lagged or max waves
+    - quadratic waves
+    - alternative coastal wave measures
+    - threshold definitions of bad weather
+
+==================================================
+4) RESULTS
+==================================================
+
+A. MAIN TIME-SERIES RESULT
+
+- In Table 3, the coefficient on:
+  Wave Height × PostSAR × Fraction Unsafe Boat
+  is negative and statistically strong across all unsafe-boat definitions:
+
+  - about -6.546
+  - about -5.450
+  - about -4.168
+
+INTERPRETATION
+
+- When intense SAR is operating and a larger share of crossings uses unsafe boats,
+  attempted crossings become much more sensitive to bad weather.
+- This is exactly what the two-boat moral-hazard model predicts.
+
+- Baseline weather deterrence:
+  - a 0.10 meter increase in wave height reduces crossings on safe boats by about 8.9% to 14.6%.
+
+B. PANEL EVIDENCE AROUND MINNITI
+
+- In Table 4, the key coefficient is:
+  From Libya × SAR × Wave Height × Fraction Inflatable Boat = -6.974
+
+WHY THIS MATTERS
+
+- This is very close to the main time-series estimate.
+- Strong internal consistency check.
+
+INTERPRETATION
+
+- Before the Minniti Code, when EU/NGO rescue near Libya made inflatable crossings feasible,
+  Libya-origin crossings on inflatables were especially sensitive to bad sea conditions.
+- This fits the mechanism that rescue expanded the set of marginal, unsafe crossings.
+
+- The comparison result also matters:
+  - when there is no substitution toward inflatables,
+    the coefficient on From Libya × SAR × Wave Height is positive,
+    which matches the one-boat prediction that rescue reduces weather deterrence.
+
+C. DIRECT EVIDENCE OF BOAT SWITCHING
+
+- Table 5 shows that relative to Hermes:
+  - Triton II is associated with a rise of about 0.606 in the inflatable share of crossings
+  - shares of fishing and motor boats fall
+
+- Figure 9 shows a sharp break around the Minniti Code:
+  - inflatable share falls from about 80% before
+  - to about 40% after
+
+WHY THIS IS IMPORTANT
+
+- This is not only a regression result.
+- The mechanism is visible directly in the raw data.
+
+D. HOW DANGEROUS ARE INFLATABLE BOATS?
+
+- Using the model’s structural mapping and estimated semielasticities,
+  the paper infers a very small relative safety parameter for unsafe boats.
+- For plausible price ratios, theta is around 5% to 10%.
+
+INTERPRETATION
+
+- Inflatables are an order of magnitude less safe than sturdier alternatives.
+
+- The abstract summarizes the same point more starkly:
+  - inflatables are about 20 times more dangerous than sturdy wooden boats.
+
+- Exact magnitude depends on the comparison boat type,
+  but the qualitative conclusion is very clear:
+  the marginal boats enabled under intense SAR are far more dangerous.
+
+E. POLICY CONCLUSION
+
+- The paper does NOT simply argue that SAR should be abolished.
+- The authors argue SAR likely increased aggregate migrant welfare,
+  because it allowed more people to afford the journey.
+- But it also generated strong strategic responses:
+  - more marginal crossings
+  - more fragile boats
+  - partial offset of intended safety gains
+
+- Their constructive policy suggestion:
+  - restrict the supply of inflatable rafts
+  - expand legal alternatives
+  - do not rely on rescue alone
+
+==================================================
+5) IDENTIFICATION CRITIQUE / HOW CONVINCING IS THE CAUSAL CLAIM?
+==================================================
+
+CORE CONCERN
+
+- A simple post-2013 comparison would be unconvincing.
+- Many other things changed during the migration crisis:
+  - conflict and instability
+  - migrant composition
+  - smuggling-market organization
+  - policy changes in Europe and North Africa
+  - NGO presence
+  - broader crisis dynamics
+
+- Also, SAR itself is endogenous:
+  - more crossings can trigger more SAR
+  - more deaths can trigger more SAR
+  - so SAR is partly a consequence of crossing attempts, not just a cause
+
+IMPORTANT HONEST ASSESSMENT
+
+- The paper does NOT prove in a clean experimental sense that intense SAR alone caused the observed changes.
+- Its evidence is stronger than a naive before/after design, but still rests on assumptions.
+
+WHAT THE PAPER TRIES TO IDENTIFY
+
+- The paper does not mainly identify SAR from levels.
+- Instead, it identifies SAR indirectly from changes in the weather elasticity of crossings.
+
+- The claim is NOT:
+  - “crossings rose after SAR, therefore SAR caused them.”
+
+- The claim IS:
+  - “when rescue becomes more extensive, and especially when unsafe boats are used,
+     crossings react differently to exogenous wave conditions;
+     under the model, that pattern is consistent with SAR-induced moral hazard.”
+
+WHY THIS HELPS
+
+- Wave height is plausibly exogenous at the daily level.
+- In the main 2013–2017 design, the model includes week-by-year fixed effects.
+- So identification comes from day-to-day variation in waves within narrow time windows,
+  not from broad annual shifts in the migration crisis.
+
+- This absorbs many slow-moving confounders:
+  - seasonal demand
+  - annual crisis trends
+  - low-frequency policy and market changes
+
+- Therefore, a confounder would need to do something quite specific:
+  - it would have to change the daily slope of crossings with respect to wave height
+    exactly when SAR changes,
+    in a way that mimics the model’s predictions.
+
+WHY THE LIBYA VS TUNISIA DESIGN IS STRONGER
+
+- The 2016–2020 panel around the Minniti Code is more convincing than the pure time-series design.
+- It compares:
+  - Libya-origin crossings (more exposed to NGO rescue near Libya)
+  - Tunisia-origin crossings (less exposed comparison route)
+
+- This is better because it is not only before/after.
+- It is also differential exposure across routes.
+
+- The main interaction is specific to:
+  - Libya × SAR × Wave Height × Inflatable share
+
+- That makes the interpretation more credible than a simple aggregate post dummy.
+
+WHAT SUPPORTS THEIR INTERPRETATION
+
+- Robustness to:
+  - OLS instead of Poisson
+  - different inference choices
+  - lagged or max waves
+  - quadratic waves
+  - alternative sea-condition measures
+  - threshold “bad weather” versions
+
+- Placebo / randomization logic:
+  - replacing current waves with distant lagged waves should not predict current crossings
+  - the true coefficients are unusually strong relative to those placebo distributions
+
+- Internal consistency:
+  - the Libya–Tunisia estimate is very close to the main time-series estimate
+
+WHAT STILL LIMITS THE PAPER
+
+- Very few major SAR-regime changes
+- SAR regimes overlap with many other institutional shifts
+- Boat-share measures are themselves endogenous
+- No direct daily observation of Libyan Coast Guard interceptions
+- Strongest empirical evidence is about behavior and mechanism,
+  not a pristine reduced-form estimate of total deaths caused by SAR
+
+BEST CRITICAL SUMMARY
+
+- The paper does not cleanly prove that intense SAR alone caused all observed changes.
+- What it identifies more credibly is that the weather responsiveness of crossings changed across SAR regimes
+  in a way consistent with SAR-induced behavioral adaptation and substitution toward unsafe boats.
+- The causal claim is therefore best read as:
+  evidence consistent with moral hazard,
+  stronger on mechanism than on full causal proof.
+
+==================================================
+6) CONNECTING METHODOLOGY TO RESULTS
+==================================================
+
+KEY DEEP LOGIC
+
+- The paper’s evidence is not mainly level-based.
+- It does NOT say:
+  “crossings rose after SAR, therefore SAR caused them.”
+
+- Instead it says:
+  when rescue becomes more extensive, and especially when unsafe boats are used,
+  crossings react differently to exogenous sea conditions.
+
+- This change in weather elasticity is the empirical fingerprint of moral hazard in their model.
+
+HOW THE RESULTS FIT TOGETHER
+
+- Table 3:
+  broad time-series version of the mechanism
+- Table 4:
+  cleaner route-specific version using the Minniti shock
+- Table 5 and Figure 9:
+  direct evidence that smugglers switched boat types
+- Figure 8:
+  translates the estimated semielasticities into implied relative danger of inflatable boats
+
+SO THE STRONGEST CLAIM IS NOT:
+
+- “we measured the exact net death effect of SAR”
+
+THE STRONGEST CLAIM IS:
+
+- SAR changed strategic behavior in exactly the way a moral-hazard model predicts:
+  - more marginal crossings
+  - more fragile boats
+  - partial offset of intended safety gains
+
+==================================================
+7) BOTTOM LINE
+==================================================
+
+- The paper argues that extensive SAR near Libya had unintended consequences.
+- By making rescue more likely, it made crossings on unsafe inflatable boats more feasible.
+- This increased attempted crossings and changed the composition of boats used.
+- Because inflatable boats are much more dangerous, part of SAR’s intended safety effect was offset.
+
+MOST IMPORTANT TAKEAWAY
+
+- The core contribution is the combination of:
+  - theory of moral hazard
+  - identification through weather responsiveness
+  - direct evidence of substitution toward inflatable boats
+
+MAIN STRENGTH
+
+- Clever use of exogenous sea conditions to identify strategic behavioral responses.
+
+MAIN LIMITATION
+
+- The paper does not directly estimate the full unconditional mortality effect of SAR.
+- It mainly identifies how SAR changes behavior and inferred risk through boat composition and weather sensitivity.

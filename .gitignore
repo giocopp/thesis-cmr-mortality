@@ -1,0 +1,48 @@
+# R
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj.user
+
+# renv library (lockfile is tracked)
+renv/library/
+renv/local/
+renv/cellar/
+renv/staging/
+renv/sandbox/
+renv/python/
+
+# targets cache
+_targets/
+
+# Large model objects
+*.RData
+*.rds
+*.RDS
+
+# Data (raw data tracked selectively; large files excluded)
+data/raw/era5/*.nc
+data/raw/era5/*.grib
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# LaTeX / Quarto build artifacts
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*_files/

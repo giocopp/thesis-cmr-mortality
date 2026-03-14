@@ -1,0 +1,58 @@
+\documentclass[class=article,crop=true]{standalone}
+%\usepackage{fullpage}
+\usepackage{tikz}								%create timelines
+	\usetikzlibrary{arrows,backgrounds,snakes}
+\usepackage{amsmath}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{adjustbox}
+\usepackage{graphicx}
+\usepackage{caption} 
+\captionsetup[table]{skip=10pt}
+\usepackage[capposition=top]{floatrow}			%to add notes on floats
+\usepackage{siunitx}
+\usepackage{float}								%package for layout of floats (tables, figures, etc.)
+\floatstyle{plaintop}							%caption above the body of the float
+\restylefloat{figure}							%apply float style to figures
+\restylefloat{table}							%apply float style to tables
+\usepackage{multirow}
+\usepackage{array}
+	\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+	\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+	\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+	
+\begin{document}
+ 
+\begin{tabular}{L{6cm}L{6cm}L{6.5cm}}
+\toprule\toprule
+   \textbf{Wave}: Description     & Height (metres)  &Effect          \\
+  \hline
+   Calm (rippled)                & 0.00   - 0.10          & No waves breaking                                                \\
+   Smooth                               & 0.10 - 0.50        & Slight waves breaking                                            \\
+   Slight                               & 0.50 - 1.25       & Waves rock buoys and small craft                                          \\
+   Moderate                             & 1.25 - 2.50       & Sea becoming furrowed                                                     \\
+   Rough                                & 2.50 - 4.00          & Sea deeply furrowed                                                       \\
+   Very rough                           & 4.00 - 6.00          & Sea much disturbed with rollers                      \\
+   High                                 & 6.00 - 9.00         & Sea disturbed with damage to foreshore \\
+   Very high                            & 9.00 - 14.00         & Towering seas                                                             \\
+   Phenomenal                           & \textgreater{}14 & Precipitous seas (only in cyclones)                           \\
+   &                  &   
+                                         \\
+                                            \hline  \hline                                 
+    \textbf{Swell}: Description                   & Wave Length   (metres)     & Wave Height  (metres)                                                               \\
+     \hline
+   Low swell of short or average length & 0 - 200        & 0 - 2                       \\
+   Long, low swell                      & over 200       & 0 - 2                                                                    \\
+   Short swell of moderate height       & 0 - 100          & 2 - 4                    \\
+   Average swell of moderate height     & 100 - 200        & 2 - 4                        \\
+   Long swell of moderate height        & over 200       & 2 - 4           \\
+   Short heavy swell                    & 0 - 100          & over 4                                                                  \\
+   Average length heavy swell           & 100 - 200        & over 4              \\
+   Long heavy swell                     & over 200       & over 4     \\
+\bottomrule\bottomrule
+\end{tabular}%
+\end{document}

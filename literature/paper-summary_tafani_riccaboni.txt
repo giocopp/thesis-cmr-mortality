@@ -1,0 +1,454 @@
+TAFANI, RICCABONI (2025)
+The Impact of the EU–Turkey Agreement on the Number of Lives Lost at Sea
+STUDY SHEET (WITH IDENTIFICATION CRITIQUE)
+
+==================================================
+1) INSTITUTIONAL SETTING — QUICK
+==================================================
+
+- The paper studies the Mediterranean migration region as a whole, covering five routes:
+  - Western Mediterranean (Algeria/Morocco to Spain)
+  - Western African (West Africa to Canary Islands)
+  - Central Mediterranean (Libya/Tunisia/Egypt to Italy/Malta)
+  - Eastern Mediterranean (Turkey to Greece/Cyprus)
+  - Eastern Border (Eastern Europe to Turkey by land)
+
+- The key policy event is the EU–Turkey statement, formally agreed on March 18, 2016.
+  - The agreement was a response to the 2015 migration crisis.
+  - Turkey committed to take back all irregular migrants who entered Greece after March 20, 2016.
+  - In return: EU pledged €6 billion in financial aid, visa liberalization, and a "1:1 mechanism"
+    (for every person sent back, one Syrian refugee resettled from Turkey to the EU).
+  - Non-Syrian nationalities (Afghans, Iraqis, Pakistanis) were left with limited access to protection.
+
+- The paper's central concern:
+  - The agreement effectively shut down the Eastern Mediterranean route.
+  - But did it simply displace migrants to other, more dangerous routes — especially the Central Mediterranean?
+  - If so, the agreement's apparent success on the Eastern route came at the cost of increased deaths elsewhere.
+
+- Context:
+  - 2016 saw the highest number of deaths (5,143) among migrants attempting to reach Europe.
+  - This happened while arrivals fell by more than 60%.
+  - The Central Mediterranean route is much longer and more dangerous than the Eastern Mediterranean route.
+  - Migrants on the Central route travel an average of 153 days, versus 62 days on the Eastern route.
+
+- Main substantive question:
+  - Did the EU–Turkey deal generate a significant diversion effect from the Eastern to the Central route?
+  - And did this diversion lead to additional deaths at sea?
+
+==================================================
+2) DATA AND DESCRIPTIVE EVIDENCE
+==================================================
+
+MAIN DATA
+
+- Migration flows:
+  - Monthly irregular border crossings from Frontex, 2011 to early 2017.
+  - Disaggregated by nationality and by route.
+  - Five routes covered.
+  - Each observation is a nationality–route–month combination.
+  - Total observations: 73,440 (without controls), 62,796 (with controls).
+
+- Deaths / missing migrants:
+  - From the IOM Missing Migrants Project.
+  - Monthly fatalities and disappearances by route.
+  - Available for four Mediterranean routes (Eastern Border excluded due to lack of data).
+  - Used in the second-stage regression analysis.
+
+- Covariates:
+  - GDP per capita (from Kummu et al. 2024): proxy for economic conditions in origin countries.
+  - Fragile State Index (Fund for Peace): proxy for political instability in origin countries.
+  - ACLED conflict data: deaths from violence against civilians in departure countries
+    (Libya, Morocco, Turkey), used in the regression on missing migrants.
+  - Note: ACLED was excluded from the main MC analysis due to data availability problems,
+    but was used in the second-stage route-level regression.
+
+- Treatment assignment:
+  - A nationality is "treated" if its median number of crossings on the Eastern Mediterranean route
+    in the pre-treatment period was above the aggregate median of all nationalities on that route.
+  - Syrians excluded from the main analysis because they had special privileges under the 1:1 rule.
+  - Alternative thresholds used for robustness: first quartile and third quartile.
+
+DESCRIPTIVE PATTERNS
+
+- Before the agreement:
+  - Treated nationalities used predominantly the Eastern Mediterranean route.
+  - The Central route had lower flows from these nationalities.
+
+- After the agreement (April 2016):
+  - Clear shift visible for treated nationalities: the ratio of Central-to-Eastern flows increases sharply.
+  - No comparable shift for non-treated nationalities.
+
+- Deaths:
+  - Central route mortality rate roughly doubled after the agreement.
+  - IOM noted an unusual increase in winter 2016 crossings and deaths, attributed to the closure
+    of the Eastern route.
+  - Before the agreement: missing migrants on the Central route were mostly isolated small incidents.
+  - After: a noticeable rise in large shipwrecks, more dispersed along the Libyan coast.
+
+IMPORTANT LIMITATIONS
+
+- Missing Migrants data likely underestimates deaths, especially on the Central route.
+- Deaths before embarkation (human trafficking, exploitation in Libya) are not captured.
+- Nationality of missing migrants is not available in the IOM data,
+  so the second-stage analysis aggregates at the route level.
+
+==================================================
+3) METHODOLOGY
+==================================================
+
+The analysis has two stages.
+
+FIRST STAGE: COUNTERFACTUAL ESTIMATION OF DIVERSION EFFECTS
+
+Core idea:
+- Estimate what migration flows would have looked like in the absence of the EU–Turkey agreement
+  for treated nationalities across all routes.
+- The difference between observed and counterfactual flows is the Average Treatment Effect
+  on the Treated (ATT).
+
+Method: Matrix Completion (MC) estimator (Athey et al. 2021).
+
+How it works:
+- Think of the data as a large matrix: rows are nationality–route pairs, columns are months.
+- After the agreement (April 2016), the treated entries are "missing" — we don't observe
+  what would have happened without the deal.
+- MC fills in these missing entries by assuming the full matrix has a low-rank structure.
+  Intuitively, the patterns across many nationalities and routes contain enough information
+  to predict the missing counterfactual values.
+- Formally, MC solves:
+    L = argmin [ (1/|O|) Σ (Y_it - L_it)^2 + λ_L · norm(L) ]
+  where O is the set of untreated observations, and the norm penalty (soft impute)
+  prevents overfitting by gradually shrinking singular values.
+
+Why MC over alternatives:
+- Generalized Synthetic Control (SC) was tried but gave contradictory results
+  because it was overly sensitive to the 2015 migration spike.
+  SC relies on parallel trends, which may be violated here.
+  When data was standardized, SC results matched MC, suggesting the issue was
+  methodological sensitivity rather than fundamentally different conclusions.
+- Interactive Fixed Effects (IFE) was also tried but produced more volatile estimates
+  for the same reason: it uses "hard impute" (binary selection of singular values)
+  rather than the smooth regularization of MC.
+- MC's soft impute is more robust to spikes, outliers, and high-dimensional settings.
+
+Two model specifications:
+- Without covariates: uses only time fixed effects and unit (nationality–route) fixed effects.
+- With covariates: adds GDP per capita and Fragile State Index as controls.
+  This reduces observations from 73,440 to 62,796 due to data availability.
+
+Treatment timing:
+- Treatment starts April 2016.
+- Treatment assignment computed using data up to October 2015,
+  to avoid contamination from the Joint Action Plan announced that month.
+
+SECOND STAGE: LINKING DIVERSION TO DEATHS
+
+- After estimating the ATT (the extra migrants on each route due to the agreement),
+  the paper runs a two-way fixed effects regression:
+
+    MM_{i,t} = α_i + γ_{t-1} + β_1 crossings_{i,t-1} + β_2 ATT_{i,t-1}
+               + β_3 political_fatalities_{i,t-1} + ε_{i,t-1}
+
+  where:
+  - MM_{i,t} = missing migrants on route i in month t
+  - α_i = route fixed effects (absorb time-invariant route characteristics)
+  - γ_{t-1} = monthly fixed effects (absorb common time shocks)
+  - ATT_{i,t-1} = estimated diversion effect from Stage 1 (lagged one month)
+  - crossings = total border crossings (lagged)
+  - political_fatalities = deaths from violence against civilians in the departure country (lagged)
+
+- Sample: 142 observations (4 routes × ~37 months), from 2015 to 2017.
+- Standard errors: clustered by route and time.
+
+Final quantification:
+- Multiply the monthly ATT for the Central route by the corresponding monthly mortality rate
+  to estimate deaths attributable to the agreement.
+
+==================================================
+4) RESULTS
+==================================================
+
+A. COUNTERFACTUAL ANALYSIS: DIVERSION EFFECTS
+
+Main result (baseline model: median threshold, no controls):
+
+  - Central Mediterranean: ATT = +198 per month (p = 0.0008)
+  - Eastern Mediterranean: ATT = −66 per month (p = 0.08)
+  - Western Mediterranean: ATT = +6 (p = 0.03)
+  - Western African: ATT = +1 (not significant)
+  - Eastern Border: ATT = +1 (not significant)
+  - Overall effect: ATT = +11 (not significant)
+
+INTERPRETATION
+
+- The agreement diverted approximately 198 migrants per month from the Eastern route
+  to the Central route.
+- Summing the monthly ATTs from April to November 2016 gives a total diversion
+  of about 2,090 additional migrants on the Central route.
+- The Eastern route shows a decrease in crossings, as expected, though only marginally significant.
+- The overall total effect across all routes is not significant, which is consistent with
+  redistribution across routes rather than net reduction.
+- Western routes were unaffected, likely due to geographical distance from the Eastern route.
+
+WHY THE MODEST SIGNIFICANCE ON THE EASTERN ROUTE MATTERS
+
+- The paper's own results show that the decrease on the Eastern route is only marginally
+  significant (p = 0.08 to 0.13 depending on specification).
+- This is somewhat puzzling: if the agreement sharply reduced Eastern crossings,
+  why is the ATT not more cleanly significant?
+- The authors chose the model without controls as the baseline because:
+  (1) controls reduce observations by ~10,000,
+  (2) yearly controls are temporally mismatched with monthly outcomes,
+  (3) results with/without controls are similar anyway.
+
+B. ROBUSTNESS CHECKS
+
+- Results robust across three threshold definitions (first quartile, median, third quartile).
+- As nationalities are progressively added to the treated group:
+  - ATT for Central route decreases smoothly
+  - ATT for Eastern route increases
+  - Western routes remain stable
+- Placebo tests (4-month and 6-month pre-treatment): model passes all tests
+  except the F-test in the pre-trend check. The equivalence test (more robust to outliers) passes.
+- Pre-treatment ATTs are nearly zero, supporting model validity.
+- Results broadly consistent with Generalized SC and IFE when data is standardized.
+
+C. HAZARD OF CROSSINGS: REGRESSION RESULTS
+
+Table 2 results (two-way fixed effects, 142 observations, R² = 0.589):
+
+  - Crossings:            β = 0.001  (SE = 0.000, t = 2.54, p = 0.012)
+  - ATT (diversion):      β = 0.877  (SE = 0.298, t = 2.95, p = 0.004)
+  - Political fatalities:  β = 0.315  (SE = 0.137, t = 2.30, p = 0.024)
+
+INTERPRETATION
+
+- There is a significant positive correlation between the diversion effect (ATT)
+  and the number of missing migrants.
+- Each additional diverted migrant is associated with roughly 0.877 additional deaths.
+- Higher volumes of total crossings also correlate with more deaths.
+- Political instability in departure countries is also positively associated with deaths.
+
+D. QUANTIFICATION OF LIVES LOST
+
+- Multiplying the significant monthly ATT for the Central route by the monthly mortality rate
+  from April to December 2016 yields an estimate of 45 ± 3 additional deaths
+  attributable to the EU–Turkey agreement.
+
+- The authors acknowledge this number has "symbolic weight" —
+  the key point is the existence and direction of the effect, not the precise magnitude.
+
+==================================================
+5) IDENTIFICATION CRITIQUE / HOW CONVINCING IS THE CAUSAL CLAIM?
+==================================================
+
+CORE STRENGTHS
+
+- The paper uses a serious causal inference method (Matrix Completion) rather than
+  simple before/after or descriptive comparisons.
+  This is a genuine contribution, since prior work on this agreement was almost entirely
+  descriptive or legal/theoretical.
+
+- MC is well-suited for this setting:
+  - Many nationality–route units, relatively few time periods.
+  - The low-rank assumption is more flexible than parallel trends.
+  - Soft impute handles the 2015 migration spike better than SC or IFE.
+
+- The treatment is plausibly exogenous to individual nationality–route pairs:
+  the agreement was a high-level EU–Turkey political deal, not driven by the behavior
+  of specific nationalities on specific routes.
+
+- Multiple robustness checks support the main finding:
+  different thresholds, different estimators, placebo tests, pre-trend tests.
+
+CORE CONCERNS
+
+1. The two-stage structure introduces generated-regressor bias.
+   - The ATT from Stage 1 is an estimated quantity, not observed.
+   - Using it as a regressor in Stage 2 may understate standard errors.
+   - The paper does not discuss or correct for this.
+
+2. The second-stage regression is very small (142 observations, 4 routes, ~37 months).
+   - With route and time fixed effects, the effective degrees of freedom are quite limited.
+   - Clustering on 4 routes is extremely sparse for cluster-robust inference.
+   - The R² of 0.589 includes fixed effects; within R² is only 0.161,
+     meaning most of the explanatory power comes from fixed effects, not the regressors.
+
+3. The link from diversion to deaths is correlational, not cleanly causal.
+   - The paper calls it a "correlation" and a "relationship," which is honest.
+   - But the ATT itself is endogenously determined by the model in Stage 1.
+   - Political fatalities are a rough proxy for departure-country conditions.
+   - Omitted variables at the route-month level (weather, smuggler behavior,
+     Libyan Coast Guard activity, NGO presence) could confound the regression.
+
+4. Exclusion of Syrians is necessary but consequential.
+   - Syrians were the largest group on the Eastern route.
+   - Their exclusion means the analysis captures only the diversion of non-Syrian nationalities.
+   - The total diversion effect (including Syrians who may have faced different incentives)
+     could look quite different.
+
+5. Treatment assignment is based on pre-treatment route usage.
+   - This is reasonable but somewhat mechanical.
+   - Nationalities near the threshold could be misclassified.
+   - The iterative robustness check (progressively moving nationalities) helps,
+     but the fundamental arbitrariness remains.
+
+6. The mortality quantification (45 ± 3 deaths) is approximate.
+   - It multiplies the estimated ATT by the observed mortality rate.
+   - But the mortality rate is itself a noisy estimate (underreported deaths, uncertain denominator).
+   - The ± 3 uncertainty band reflects only the ATT uncertainty, not the mortality rate uncertainty.
+   - This number is best understood as a lower bound, as the authors note.
+
+7. Pre-trend concern.
+   - The model fails the F-test in the pre-trend test for the Central route.
+   - The authors argue the equivalence test (which it passes) is more robust to outliers.
+   - This is a reasonable argument but not completely reassuring.
+   - If there were pre-existing trends in Central route flows for treated nationalities,
+     the ATT could be biased upward.
+
+8. Temporal scope.
+   - The analysis ends in early 2017, only about 9 months after the agreement.
+   - Longer-run effects (adaptation by smugglers, policy changes, new routes) are not captured.
+   - The authors acknowledge this as a limitation.
+
+WHAT SUPPORTS THEIR INTERPRETATION
+
+- The diversion pattern is visible descriptively: treated nationalities shift from Eastern to Central.
+- Non-treated nationalities show no comparable shift — a useful placebo-like check.
+- The Central route ATT is consistently positive and significant across all specifications.
+- Field evidence from Galos et al. (2017) confirms that the Central route is much more dangerous
+  (longer journeys, more exploitation, more secondary migration).
+- The IOM itself noted the unusual increase in late-2016 Central route crossings.
+
+WHAT STILL LIMITS THE PAPER
+
+- Only one major policy shock (the agreement), making it hard to rule out coincident confounders.
+- The 2015 crisis was a massive structural break; any method struggles with such disruption.
+- No direct observation of smuggler behavior, route choices, or prices.
+- The paper cannot distinguish between migrants who genuinely diverted from the Eastern route
+  and migrants who would have attempted the Central route regardless.
+- Libyan civil war dynamics (intensifying throughout 2016) could independently
+  increase both Central route flows and Central route deaths.
+
+BEST CRITICAL SUMMARY
+
+- The paper provides the first rigorous quantitative estimate of the diversion effect
+  of the EU–Turkey agreement.
+- The first-stage result (diversion to the Central route) is the strongest and most convincing finding.
+- The second-stage result (link to deaths) is suggestive and directionally plausible
+  but rests on a small sample and correlational design.
+- The quantification of 45 deaths is best read as an order-of-magnitude illustration,
+  not a precise causal estimate of mortality.
+
+==================================================
+6) CONNECTING METHODOLOGY TO RESULTS
+==================================================
+
+KEY DEEP LOGIC
+
+- The paper's main contribution is methodological:
+  applying Matrix Completion to the migration-policy context
+  to construct a proper counterfactual for treated nationalities.
+
+- Previous analyses simply compared totals before and after the agreement
+  and concluded there was no significant diversion.
+  The paper shows this conclusion is wrong: when you properly account for
+  which nationalities were affected, a clear diversion appears.
+
+HOW THE RESULTS FIT TOGETHER
+
+- Stage 1 (MC estimation):
+  Identifies the nationalities most affected by the agreement,
+  constructs counterfactuals, and measures the monthly diversion to the Central route.
+
+- Stage 2 (two-way FE regression):
+  Tests whether the estimated diversion correlates with increased deaths,
+  controlling for total flow volume and political instability.
+
+- Descriptive evidence:
+  Provides visual support (Figures 2, 3) for the diversion pattern
+  and the increased mortality on the Central route after April 2016.
+
+- Mortality quantification:
+  Translates the statistical result into a concrete (if approximate) human cost.
+
+SO THE STRONGEST CLAIM IS NOT:
+
+- "We precisely measured 45 deaths caused by the EU–Turkey agreement."
+
+THE STRONGEST CLAIM IS:
+
+- The EU–Turkey agreement caused a statistically significant diversion of migrants
+  from the Eastern Mediterranean to the more dangerous Central Mediterranean route,
+  and this diversion is positively correlated with increased deaths at sea.
+
+==================================================
+7) CONNECTION TO DEIANA ET AL. (2024)
+==================================================
+
+Both papers study unintended consequences of migration policies in the Mediterranean,
+but they focus on different mechanisms and different policies:
+
+DEIANA ET AL.:
+- Studies SAR operations on the Central Mediterranean route.
+- Mechanism: moral hazard — rescue operations made inflatable boats viable,
+  leading smugglers to substitute toward cheaper, more dangerous vessels.
+- Identification: exploits daily variation in wave height interacted with SAR regimes
+  and boat-type composition. The key is how weather sensitivity of crossings
+  changes across SAR regimes.
+- Evidence is strongest on behavioral mechanism (boat switching, weather elasticity).
+
+TAFANI & RICCABONI:
+- Studies the EU–Turkey agreement and its effect across Mediterranean routes.
+- Mechanism: route diversion — shutting down the Eastern route pushed migrants
+  to the more dangerous Central route.
+- Identification: Matrix Completion counterfactual for treated nationalities,
+  exploiting the cross-sectional structure of many nationality–route pairs.
+- Evidence is strongest on the existence and magnitude of the diversion effect.
+
+COMPLEMENTARY INSIGHTS:
+- Together, the papers paint a picture where both supply-side interventions (SAR)
+  and demand-side interventions (bilateral agreements) generate unintended consequences.
+- Deiana et al. show that rescue operations change smuggler behavior within a route.
+- Tafani & Riccaboni show that border agreements shift migrants across routes.
+- Both conclude that narrowly targeted policies can backfire when migrants and smugglers
+  respond strategically.
+
+KEY METHODOLOGICAL CONTRAST:
+- Deiana et al. use high-frequency (daily) variation in an exogenous variable (waves)
+  to identify behavioral responses. This is closer to a quasi-experimental design.
+- Tafani & Riccaboni use a panel counterfactual method (MC) with a single treatment event.
+  This is methodologically sophisticated but relies more heavily on modeling assumptions.
+- Deiana et al. cannot directly estimate total deaths caused by SAR.
+- Tafani & Riccaboni attempt to quantify deaths but through a correlational second stage.
+
+==================================================
+8) BOTTOM LINE
+==================================================
+
+- The EU–Turkey agreement successfully reduced crossings on the Eastern Mediterranean route.
+- But it generated a significant diversion effect: roughly 2,000 additional migrants
+  were pushed to the Central Mediterranean route from April to December 2016.
+- The Central route is far more dangerous (longer journeys, more exploitation, higher mortality).
+- The paper estimates approximately 45 additional deaths at sea attributable to this diversion.
+
+MOST IMPORTANT TAKEAWAY
+
+- Bilateral migration agreements that focus on a single route are shortsighted.
+- Migration patterns across routes are interdependent.
+- Closing one route without addressing root causes or providing legal alternatives
+  simply displaces the problem — and the danger — elsewhere.
+
+MAIN STRENGTH
+
+- First rigorous causal estimate of the diversion effect of the EU–Turkey agreement,
+  using a modern counterfactual method suited to the data structure.
+- Clear policy relevance: the EU continues to negotiate similar agreements
+  (e.g., with Egypt in 2024), making these findings timely.
+
+MAIN LIMITATION
+
+- The link from diversion to deaths rests on a small-sample correlational regression,
+  not a clean causal design.
+- The analysis captures only a short post-treatment window (~9 months).
+- The quantification of deaths is approximate and likely a lower bound.

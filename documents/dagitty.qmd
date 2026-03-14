@@ -1,0 +1,879 @@
+---
+title: "DAG Analysis: Weather × Post-MoU Mortality Model"
+author: "Giorgio Coppola"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    theme: cosmo
+    self-contained: true
+editor:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  message = FALSE, warning = FALSE,
+  fig.width = 9, fig.height = 6, dpi = 150
+)
+```
+
+
+## Research question
+
+Did the 2017 EU-Libya MoU make the Central Mediterranean route more
+dangerous (increase per-crossing mortality)?
+
+**Identification strategy:** Weather × Post-MoU interaction ($\beta_3$)
+captures how the MoU changed the Weather → vulnerability → Deaths pathway.
+
+## 1. Define the DAG
+
+Nodes and edges traced from `dag-1.pdf`:
+
+| Node | Description | Status |
+|------|-------------|--------|
+| MoU | Feb 2017 EU-Libya policy shock | Exposure (treatment) |
+| Deaths | Death count (per incident or aggregate) | Outcome |
+| Vulnerability | Crossing vulnerability (boat quality, rescue, conditions, overcrowding) | **Latent (unobservable)** |
+| Weather | Sea conditions: SWH, wind, SST | Observed, exogenous |
+| FE | Seasonality + grid fixed effects | Adjusted (in model) |
+| SAR | Search & rescue capacity | Mostly unobserved (low quality data) |
+| Boats | Vessel type/quality | Partially observed |
+| Crossings | Crossing volume | Observed, endogenous |
+
+```{r dag-define}
+library(dagitty)
+
+dag <- dagitty('
+dag {
+  MoU       [exposure, pos="4,-0.5"]
+  Deaths    [outcome,  pos="6.5,2"]
+  Vulnerability      [latent,   pos="4,2"]
+  Weather   [pos="0,2"]
+  FE        [adjusted, pos="1.5,3.5"]
+  SAR       [pos="3,0.5"]
+  Boats     [pos="5,0.5"]
+  Crossings [pos="1.5,1.1"]
+
+  MoU -> SAR
+  MoU -> Boats
+  MoU -> Crossings
+  SAR -> Crossings
+  SAR -> Vulnerability
+  Boats -> Crossings
+  Boats -> Vulnerability
+  Weather -> Crossings
+  Weather -> Vulnerability
+  Vulnerability -> Deaths
+  Crossings -> Deaths
+  FE -> Weather
+  FE -> Crossings
+  FE -> Vulnerability
+  FE -> Deaths
+}
+')
+```
+
+```{r dag-plot, fig.height=5}
+library(ggdag)
+library(ggplot2)
+
+ggdag_status(dag, text = FALSE) +
+  geom_label(aes(label = name),
+             fill = "grey93", colour = "black",
+             size = 3, fontface = "bold",
+             label.padding = unit(0.2, "lines"),
+             label.size = 0, na.rm = TRUE) +
+  theme_dag() +
+  guides(color = guide_legend(title = "Node status")) +
+  ggtitle("DAG: MoU → Deaths (Vulnerability unobserved)")
+```
+
+::: {.callout-note}
+### Notes on edge directionality and omitted edges
+
+**SAR ↔ Crossings (bidirectional in theory, unidirectional in the
+DAG).** The DAG includes SAR → Crossings, representing the post-MoU
+deterrence channel: reduced SAR capacity reduces crossings
+(Rodriguez Sanchez et al. 2023, Model C; Hoffmann Pham & Komiyama
+2024, ECM). However, the reverse — Crossings → SAR — is also
+plausible, especially in the pre-MoU period: the migration crisis
+drove the expansion of SAR operations (Mare Nostrum was launched in
+response to the October 2013 Lampedusa shipwreck; NGO SAR expanded
+as crossings surged). Rodriguez Sanchez et al. (2023) are explicit
+that SAR is partly a consequence of crossing attempts, not just a
+cause. In the post-MoU period that our model targets, the dominant
+direction is SAR → Crossings (policy-driven SAR withdrawal reduces
+crossings). The DAG represents this post-treatment causal direction.
+
+**MoU → Crossings (direct deterrence channel).** The MoU reduced
+crossings not only through SAR withdrawal but also through direct
+deterrence mechanisms outside the SAR/Boats pathway: tightening of
+Libya's southern border, detention of migrants in Libya, and
+signaling effects that discouraged departure (Zambiasi & Albarosa
+2025). This edge is included in the DAG for completeness. Since
+MoU has no parents, it does not create backdoor paths.
+
+**SAR → Boats (not included).** Deiana et al. (2024) show that
+extensive SAR *enables* inflatable boat use — their entire
+identification rests on SAR making unsafe boats viable. This
+suggests SAR → Boats may exist as a causal edge. We do not include
+it in the main DAG because (a) the MoU independently affected both
+SAR and Boats through distinct policy channels (SAR externalization
+vs. smuggler market disruption), and (b) adding SAR → Boats would
+not change identification (all paths remain front-door from MoU,
+which is parentless). However, the mechanism is real and should be
+acknowledged: part of the boat-type shift documented by Deiana et
+al. and Hoffmann Pham & Komiyama (2024) is mediated by SAR
+availability rather than being a direct MoU effect.
+
+**MoU → Vulnerability directly (not included).** The MoU shifted migrants
+to more dangerous conditions in Libyan detention and exploitation
+(documented by Zambiasi & Albarosa 2025). If pre-crossing
+vulnerability feeds into at-sea crossing vulnerability, a direct
+MoU → Vulnerability edge could exist. We omit it from the main DAG because
+(a) Vulnerability as defined here captures *at-sea crossing vulnerability*
+specifically, not pre-departure conditions, and (b) even if
+included, it would not threaten identification since MoU has no
+parents. This channel is relevant for the broader discussion of
+MoU consequences but is outside the scope of the Weather × Post
+identification strategy.
+:::
+
+## 2. All causal paths
+
+### MoU → Deaths
+
+```{r paths-mou}
+p_mou <- paths(dag, from = "MoU", to = "Deaths")
+data.frame(
+  status = ifelse(p_mou$open, "OPEN", "closed"),
+  path   = p_mou$paths
+)
+```
+
+### Weather → Deaths
+
+```{r paths-weather}
+p_wx <- paths(dag, from = "Weather", to = "Deaths")
+data.frame(
+  status = ifelse(p_wx$open, "OPEN", "closed"),
+  path   = p_wx$paths
+)
+```
+
+## 3. Adjustment sets
+
+### Total effect: MoU → Deaths
+
+```{r adj-mou}
+adj_mou <- adjustmentSets(dag, exposure = "MoU", outcome = "Deaths",
+                           type = "minimal")
+if (length(adj_mou) == 0) {
+  cat("No adjustment needed — no backdoor paths from MoU to Deaths.\n")
+  cat("MoU is exogenous: it has no parents in the DAG.")
+} else {
+  print(adj_mou)
+}
+```
+
+MoU has no parents → no backdoor paths → the total effect is
+identified without any conditioning.
+
+### Total effect: Weather → Deaths
+
+```{r adj-weather}
+adjustmentSets(dag, exposure = "Weather", outcome = "Deaths",
+               type = "minimal")
+```
+
+Must condition on **FE** to block the backdoor: Deaths ← FE → Weather.
+
+### Canonical adjustment sets
+
+```{r adj-canonical}
+cat("MoU → Deaths:\n")
+print(adjustmentSets(dag, exposure = "MoU", outcome = "Deaths",
+                      type = "canonical"))
+
+cat("\nWeather → Deaths:\n")
+print(adjustmentSets(dag, exposure = "Weather", outcome = "Deaths",
+                      type = "canonical"))
+```
+
+## 4. Checking specific conditioning strategies
+
+```{r check-adj}
+results <- data.frame(
+  estimand = c(rep("MoU → Deaths", 3), rep("Weather → Deaths", 3)),
+  conditioning_set = c(
+    "{FE}", "{FE, Weather}", "{} (empty)",
+    "{FE}", "{FE, MoU}", "{} (empty)"
+  ),
+  valid = c(
+    isAdjustmentSet(dag, "MoU", "Deaths", c("FE")),
+    isAdjustmentSet(dag, "MoU", "Deaths", c("FE", "Weather")),
+    isAdjustmentSet(dag, "MoU", "Deaths", c()),
+    isAdjustmentSet(dag, "Weather", "Deaths", c("FE")),
+    isAdjustmentSet(dag, "Weather", "Deaths", c("FE", "MoU")),
+    isAdjustmentSet(dag, "Weather", "Deaths", c())
+  )
+)
+knitr::kable(results)
+```
+
+::: {.callout-note}
+For the Weather × Post interaction model:
+
+- The model conditions on **month FE** (= FE node) ✓
+- Weather is exogenous to the MoU ✓
+- The interaction $\beta_3$ captures the **change** in Weather's total
+  effect on Deaths across periods
+:::
+
+## 5. Collider bias: conditioning on Crossings (Kronmal problem)
+
+This is the DAG representation of **Kronmal (1993)**. When we use
+mortality **rate** = Deaths/Crossings as the outcome, we implicitly
+condition on Crossings.
+
+Crossings is a **collider** between multiple parent nodes:
+
+- Weather → Crossings ← SAR
+- Weather → Crossings ← Boats
+
+Conditioning on a collider **opens** spurious non-causal paths.
+
+```{r collider-check}
+cat("Is {FE, Crossings} valid for Weather → Deaths?\n")
+cat(isAdjustmentSet(dag, "Weather", "Deaths", c("FE", "Crossings")))
+```
+
+### What paths open when we condition on Crossings?
+
+```{r collider-paths}
+dag_cond_cross <- dag
+adjustedNodes(dag_cond_cross) <- c("FE", "Crossings")
+p_cond <- paths(dag_cond_cross, from = "Weather", to = "Deaths")
+data.frame(
+  status = ifelse(p_cond$open, "OPEN", "closed"),
+  path   = p_cond$paths
+)
+```
+
+::: {.callout-warning}
+**Kronmal problem in DAG terms:** conditioning on Crossings opens
+collider paths through SAR and Boats:
+
+- Weather → \[Crossings\] ← SAR → Vulnerability → Deaths
+- Weather → \[Crossings\] ← Boats → Vulnerability → Deaths
+
+The mortality **rate** inherits denominator-driven bias because
+Crossings sits as a collider between Weather and SAR/Boats, which
+also causally affect Deaths through Vulnerability.
+:::
+
+## 6. Can we fix collider bias by also conditioning on SAR + Boats?
+
+```{r fix-collider}
+cat("Is {FE, Crossings, SAR, Boats} valid for Weather → Deaths?\n")
+cat(isAdjustmentSet(dag, "Weather", "Deaths",
+                    c("FE", "Crossings", "SAR", "Boats")))
+```
+
+```{r fix-collider-paths}
+dag_cond_fix <- dag
+adjustedNodes(dag_cond_fix) <- c("FE", "Crossings", "SAR", "Boats")
+p_fix <- paths(dag_cond_fix, from = "Weather", to = "Deaths")
+data.frame(
+  status = ifelse(p_fix$open, "OPEN", "closed"),
+  path   = p_fix$paths
+)
+```
+
+::: {.callout-note}
+If SAR and Boats were fully observed, conditioning on
+{FE, Crossings, SAR, Boats} would block the collider paths and
+allow using the mortality rate. But SAR and Boats are only
+**partially observed** (and Vulnerability remains latent), so this fix is
+not practically available.
+:::
+
+## 7. Implied conditional independencies
+
+These are **testable** predictions of the DAG. If any of these fail
+empirically, the DAG structure may be wrong.
+
+```{r cond-indep}
+ci <- impliedConditionalIndependencies(dag)
+for (s in ci) cat(format(s), "\n")
+```
+
+## 8. Instrumental variables
+
+```{r iv}
+cat("For MoU → Deaths:\n")
+iv_mou <- instrumentalVariables(dag, exposure = "MoU", outcome = "Deaths")
+if (length(iv_mou) == 0) {
+  cat("  None needed (MoU is exogenous, no backdoor paths)\n")
+} else {
+  print(iv_mou)
+}
+
+cat("\nFor Weather → Deaths:\n")
+iv_wx <- instrumentalVariables(dag, exposure = "Weather",
+                                outcome = "Deaths")
+if (length(iv_wx) == 0) {
+  cat("  None found\n")
+} else {
+  print(iv_wx)
+}
+```
+
+## 9. Sensitivity: adding Crossings → Vulnerability
+
+Overcrowding from high volume could increase vulnerability. This adds
+a new causal chain: Weather → Crossings → Vulnerability → Deaths. Since FE →
+SAR and FE → Boats are absorbed by conditioning on FE, we only test
+this edge.
+
+```{r sensitivity-crossings-Vulnerability}
+dag_ext <- dagitty('
+dag {
+  MoU       [exposure, pos="4.5,-0.5"]
+  Deaths    [outcome,  pos="6.5,2"]
+  Vulnerability      [latent,   pos="4,2"]
+  Weather   [pos="0,2"]
+  FE        [adjusted, pos="2.5,4"]
+  SAR       [pos="2.5,0.5"]
+  Boats     [pos="5,0.5"]
+  Crossings [pos="0.5,3"]
+
+  MoU -> SAR
+  MoU -> Boats
+  MoU -> Crossings
+  SAR -> Crossings
+  SAR -> Vulnerability
+  Boats -> Crossings
+  Boats -> Vulnerability
+  Weather -> Crossings
+  Weather -> Vulnerability
+  Vulnerability -> Deaths
+  Crossings -> Deaths
+  Crossings -> Vulnerability
+  FE -> Weather
+  FE -> Crossings
+  FE -> Vulnerability
+  FE -> Deaths
+}
+')
+
+cat("With Crossings → Vulnerability added:\n\n")
+
+cat("Adjustment sets for Weather → Deaths:\n")
+print(adjustmentSets(dag_ext, exposure = "Weather", outcome = "Deaths",
+                      type = "minimal"))
+
+cat("\nAdjustment sets for MoU → Deaths:\n")
+adj_ext <- adjustmentSets(dag_ext, exposure = "MoU", outcome = "Deaths",
+                           type = "minimal")
+if (length(adj_ext) == 0) {
+  cat("  Still no adjustment needed (MoU still exogenous)\n")
+} else {
+  print(adj_ext)
+}
+```
+
+```{r sensitivity-collider-worse}
+cat("Is {FE, Crossings} still invalid for Weather → Deaths?\n")
+cat(isAdjustmentSet(dag_ext, "Weather", "Deaths", c("FE", "Crossings")))
+
+cat("\n\nPaths Weather → Deaths | {FE, Crossings} (extended DAG):\n")
+dag_ext_cond <- dag_ext
+adjustedNodes(dag_ext_cond) <- c("FE", "Crossings")
+p_ext <- paths(dag_ext_cond, from = "Weather", to = "Deaths")
+data.frame(
+  status = ifelse(p_ext$open, "OPEN", "closed"),
+  path   = p_ext$paths
+)
+```
+
+::: {.callout-important}
+Adding Crossings → Vulnerability does **not** threaten identification (still
+a front-door causal path, no new backdoor). But it makes the
+**Kronmal problem worse**: conditioning on Crossings now also blocks
+the real causal path Weather → Crossings → Vulnerability → Deaths, on top of
+opening the collider bias paths. The mortality rate becomes an even
+more distorted estimand.
+:::
+
+## 10. Counterfactual: what if Vulnerability were observed?
+
+```{r Vulnerability-observed}
+dag_obs <- dag
+latents(dag_obs) <- c()
+
+cat("Minimal adjustment sets for Weather → Deaths (Vulnerability observed):\n")
+print(adjustmentSets(dag_obs, exposure = "Weather", outcome = "Deaths",
+                      type = "minimal"))
+
+cat("\nMinimal adjustment sets for MoU → Deaths (Vulnerability observed):\n")
+print(adjustmentSets(dag_obs, exposure = "MoU", outcome = "Deaths",
+                      type = "minimal"))
+```
+
+If Vulnerability were observed:
+
+- Conditioning on {FE, Vulnerability} would block the Weather → Vulnerability → Deaths
+  front-door path and **isolate the volume channel** only
+- NOT conditioning on Vulnerability gives the **total effect** (both channels)
+- This highlights that our Weather × Post interaction estimates the
+  total effect change (danger + volume), not the pure danger channel
+
+## 11. Estimand decomposition and model hierarchy
+
+Per-crossing mortality can be decomposed as:
+
+$$\frac{\text{deaths}_t}{\text{crossings}_t} = \underbrace{\frac{\text{incidents}_t}{\text{crossings}_t}}_{\text{frequency}} \times \underbrace{\frac{\text{deaths}_t}{\text{incidents}_t}}_{\text{severity}}$$
+
+This is the **preferred theoretical estimand**
+$E[\text{deaths} \mid \text{crossing}]$: it isolates per-crossing
+danger from volume effects. However, it is **infeasible** as a
+primary analysis for two reasons:
+
+1. **Crossings data are monthly only** (interception data from
+   LCG/TCG is monthly), so the per-crossing rate cannot be computed
+   at event level.
+2. **Crossings is a post-treatment variable** affected by MoU. Per
+   the DAG (Section 5), conditioning on Crossings opens collider
+   paths through SAR and Boats. This is only fixable by also
+   conditioning on SAR and Boats (Section 6), which are not fully
+   observed (Boats data requested from Frontex; SAR data partially
+   available).
+
+### Alternative: monthly count decomposition
+
+An alternative decomposition avoids the crossings denominator:
+
+$$\text{deaths}_t = \underbrace{\text{incidents}_t}_{\text{frequency}} \times \underbrace{E[\text{deaths} \mid \text{incident}]_t}_{\text{severity}}$$
+
+This is also an accounting identity. It does **not** require
+crossings — no collider opens. However, the frequency term
+($\text{incidents}_t$) is a count, not a probability per crossing.
+It conflates two distinct channels:
+
+- **Volume**: more crossings → more incidents (regardless of
+  per-crossing danger)
+- **Per-crossing danger**: each crossing more likely to become an
+  incident
+
+Without crossings data in the denominator, these two channels
+cannot be separated within a single model.
+
+### Model hierarchy
+
+| Model | Estimand | Data level | Crossings needed? | What $\beta_3$ captures |
+|-------|----------|------------|-------------------|------------------------|
+| **A** (primary) | $E[\text{deaths} \mid \text{incident}, \text{weather}, \text{post}]$ | Event-level | No | Did weather kill more people **per incident** after MoU? (severity margin) |
+| **Monthly death counts** | $E[\text{deaths}_t \mid \text{weather}, \text{post}]$ | Monthly | No | Did more people **die in total** in bad-weather months after MoU? Mixes volume + danger |
+| **Crossings diagnostic** | $E[\text{crossings}_t \mid \text{weather}, \text{post}]$ | Monthly | As outcome, not conditioning | Did weather's effect on **crossing volume** change after MoU? (volume channel assessment; see Section 12) |
+| **D** (exploratory rate) | $\text{deaths}_t / \text{crossings}_t \sim \text{weather} \times \text{post}$ | Monthly | Yes → collider bias | Per-crossing danger, but collider bias from SAR/Boats (see Section 13) |
+| **C** (aspirational) | As D, conditioning on {FE, Crossings, SAR, Boats} | Monthly | Yes, with SAR + Boats fix | Per-crossing danger, collider-free — requires SAR and Boats data |
+
+**Model A** is the primary analysis: it captures severity at event
+level without conditioning on crossings or incident occurrence
+beyond the detection selection inherent in IOM MMP data. The monthly
+death count model is complementary (captures the total effect). The
+crossings diagnostic (Section 12) helps disentangle volume from
+danger. Model D is exploratory with acknowledged collider bias.
+Model C is theoretically preferred but requires data not yet
+available.
+
+## 12. Volume channel diagnostic: Crossings ~ Weather × Post
+
+To partially disentangle the volume and danger channels in the
+monthly death count model, we can model crossings as an **outcome**
+in a separate regression:
+
+$$\text{crossings}_t \sim f(\text{weather}_t \times \text{Post}_t + \text{month FE})$$
+
+This models crossings as an **outcome**, not as a conditioning
+variable — so no collider problem arises.
+
+### DAG validity
+
+```{r adj-weather-crossings}
+cat("Adjustment sets for Weather → Crossings:\n")
+print(adjustmentSets(dag, exposure = "Weather",
+                      outcome = "Crossings",
+                      type = "minimal"))
+
+cat("\nIs {FE} valid for Weather → Crossings?\n")
+cat(isAdjustmentSet(dag, "Weather", "Crossings", c("FE")))
+```
+
+```{r paths-weather-crossings}
+p_wx_cross <- paths(dag, from = "Weather", to = "Crossings")
+data.frame(
+  status = ifelse(p_wx_cross$open, "OPEN", "closed"),
+  path   = p_wx_cross$paths
+)
+```
+
+The only paths from Weather to Crossings are:
+
+- Weather → Crossings (direct causal edge — the one we want)
+- Weather ← FE → Crossings (backdoor through FE — blocked by
+  conditioning on FE)
+
+No other paths exist because: (a) Weather's only parent in the DAG
+is FE, and (b) the path Weather → Vulnerability → Deaths ← Crossings has a
+collider at Deaths, which is blocked unless we condition on Deaths
+(we do not in this regression).
+
+Conditioning on **{FE}** is sufficient. The regression is **valid
+per the DAG**.
+
+::: {.callout-note}
+Crossings is only a problem when it appears in the **conditioning
+set** of a regression targeting Weather → Deaths (collider). When
+Crossings is the **outcome**, there is no collider issue — we are
+modelling it, not conditioning on it. SAR and Boats do not need to
+be included because they do not cause Weather (they are not
+confounders of the Weather → Crossings relationship).
+:::
+
+### Interpretation
+
+$\beta_3$ in this regression captures whether the MoU changed how
+weather affects crossing volume. Pre-MoU, bad weather strongly
+deters crossings because SAR makes waiting costless (Deiana et al.
+2024). Post-MoU, smugglers may be less responsive to weather
+conditions.
+
+This serves as a **diagnostic**: if weather's effect on crossings
+did not change much post-MoU, then $\beta_3$ in the monthly death
+count model is primarily about the **danger channel**
+(Weather → Vulnerability → Deaths), not the volume channel
+(Weather → Crossings → Deaths). This is a mediation-style argument
+without formal mediation analysis, but it is informative and avoids
+the collider problem entirely.
+
+## 13. Rate regression as exploratory analysis (Model D)
+
+The theoretical estimand
+$E[\text{deaths} \mid \text{crossing}]$ is the most substantively
+meaningful measure of route danger. It can be operationalized as a
+rate regression:
+
+$$\log(\text{death rate}_t + c) \sim \beta_1 \text{weather}_t + \beta_2 \text{Post}_t + \beta_3 (\text{weather}_t \times \text{Post}_t) + \lambda_m$$
+
+or equivalently as a count model with offset:
+
+$$\text{deaths}_t \sim \text{NegBin}\!\bigl(\text{weather} \times \text{Post} + \text{offset}(\log \text{crossings}_t) + \text{month FE}\bigr)$$
+
+Both formulations condition on Crossings, which opens the collider
+paths documented in Section 5.
+
+### Why $\beta_3$ is partially protected by differencing
+
+The Kronmal-induced bias from the denominator exists in **both**
+the pre- and post-MoU periods (the Weather → Crossings relationship
+is present throughout). The interaction $\beta_3$ captures the
+**change** in the weather–mortality relationship across periods. If
+the denominator-driven bias were constant across periods, it would
+difference out.
+
+Moreover, the death rate has clear substantive meaning: fewer
+crossings with equal deaths implies higher per-crossing danger —
+which is the real phenomenon.
+
+### Why this argument is incomplete
+
+The collider bias is **not** constant across periods. The spurious
+paths opened by conditioning on Crossings are:
+
+- Weather → \[Crossings\] ← **SAR** → Vulnerability → Deaths
+- Weather → \[Crossings\] ← **Boats** → Vulnerability → Deaths
+
+The MoU changed both SAR (withdrawal) and Boats (shift to
+inflatables). Pre-MoU, SAR is high and Boats are predominantly
+wooden → one collider bias magnitude. Post-MoU, SAR is low and
+Boats are inflatable → a different magnitude. Therefore, $\beta_3$
+picks up both the **true change** in weather-lethality and the
+**change in collider bias** across periods. The direction of the
+additional bias is ambiguous without knowing the exact structural
+parameters.
+
+### How to use Model D
+
+Model D remains informative as an **exploratory/robustness**
+analysis:
+
+- Run with acknowledged collider bias
+- Compare $\beta_3$ with and without crossings in the denominator
+  (i.e., compare with the monthly death count model) to assess the
+  empirical magnitude of the collider distortion
+- If Frontex boat-type data become available, add Boats as a
+  control (partially closing the collider)
+- If SAR proxy data are available (e.g., NGO fleet presence), add
+  SAR as well (approaching the Model C ideal of Section 6)
+- Report alongside Model A (primary) and monthly counts
+  (complementary) to show robustness
+
+::: {.callout-important}
+Model D is **not** the primary analysis. It is exploratory evidence
+that the per-crossing danger signal exists, reported with
+transparent discussion of the collider bias and its likely
+direction.
+:::
+
+## 14. Model A: specification notes
+
+### Why negative binomial?
+
+Deaths per incident is a non-negative count with clear overdispersion:
+most incidents produce a few deaths, but mass-casualty shipwrecks can
+produce hundreds. The IOM MMP data show ~23% zero-death incidents on
+the CMR (490/2,090), with a long right tail. The Poisson assumption
+(mean = variance) is almost certainly violated.
+
+The negative binomial adds a dispersion parameter $\alpha$ that
+allows variance $> $ mean. Standard diagnostics to justify this
+choice:
+
+1. **Likelihood ratio test**: NegBin vs. Poisson (H0: $\alpha = 0$).
+   If rejected, overdispersion is confirmed.
+2. **Cameron–Trivedi test** for overdispersion in the Poisson model.
+3. **AIC/BIC comparison** between Poisson and NegBin fits.
+
+The Poisson specification should be reported as a **robustness check**.
+Deiana et al. (2024) use Poisson QMLE for their crossing counts,
+which is consistent under heteroskedasticity even if the variance
+function is misspecified. If $\hat{\beta}_3$ is similar across
+NegBin, Poisson, and DML (pipeline step 2), the functional form
+choice is not driving results.
+
+**Alternatives considered:**
+
+| Model | Issue for this setting |
+|-------|----------------------|
+| Poisson | Mean = variance almost certainly violated (mix of small rubber-boat incidents and mass-casualty shipwrecks) |
+| Quasi-Poisson | Robust to overdispersion but less efficient; does not model the dispersion structure |
+| Zero-inflated NB | Defensible given 23% zeros, but zeros likely reflect reporting (missing confirmed dead, not a separate DGP) |
+| OLS on $\log(\text{deaths} + 1)$ | Arbitrary constant, loses count structure, inconsistent under heteroskedasticity |
+
+### Weather covariate selection and multicollinearity
+
+**Selection rationale (theory-driven, not data-driven).** The 38
+covariates are retained if and only if they satisfy two criteria:
+
+1. **Exogenous to migration policy** — atmospheric/oceanic conditions
+   cannot be affected by the MoU.
+2. **Physically related to crossing danger** — waves capsize boats,
+   wind drives drift, SST affects hypothermia risk, currents affect
+   trajectory.
+
+This gives: waves (SWH), wind speed, SST, current speed, cloud cover,
+precipitation — each at lag 0 (conditions at time of incident) and
+lag 1 (conditions day before, affecting departure decisions) = 19
+variables $\times$ 2 lags = 38.
+
+**Multicollinearity.** Weather variables are highly correlated
+($r = 0.58$–$0.89$). This matters differently across the two models
+in the analysis:
+
+- **BSTS diagnostic (Section 11 of presentation):** all 38 enter as
+  predictors. Spike-and-slab regularization handles multicollinearity
+  by construction — it selects among correlated predictors. The
+  finding that none are retained for the mortality rate (0/49 at
+  $>$10% inclusion) is the diagnostic result.
+- **NegBin Model A:** the triple interaction uses **SWH only** (or
+  PC1 from PCA on all weather features). Other weather variables
+  enter $\mathbf{X}_i$ as controls. Multicollinearity among weather
+  controls does not bias $\hat{\beta}_3$ — it only affects the
+  precision of the individual weather coefficients in $\hat{\gamma}$,
+  which are not parameters of interest.
+
+**PCA option:** Collapse the correlated weather dimensions into PC1
+("overall sea harshness") for the triple interaction. This avoids
+multicollinearity entirely but sacrifices individual-variable
+interpretability. Both approaches (SWH alone, PC1) should be
+reported.
+
+### Interpreting $\beta_3$
+
+In the NegBin framework with log link:
+
+$$\log \mu_i = \alpha_g + \lambda_m + \beta_3 (\text{SWH}_i \times
+\text{Post}_t \times \text{CMR}_r) + \mathbf{X}_i'\gamma$$
+
+$\beta_3$ is a **triple-difference semi-elasticity**:
+
+> For each additional 1m of significant wave height, the expected
+> number of deaths per incident on the CMR post-MoU is
+> $\exp(\beta_3)$ times what it would be based on the pre-MoU
+> weather–mortality gradient (or the gradient on control routes).
+
+**Substantive example:** if $\hat{\beta}_3 = 0.3$, then
+$\exp(0.3) \approx 1.35$, meaning a 1m SWH increase raises expected
+deaths per incident by 35% **more** on the CMR post-MoU than the
+same increase did pre-MoU or on control routes. If the pre-MoU
+gradient was essentially zero (SAR rescued distressed boats regardless
+of weather), then $\beta_3$ captures nearly the full post-MoU
+weather-lethality effect.
+
+**Scaling note (Deiana et al. 2024):** small changes in SWH translate
+to large changes in maximum wave height encountered. The Rayleigh
+distribution implies max wave $\approx 2 \times$ SWH. A modest
+$\beta_3$ per meter of SWH can therefore correspond to substantively
+large lethality differences in the waves actually experienced.
+Marginal effects should be reported at meaningful SWH values (median,
+75th percentile) rather than only the raw coefficient.
+
+## 15. Adjustment set visualization
+
+```{r dag-adj-plot, fig.height=5}
+ggdag_adjustment_set(dag, text = FALSE) +
+  geom_label(aes(label = name),
+             fill = "grey93", colour = "black",
+             size = 3, fontface = "bold",
+             label.padding = unit(0.2, "lines"),
+             label.size = 0, na.rm = TRUE) +
+  theme_dag() +
+  ggtitle("Required adjustments: Weather → Deaths")
+```
+
+## 16. Summary
+
+| Finding | Implication |
+|---------|-------------|
+| **MoU → Deaths**: no backdoor paths | Total effect identified without conditioning (MoU is exogenous) |
+| **Weather → Deaths**: one backdoor through FE | Conditioning on FE (month + grid FE) is **sufficient** |
+| **Conditioning on Crossings** (= using rate) | Opens collider paths through SAR/Boats → **Kronmal bias** |
+| **Vulnerability is latent** | Weather × Post interaction identifies MoU's effect on the Weather → Vulnerability → Deaths pathway **without** observing Vulnerability |
+| **Exclusion restriction** | No direct Weather × Post → Deaths path outside Vulnerability must hold |
+| **Per-crossing decomposition infeasible** | Crossings only monthly + post-treatment → collider. Model A (event-level severity) is primary; monthly counts complementary |
+| **Crossings ~ Weather × Post is valid** | {FE} sufficient; no collider because Crossings is outcome, not conditioning set. Diagnostic for volume channel |
+| **Rate regression (Model D)** | $\beta_3$ partially protected by differencing, but collider bias changes across periods (SAR/Boats shift). Exploratory only |
+
+### Data needs
+
+| Variable | Status | Source |
+|----------|--------|--------|
+| Weather (SWH, wind, SST) | **Observed** | ERA5 |
+| Deaths | **Observed** | IOM MMP |
+| FE (date, grid) | **Observed** | Date/coordinates |
+| SAR | Mostly unobserved (low quality data) | NGO fleet data |
+| Boats | Partially observed | Frontex JORA |
+| Crossings | Observed — **do not condition on** in primary model; use as **outcome** in diagnostic (Section 12); use as **denominator** only in exploratory Model D (Section 13) | IOM/UNHCR monthly |
+| Vulnerability | **Unobserved** | No single data source |
+
+### Potential missing edges
+
+| Edge | Plausible? | Impact on identification |
+|------|-----------|------------------------|
+| FE → SAR | Yes (seasonal SAR deployment) | **None** — FE is already conditioned on, so any path through FE is blocked |
+| FE → Boats | Yes (seasonal boat availability) | **None** — same reason, absorbed by FE conditioning |
+| Crossings → Vulnerability | Yes (overcrowding from high volume) | Adds a new **causal** front-door path (Weather → Crossings → Vulnerability → Deaths) but does not create backdoor bias. Makes conditioning on Crossings (= using the rate) **even more problematic**: it would block this additional real causal variation. Tested in Section 9 |
+| Crossings → SAR | Yes in pre-MoU period (migration crisis drove SAR expansion) | Not included because the DAG represents the post-MoU causal structure. In this period, the dominant direction is SAR → Crossings (policy-driven deterrence). See discussion in Section 1 callout |
+| SAR → Boats | Yes (Deiana et al. 2024: SAR enables inflatable boat use) | **None** — all paths remain front-door from MoU (parentless). Not included but acknowledged as a real mechanism. See discussion in Section 1 callout |
+| MoU → Vulnerability directly | Possible (detention conditions, pre-departure exploitation) | **None** — MoU has no parents. Not included because Vulnerability here captures at-sea vulnerability specifically. Relevant for broader discussion of MoU consequences |
+| Weather → Deaths directly | No — every mechanism (waves capsizing boats, storms preventing rescue, exposure at sea) operates through crossing vulnerability | Not applicable; exclusion restriction is defensible |
+
+### Literature support for DAG edges
+
+| Edge | Supporting literature |
+|------|---------------------|
+| MoU → SAR | Zambiasi & Albarosa (2025): SAR externalized to LCG; Deiana et al. (2024): Minniti Code withdrew NGO SAR; Rodriguez Sanchez et al. (2023): EU-Libya cooperation = "shift to deterrence"; Hoffmann Pham & Komiyama (2024): rescue probability falls from ~90% to ~50%; Steinhilper & Gruijters (2018): mortality rates rose when SAR scaled back |
+| MoU → Boats | Deiana et al. (2024): inflatable share drops post-Minniti; Hoffmann Pham & Komiyama (2024): smugglers shift to smaller boats as interception rises; Friebel et al. (2024): migration choices sensitive to crossing costs, including boat availability |
+| MoU → Crossings | Hoffmann Pham & Komiyama (2024): deterrence via rescue probability; Zambiasi & Albarosa (2025): southern border tightening, detention deterrence; Rodriguez Sanchez et al. (2023): Model C shows pushback period reduces crossings; Friebel et al. (2024): elasticity of migration intentions to smuggling distance > −3; Tafani & Riccaboni (2025): EU-Turkey deal diverted ~2,000 migrants to CMR |
+| SAR → Crossings | Hoffmann Pham & Komiyama (2024): ECM, rescue probability fall 0.9→0.5 predicts ~11,200 fewer monthly crossings; Rodriguez Sanchez et al. (2023): null at aggregate monthly level but significant for pushback period; Battiston (2022): reducing rescue distance increases future departures; Cusumano & Villa (2019): no pull factor from NGO SAR; Amenta et al. (2021): SAR not a pull factor |
+| SAR → Vulnerability | Deiana et al. (2024): SAR withdrawal = no rescue for distressed boats; Zambiasi & Albarosa (2025): LCG's poor SAR increases deadly event probability by 50% per 100km from Libya; Battiston (2022): rescue distance directly affects safety; Fasani et al. (2019): SAR operations related to probability of dying; Steinhilper & Gruijters (2018): mortality rates rose when SAR scaled back |
+| Boats → Vulnerability | Deiana et al. (2024): inflatables ~20× more dangerous than wooden boats (θ ≈ 5-10%); Hoffmann Pham & Komiyama (2024): boat size affects survival |
+| Weather → Crossings | Deiana et al. (2024): 0.10m SWH increase reduces crossings 8.9-14.6%; Camarena et al. (2020): 10% wave height increase → ~27% fewer arrivals; Cusumano & Villa (2019): weather conditions are the main determinant of departures from Libya |
+| Weather → Vulnerability | Deiana et al. (2024): weather × boat-type interaction — weather more dangerous for fragile boats; Camarena et al. (2020): rougher seas raise death risk (daily level). Empirical link at monthly frequency not yet fully explored in our analysis |
+| Vulnerability → Deaths | All papers: definitional — vulnerability determines whether crossings result in death. Steinhilper & Gruijters (2018): descriptive analysis of mortality risk 2010-2016 |
+| Crossings → Deaths | Tafani & Riccaboni (2025): crossings coeff = 0.001 (p=0.012) on missing migrants; Amenta et al. (2021): crossing volume as determinant of deaths |
+| FE → {all} | Universal: every paper conditions on time/seasonal FE. Deiana et al. (2024): week-by-year FE; Camarena et al. (2020): month + day-of-week FE; Zambiasi & Albarosa (2025): month + quadrant FE + quadrant-specific trends |
+
+### Structural assumptions: literature support
+
+| Assumption | Supporting literature |
+|-----------|---------------------|
+| MoU exogeneity (no parents) | Zambiasi & Albarosa (2025): geopolitical agreement endorsed at EU Malta summit; Hoffmann Pham & Komiyama (2024): treats LCG shift as exogenous policy change |
+| Weather ⊥ MoU | By physics: atmospheric/oceanic conditions are independent of political agreements |
+| Exclusion restriction (no Weather → Deaths bypassing Vulnerability) | Deiana et al. (2024): weather's effect on danger is mediated by boat vulnerability; Camarena et al. (2020): all identified mechanisms (capsizing, failed rescue, exposure) operate through crossing vulnerability |
+| Vulnerability is latent | No paper fully observes crossing vulnerability. Deiana et al. (2024): observe boat type only; Hoffmann Pham & Komiyama (2024): observe boat size and passengers only; Zambiasi & Albarosa (2025): observe location relative to SAR zones only |
+| Collider bias from conditioning on Crossings | Kronmal (1993): foundational analysis of ratio-outcome bias; Elwert & Winship (2014): formalization of collider bias in DAG terms; Camarena et al. (2020): their death-rate regression is an example of this problem |
+| Weather × Post interaction as identification | Novel in this context. Closest precedent: Deiana et al. (2024) use weather × SAR × boat-type triple interaction for crossing behavior, not mortality directly |
+
+## References
+
+1. Amenta, C., Di Betta, P., & Ferrara, C. (2021). The migrant
+   crisis in the Mediterranean Sea: Empirical evidence on policy
+   interventions. *Socio-Economic Planning Sciences*, 75, 100880.
+
+2. Battiston, G. (2022). Rescue on stage: Border enforcement and
+   public attention in the Mediterranean Sea. Marco Fanno Working
+   Paper No. 0292.
+
+3. Camarena, K. R., Claudy, S., Wang, Y., & Wright, A. L. (2020).
+   Political and environmental risks influence migration and human
+   smuggling across the Mediterranean Sea. *SSRN Working Paper*.
+
+4. Cusumano, E., & Villa, M. (2019). Sea rescue NGOs: A pull
+   factor of irregular migration? *EUI Policy Brief*.
+
+5. Deiana, C., Maheshri, V., & Mastrobuoni, G. (2024). Migrants
+   at sea: Unintended consequences of search and rescue
+   operations. *American Economic Journal: Economic Policy*.
+
+6. Elwert, F., & Winship, C. (2014). Endogenous selection bias:
+   The problem of conditioning on a collider variable. *Annual
+   Review of Sociology*, 40, 31--53.
+
+7. Fasani, F., Frattini, T., & Weisser, R. (2019). The
+   relationship between SAR operations and the probability of
+   dying in the Central Mediterranean, 2012--2017. *Working
+   Paper*.
+
+8. Friebel, G., Manchin, M., Mendola, M., & Prarolo, G. (2024).
+   International migration and illegal costs: Evidence from
+   Africa-to-Europe smuggling routes. *Journal of International
+   Economics*, 148, 103876.
+
+9. Hoffmann Pham, K., & Komiyama, Y. (2024). Strategic choices of
+   migrants and smugglers in the Central Mediterranean Sea.
+   *Working Paper*.
+
+10. Kronmal, R. A. (1993). Spurious correlation and the fallacy
+    of the ratio standard revisited. *Journal of the Royal
+    Statistical Society: Series A*, 156(3), 379--392.
+
+11. Rodriguez Sanchez, A., Wucherpfennig, J., Rischke, R., &
+    Iacus, S. M. (2023). Search-and-rescue in the Central
+    Mediterranean Route does not induce migration: Predictive
+    modeling to answer causal queries in migration research.
+    *Scientific Reports*, 13, 12871.
+
+12. Steinhilper, E., & Gruijters, R. J. (2018). A contested
+    crisis: Policy narratives and empirical evidence on border
+    deaths in the Mediterranean. *Sociology*, 52(3), 515--533.
+
+13. Tafani, S., & Riccaboni, M. (2025). The impact of the
+    EU--Turkey agreement on the number of lives lost at sea.
+    *Humanities and Social Sciences Communications*, 12, 282.
+
+14. Textor, J., van der Zander, B., Gilthorpe, M. S., Liskiewicz,
+    M., & Ellison, G. T. (2016). Robust causal inference using
+    directed acyclic graphs: The R package 'dagitty'.
+    *International Journal of Epidemiology*, 45(6), 1887--1894.
+
+15. Zambiasi, D., & Albarosa, E. (2025). Externalizing rescue
+    operations at sea: The migration deal between Italy and Libya.
+    *Journal of Economic Geography*, 25(1), 41--58.

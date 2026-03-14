@@ -1,0 +1,39 @@
+"variable","label","period","r_crossings","r_deaths","r_rate"
+"wave_height_central_med","Wave height","Pre-MoU",-0.500555295137396,-0.246008404367152,-0.111370114373419
+"wave_period_central_med","Wave period","Pre-MoU",-0.444543762587919,-0.195178229885459,-0.0636229881135019
+"wave_direction_central_med","Wave direction","Pre-MoU",-0.246197767674809,-0.181821762663909,-0.146341723766758
+"wind_speed_central_med","Wind speed","Pre-MoU",-0.397381253996258,-0.324441937854393,-0.285347089103828
+"sst_central_med","SST","Pre-MoU",0.368134607507527,0.22953543165319,0.140498319368608
+"sst_anomaly_central_med","SST anomaly","Pre-MoU",0.166267885784936,0.113507177297838,0.114433413020768
+"cloud_cover_central_med","Cloud cover","Pre-MoU",-0.351967923518683,-0.143722186078762,-0.0137037938310088
+"low_cloud_central_med","Low cloud","Pre-MoU",-0.34534271989913,-0.159228406946337,-0.0337059917993554
+"dewpoint_depression_central_med","Dewpoint dep.","Pre-MoU",-0.084623040912376,-0.0221981507037083,-0.047682653712382
+"temperature_central_med","Air temp.","Pre-MoU",0.43053559524039,0.256632925048133,0.143676996664794
+"wind_speed_departure_coast","Wind (coast)","Pre-MoU",-0.132422343649724,-0.155971607116074,-0.209894765407064
+"cloud_cover_departure_coast","Cloud (coast)","Pre-MoU",-0.361760044608714,-0.159702196201432,-0.0169112003824069
+"temperature_departure_coast","Temp. (coast)","Pre-MoU",0.453492203053396,0.276053328548559,0.1507667986039
+"precipitation_departure_coast","Precip. (coast)","Pre-MoU",-0.383642227774205,-0.125993580842328,0.0286193346985566
+"wave_max_central_med","Wave max","Pre-MoU",-0.471042394974614,-0.233302388120293,-0.0807261547104314
+"wave_sd_central_med","Wave SD","Pre-MoU",-0.465040508254391,-0.261428233058017,-0.0956624752103769
+"wave_days_above_2m","Days >2m waves","Pre-MoU",-0.490060024429211,-0.251841504934219,-0.108870611721905
+"current_speed_central_med","Current speed","Pre-MoU",-0.366564468279706,-0.333604231377225,-0.261044757735542
+"current_against_route","Current (opposing)","Pre-MoU",-0.10169125707984,-0.139155896388814,-0.152230722288361
+"wave_height_central_med","Wave height","Post-MoU",-0.588934684760794,-0.184384163022964,0.30684838036415
+"wave_period_central_med","Wave period","Post-MoU",-0.580548324911876,-0.210843296157035,0.269742838794533
+"wave_direction_central_med","Wave direction","Post-MoU",-0.104895165255837,0.127190479772642,0.234223867452621
+"wind_speed_central_med","Wind speed","Post-MoU",-0.33394736620748,0.00407131930665948,0.294978423601153
+"sst_central_med","SST","Post-MoU",0.376782451634825,0.143594697602158,-0.167182260188101
+"sst_anomaly_central_med","SST anomaly","Post-MoU",0.353415918460243,0.159919870887619,-0.129331257477756
+"cloud_cover_central_med","Cloud cover","Post-MoU",-0.504781883878336,-0.256172681137845,0.153003112091065
+"low_cloud_central_med","Low cloud","Post-MoU",-0.441980705357565,-0.257932928582352,0.0949606469955392
+"dewpoint_depression_central_med","Dewpoint dep.","Post-MoU",0.119869173349435,0.131911405078475,0.0445181355974011
+"temperature_central_med","Air temp.","Post-MoU",0.444130903073126,0.164380979740622,-0.202235209704253
+"wind_speed_departure_coast","Wind (coast)","Post-MoU",-0.00523669924788924,0.123989557561721,0.142927232652272
+"cloud_cover_departure_coast","Cloud (coast)","Post-MoU",-0.465021486368263,-0.258219270562586,0.115298638996497
+"temperature_departure_coast","Temp. (coast)","Post-MoU",0.462256073207876,0.16599178256105,-0.215927557619479
+"precipitation_departure_coast","Precip. (coast)","Post-MoU",-0.460391771395079,-0.233061386998045,0.136622961471705
+"wave_max_central_med","Wave max","Post-MoU",-0.551951505478667,-0.166735407545737,0.294133042514352
+"wave_sd_central_med","Wave SD","Post-MoU",-0.538872086123621,-0.132009201965499,0.320471160090817
+"wave_days_above_2m","Days >2m waves","Post-MoU",-0.544692744955637,-0.116378845878454,0.344869180541705
+"current_speed_central_med","Current speed","Post-MoU",-0.266758589918756,0.12839200031645,0.376229538520471
+"current_against_route","Current (opposing)","Post-MoU",-0.0309806760398725,0.231849102948669,0.285351540083575
