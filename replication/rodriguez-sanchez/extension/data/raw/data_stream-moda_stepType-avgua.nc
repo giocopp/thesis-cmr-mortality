@@ -1,1 +1,0 @@
-/Users/giocopp/Desktop/Uni/Hertie School/6th Semester/Thesis-MDS/Rodriguez-Sanchez-paper-replication/Extension-1-BSTS-mortality/data/era5/data_stream-moda_stepType-avgua.nc
