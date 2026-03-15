@@ -1,0 +1,508 @@
+---
+title: "Weather Variable Selection and Monthly Regression Results"
+author: "Giorgio Coppola"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    theme: cosmo
+    self-contained: true
+editor:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  message = FALSE, warning = FALSE,
+  fig.width = 9, fig.height = 6, dpi = 150
+)
+```
+
+
+## Purpose
+
+This document records the reasoning behind the selection of weather
+variables for the thesis, the empirical investigation of a composite
+sea danger index via PCA, and the monthly regression results that
+led to the decision to use **wind speed** as the primary weather
+variable at monthly frequency. All choices are grounded in the
+migration literature and in maritime safety standards (Beaufort
+scale, WMO sea state codes).
+
+The document covers the **monthly-level** exploratory analysis. The
+event-level pipeline (matching ERA5 to individual incident
+coordinates and dates) will be documented separately. PCA may be
+revisited at the event level, where daily data may show more
+variable independence.
+
+
+## 1. How the literature uses weather variables
+
+### 1.1 Significant wave height as identification variable
+
+Significant wave height (SWH) is the dominant weather variable in the
+Central Mediterranean migration literature:
+
+- **Deiana, Maheshri, and Mastrobuoni (2024)** build their entire
+  identification strategy around SWH. Their triple interaction
+  (wave height $\times$ PostSAR $\times$ fraction unsafe boats) uses
+  the exogeneity of daily wave conditions to identify behavioral
+  responses to SAR regimes. SWH is measured at North African coastal
+  points (Tripoli). This is the closest precedent for our weather
+  $\times$ post-MoU interaction design.
+
+- **Camarena, Claudy, Wang, and Wright (2020)** use wave height
+  averaged over the prior 7 days as their main environmental risk
+  measure. A 10% increase in wave height is associated with a 27%
+  decrease in arrivals. They treat wave height as plausibly exogenous.
+
+- **Zambiasi and Albarosa (2024)** control for "sea roughness" in
+  their spatial DiD of the Italy-Libya MoU, though they do not detail
+  the exact variable construction.
+
+### 1.2 Wind speed
+
+Wind is mechanistically linked to wave generation and independently
+affects drift, spray, steering difficulty, and hypothermia risk.
+Camarena et al. implicitly capture wind through wave height (since
+wind-driven waves dominate SWH). Deiana et al. use SWH directly but
+note that wind conditions at the coast affect departure decisions.
+
+### 1.3 Wave period
+
+Shorter wave periods produce steeper waves, which are more dangerous
+for small boats (higher capsizing risk per unit wave height). This
+variable is less commonly used in the migration literature but is
+standard in maritime safety assessments. ERA5 provides mean wave
+period (MWP, short name `mwp`) and peak wave period (`pp1d`).
+
+### 1.4 Ocean currents
+
+Surface current speed affects crossing duration, fuel consumption,
+and drift trajectory. Longer crossings amplify exposure to all other
+sea dangers. This is physically distinct from waves and wind, and is
+perfectly exogenous to migration policy.
+
+### 1.5 Variables excluded from analysis
+
+| Variable | Reason for exclusion |
+|----------|---------------------|
+| **SST** | Strongly driven by seasonality; absorbed by month FE. Mechanism is hypothermia survival, distinct from capsizing. |
+| **Cloud cover** | Affects departure decisions and rescue visibility, not direct sea danger. |
+| **Wave direction** | Directional variable requiring a reference heading; difficult to aggregate into scalar danger. |
+| **Departure coast variables** | Affect departure decisions ("selection"), not at-sea danger. |
+
+**Note on SST anomaly.** A negative SST anomaly (unusually cold
+month relative to the seasonal norm) could capture heightened
+hypothermia risk beyond what month FE absorb. This is a separate
+mechanism from capsizing and may be used as a sensitivity variable
+in the event-level analysis.
+
+
+## 2. PCA investigation: empirical findings
+
+We investigated whether a composite "sea danger index" via PCA
+could improve on individual weather variables at monthly frequency.
+
+### 2.1 Candidate variables
+
+Six ERA5-derived variables were considered, all measured as monthly
+spatial means over the Central Mediterranean crossing zone
+(31N--38N, 10E--20E):
+
+| Variable | Mean | SD | Description |
+|----------|------|----|-------------|
+| SWH | 1.01 | 0.35 | Significant wave height (m) |
+| Wind speed | 1.78 | 1.00 | 10m wind speed (m/s) |
+| $-$MWP | $-$4.83 | 0.64 | Negative mean wave period (higher = shorter = more dangerous) |
+| Wave max | 2.36 | 0.95 | Monthly max of daily spatial-mean SWH |
+| Wave SD | 0.46 | 0.20 | Monthly SD of daily spatial-mean SWH |
+| Days $>$2m | 4.60 | 6.22 | Count of days with spatial-mean SWH $>$ 2m |
+
+Ocean current speed was not included because the NetCDF extraction
+was computationally prohibitive for this exploratory analysis. It
+will be integrated in the event-level pipeline.
+
+### 2.2 Correlation structure
+
+The correlation matrix revealed extreme redundancy:
+
+|       | SWH  | Wind | $-$MWP | WMax | WSD  | D$>$2m |
+|-------|------|------|--------|------|------|--------|
+| SWH   | 1.00 | 0.58 | $-$0.98 | 0.89 | 0.88 | 0.89 |
+| Wind  | 0.58 | 1.00 | $-$0.50 | 0.47 | 0.49 | 0.66 |
+| $-$MWP | $-$0.98 | $-$0.50 | 1.00 | $-$0.88 | $-$0.87 | $-$0.83 |
+| WMax  | 0.89 | 0.47 | $-$0.88 | 1.00 | 0.97 | 0.80 |
+| WSD   | 0.88 | 0.49 | $-$0.87 | 0.97 | 1.00 | 0.82 |
+| D$>$2m | 0.89 | 0.66 | $-$0.83 | 0.80 | 0.82 | 1.00 |
+
+Key findings:
+
+- **SWH and $-$MWP are correlated at $r = -0.98$**: at monthly
+  spatial-mean resolution, wave period carries essentially no
+  independent information beyond SWH. This is expected ---
+  monthly means smooth out the fetch-limited vs. swell-dominated
+  conditions where period and height diverge.
+- **Wave max, wave SD, and days $>$ 2m are all correlated with
+  SWH at $r = 0.87$--$0.89$**: they are mechanically derived from
+  the same underlying daily SWH series.
+- **Wind speed is the only variable with genuinely distinct
+  information** ($r = 0.58$ with SWH).
+
+### 2.3 PCA results
+
+| PCA specification | PC1 variance explained |
+|---|---|
+| 3-var (SWH, Wind, $-$MWP) | 79.9% |
+| 6-var (all six) | 81.5% |
+| 4-var (SWH, Wind, $-$MWP, WSD) | 79.7% |
+
+Adding variables beyond SWH + Wind barely increases variance
+explained. PC1 in all specifications is dominated by the
+SWH--wave period axis, with wind contributing the second dimension.
+
+### 2.4 Conclusion on PCA
+
+**At monthly frequency with spatial means, PCA does not add value
+over using SWH and wind speed as separate regressors.** The reasons:
+
+1. All wave-derived variables (period, max, SD, days$>$2m) are
+   redundant with monthly mean SWH ($r > 0.87$).
+2. PC1 is essentially a weighted average of SWH and its derivatives,
+   plus wind --- not meaningfully different from just using the two
+   underlying variables.
+3. Using SWH + wind directly is more transparent and easier to
+   interpret.
+
+**PCA will be revisited at the event level**, where daily data at
+individual incident locations may show more independence between
+variables (e.g., swell vs. wind-wave decomposition, fetch-limited
+conditions where period and height diverge).
+
+
+## 3. Validation reference: Beaufort and WMO scales
+
+These scales are recorded here for reference and will be used for
+event-level validation. At monthly spatial-mean resolution, they
+are uninformative: all 128 months in the analysis sample fall in
+Beaufort 0--3 and WMO sea state 2--4 (no month reaches the
+"dangerous" thresholds).
+
+### 3.1 Beaufort scale (wind dimension)
+
+| Beaufort | Description | Wind (m/s) | Wave height (m) |
+|----------|-------------|-----------|-----------------|
+| 0 | Calm | 0--0.2 | 0 |
+| 1 | Light air | 0.3--1.5 | 0--0.1 |
+| 2 | Light breeze | 1.6--3.3 | 0.1--0.3 |
+| 3 | Gentle breeze | 3.4--5.4 | 0.3--1.0 |
+| 4 | Moderate breeze | 5.5--7.9 | 1.0--1.5 |
+| 5 | Fresh breeze | 8.0--10.7 | 1.5--2.5 |
+| 6 | Strong breeze | 10.8--13.8 | 2.5--4.0 |
+| 7 | Near gale | 13.9--17.1 | 4.0--5.5 |
+| 8+ | Gale and above | $\geq$17.2 | $\geq$5.5 |
+
+**Danger threshold for small boats:** Beaufort $\geq$ 6
+(wind $\geq$ 10.8 m/s). For inflatable dinghies, Beaufort
+$\geq$ 5 (wind $\geq$ 8.0 m/s) is already dangerous.
+
+### 3.2 WMO sea state code (wave dimension)
+
+| Code | Description | SWH (m) |
+|------|-------------|---------|
+| 0--2 | Calm to smooth | 0--0.5 |
+| 3 | Slight | 0.5--1.25 |
+| 4 | Moderate | 1.25--2.5 |
+| 5 | Rough | 2.5--4.0 |
+| 6 | Very rough | 4.0--6.0 |
+| 7+ | High and above | $\geq$6.0 |
+
+**Danger threshold:** WMO $\geq$ 5 (SWH $\geq$ 2.5 m).
+
+### 3.3 Sensitivity: ERA5 storm indicators (deferred)
+
+For robustness at the event level, ERA5 provides additional
+extreme-event variables:
+
+- `i10fg`: instantaneous 10m wind gust (peak within the hour)
+- `hmax`: maximum individual wave height (rogue-wave risk)
+
+These require new downloads and are reserved for event-level
+analysis.
+
+
+## 4. Monthly regression results
+
+### 4.1 Main specification
+
+$$
+\log(\text{rate}_t + 0.01) = \alpha + \beta_1 \cdot \text{SWH}_t +
+\beta_2 \cdot \text{Wind}_t + \beta_3 \cdot \text{Post}_t +
+\beta_4 \cdot (\text{SWH}_t \times \text{Post}_t) +
+\beta_5 \cdot (\text{Wind}_t \times \text{Post}_t) +
+\gamma \cdot \text{MonthFE} + \varepsilon_t
+$$
+
+Sample: 128 months (Feb 2011 -- Sep 2021). Post-MoU: Feb 2017+.
+
+### 4.2 Results
+
+| Coefficient | $\hat{\beta}$ | HAC p |
+|---|---|---|
+| SWH | +2.00 | 0.090 |
+| Wind speed | $-$0.71 | 0.104 |
+| Post-MoU | $-$0.87 | 0.297 |
+| **SWH $\times$ Post** | **+0.38** | **0.709** |
+| **Wind $\times$ Post** | **+0.80** | **0.034** |
+
+Joint F-test (both interactions = 0): $F = 4.08$, $p = 0.020$.
+
+$R^2 = 0.206$, $n = 128$, $df_{\text{residual}} = 111$.
+
+### 4.3 Interpretation
+
+**Wind speed drives the interaction, not SWH.** When both are
+included jointly, the SWH interaction is completely insignificant
+($p = 0.71$), while the wind interaction is significant at 5%
+($p = 0.034$).
+
+The sign pattern tells a coherent story:
+
+- **Pre-MoU:** Higher wind speed is associated with *lower*
+  mortality ($\hat{\beta}_{\text{wind}} = -0.71$). This likely
+  reflects deterrence: worse wind deters departures, so observed
+  crossings in windy months occur in safer windows or with better
+  preparation.
+- **Post-MoU:** The wind-mortality relationship flips
+  ($-0.71 + 0.80 = +0.09$). Wind no longer "protects." This is
+  consistent with the MoU degrading the safety mechanisms
+  (SAR access, NGO rescue) that previously filtered out the
+  most dangerous departures.
+
+**Why wind rather than SWH?** On overloaded inflatable dinghies
+--- which became the dominant vessel type on the CMR --- wind is
+arguably more dangerous than waves. Inflatables have very low
+freeboard, are impossible to steer in wind, and wind drives
+spray, drift, and hypothermia. SWH captures swell conditions but
+misses these direct wind effects.
+
+### 4.4 Standardized coefficients
+
+Using z-scored weather variables to compare effect sizes:
+
+| Interaction | $\hat{\beta}$ (std.) | HAC p |
+|---|---|---|
+| SWH $\times$ Post | +0.13 | 0.709 |
+| Wind $\times$ Post | +0.80 | 0.034 |
+
+A one-SD increase in wind speed is associated with a 0.80 unit
+increase in log(mortality rate) after the MoU --- a much larger
+effect than SWH.
+
+### 4.5 Robustness
+
+| Specification | Wind $\times$ Post $\hat{\beta}$ | HAC p |
+|---|---|---|
+| Baseline (month FE, $c = 0.01$) | +0.80 | 0.034 |
+| Alternative constant ($c = 1$) | +0.33 | 0.021 |
+| Quarter FE (conserve df) | +0.86 | 0.010 |
+
+The wind interaction is significant and stable across all
+specifications. The SWH interaction is insignificant in all
+($p > 0.7$).
+
+### 4.6 Comparison: individual vs. joint models
+
+| Model | SWH $\times$ Post | Wind $\times$ Post |
+|---|---|---|
+| SWH alone | +1.58 ($p = 0.135$) | --- |
+| Wind alone | --- | +0.90 ($p = 0.008$) |
+| Joint (SWH + Wind) | +0.38 ($p = 0.709$) | +0.80 ($p = 0.034$) |
+
+When SWH is included alone, its interaction is marginal
+($p = 0.135$). Once wind is added, SWH's interaction collapses
+entirely. This confirms that whatever signal SWH carried was
+driven by its correlation with wind, not by an independent wave
+mechanism at monthly frequency.
+
+
+## 5. Autocorrelation analysis
+
+### 5.1 The problem
+
+The Durbin-Watson statistic is 1.36, indicating positive
+autocorrelation in the residuals. The residual ACF confirms:
+
+| Lag | ACF | Significant? |
+|-----|-----|---|
+| 1 | +0.31 | Yes |
+| 2 | +0.20 | Yes |
+| 3 | +0.23 | Yes |
+| 4 | +0.18 | Yes |
+| 5 | $-$0.03 | No |
+| 7 | +0.23 | Yes |
+
+Ljung-Box tests reject the null of no autocorrelation at all
+tested lag orders ($p < 0.001$ for lags 1--3, 1--6, and 1--12).
+
+### 5.2 Why does autocorrelation arise?
+
+The autocorrelation is concentrated in the **pre-MoU period**
+(ACF(1) = 0.37) and largely absent in the post-MoU period
+(ACF(1) = $-$0.04). This pattern points to specific sources:
+
+1. **Omitted slow-moving confounders.** The model controls for
+   seasonality (month FE) and the MoU structural break, but
+   mortality may be affected by slowly evolving factors: smuggler
+   network changes, boat quality trends, NGO presence shifts, and
+   Libyan institutional dynamics. These evolve over multi-month
+   timescales, creating "runs" in the residuals.
+
+2. **Persistent weather regimes.** Monthly weather is itself
+   autocorrelated (a stormy winter month tends to be followed by
+   another). Month FE absorb average seasonality but not
+   year-to-year persistence in weather anomalies.
+
+3. **Measurement/reporting lags.** IOM death reporting may lag:
+   deaths from one month may be attributed or recorded in the next,
+   creating artificial serial correlation.
+
+4. **Gradual institutional change.** The pre-MoU period spans
+   multiple SAR regime changes (Mare Nostrum, Triton, NGO
+   expansion) that the model treats as a single pre-period. Each
+   sub-period may have a different mortality baseline, creating
+   multi-month residual runs.
+
+A runs test confirms clustering: 52 runs observed vs. 64 expected
+under independence, with a mean run length of 2.5 months and a
+maximum run of 10 consecutive months.
+
+### 5.3 Consequences
+
+**What autocorrelation does:**
+
+- **OLS standard errors are biased downward.** Positive
+  autocorrelation makes OLS SEs too small, inflating
+  t-statistics and producing false positives. This is why we
+  report Newey-West HAC standard errors throughout.
+
+- **Coefficient estimates remain unbiased.** OLS with
+  autocorrelated errors gives unbiased point estimates. The
+  $\hat{\beta}$ values are correct; only the uncertainty
+  around them is affected.
+
+- **Effective sample size is reduced.** With ACF(1) = 0.31,
+  the effective sample size is approximately
+  $n_{\text{eff}} \approx n \cdot \frac{1 - \rho}{1 + \rho}
+  \approx 128 \cdot \frac{0.69}{1.31} \approx 68$.
+  We effectively have 68 independent observations, not 128.
+  This reduces statistical power.
+
+**What autocorrelation does not do:**
+
+- It does not bias the coefficients.
+- It does not invalidate the regression if properly handled
+  (HAC SEs).
+
+### 5.4 HAC bandwidth sensitivity
+
+The wind $\times$ Post interaction remains significant across
+all Newey-West bandwidth choices:
+
+| Bandwidth | HAC SE | HAC p |
+|-----------|--------|-------|
+| lag = 1 | 0.395 | 0.044 |
+| lag = 2 | 0.402 | 0.048 |
+| lag = 3 | 0.392 | 0.043 |
+| lag = 4 | 0.374 | 0.034 |
+| lag = 5 (plug-in optimal, $n^{1/3}$) | --- | --- |
+| lag = 6 | 0.333 | 0.017 |
+| lag = 8 | 0.320 | 0.014 |
+| lag = 10 | 0.319 | 0.013 |
+| OLS (no correction) | 0.385 | 0.039 |
+
+The result is insensitive to bandwidth choice. At the most
+conservative bandwidth (lag = 2), $p = 0.048$ --- still below
+5%. The HAC SEs are slightly larger than OLS SEs at short lags
+but slightly smaller at long lags, which is an unusual pattern
+suggesting the Bartlett kernel is capturing negative
+medium-lag covariance that partially offsets the positive
+short-lag autocorrelation.
+
+### 5.5 Lagged dependent variable check
+
+Adding the lagged dependent variable $\log(\text{rate}_{t-1})$
+to the regression:
+
+- Eliminates autocorrelation: DW rises from 1.36 to 2.02,
+  ACF(1) drops from 0.31 to $-$0.02. Ljung-Box(6) $p = 0.29$
+  (no remaining autocorrelation).
+- The lagged rate is significant ($\hat{\beta} = 0.29$,
+  $p = 0.002$), confirming serial dependence in mortality.
+- The wind $\times$ Post interaction survives: $\hat{\beta} =
+  +0.74$, HAC $p = 0.031$.
+
+This confirms the interaction result is not an artifact of
+autocorrelation.
+
+
+## 6. Decision: wind speed as primary weather variable
+
+For the **monthly-level** exploratory regression, we use
+**wind speed** as the primary weather variable:
+
+1. It has the strongest and most robust interaction with post-MoU
+   in the mortality rate regression.
+2. It absorbs the SWH signal when entered jointly.
+3. The result survives HAC correction at all bandwidths,
+   alternative functional forms, alternative FE structures, and
+   the lagged dependent variable specification.
+
+SWH remains the dominant variable in the migration literature
+(Deiana et al., Camarena et al.), and will be used as the primary
+variable or alongside wind in the **event-level** analysis, where
+daily point-level data may reveal wave-specific mechanisms invisible
+at monthly spatial-mean resolution.
+
+
+## 7. Deferred items
+
+### 7.1 Control route weather data
+
+The primary analysis design uses EMR, WMR, and WAAR as control
+routes. Weather data for these routes has not yet been downloaded.
+Deferred until the control route strategy is finalized.
+
+### 7.2 Event-level weather matching
+
+The primary analysis (Model A: NegBin triple-diff at incident level)
+requires ERA5 data matched to each incident's coordinates and date.
+This requires daily/sub-daily ERA5 downloads, a spatial matching
+script, and potentially a PCA at incident level (where variable
+independence may be higher). Deferred to the next analysis stage.
+
+### 7.3 Ocean currents
+
+Current speed could not be extracted efficiently from the large
+Copernicus Marine NetCDF for this exploratory analysis. It will be
+integrated in the event-level pipeline via point extraction.
+
+
+## References
+
+- Beaufort scale: Royal Meteorological Society; NOAA JetStream.
+- WMO Code Table 3700 (sea state): World Meteorological Organization.
+- Camarena, Claudy, Wang, and Wright (2020). Political and
+  environmental risks influence migration and human smuggling across
+  the Mediterranean Sea.
+- Deiana, Maheshri, and Mastrobuoni (2024). Migrants at Sea:
+  Unintended Consequences of Search-and-Rescue Operations.
+- Rodriguez Sanchez, Wucherpfennig, Rischke, and Iacus (2023).
+  Search-and-Rescue in the Central Mediterranean Route Does Not
+  Induce Migration.
+- Zambiasi and Albarosa (2024). Externalizing rescue operations at
+  sea: The migration deal between Italy and Libya.
+- ERA5 variable documentation: ECMWF (ecmwf-models.readthedocs.io).
