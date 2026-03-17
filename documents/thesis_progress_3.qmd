@@ -1041,7 +1041,7 @@ that bias the weather--mortality association.
   at monthly level (total effect, complementary)
 - \textcolor{okgreen}{$\checkmark$} Model crossings as
   \textit{outcome} (diagnostic: DAG-valid per
-  Section 12 of dagitty.qmd)
+  Section 12 of dag_identification.qmd)
 
 :::
 ::::
@@ -1437,7 +1437,7 @@ Steps 1--3 = core. Steps 4--8 = complementary/robustness.
 \medskip
 
 \scriptsize
-\textit{See dagitty.qmd (Sections 11--13) for full DAG-based
+\textit{See dag_identification.qmd (Sections 11--13) for full DAG-based
 justification of the model hierarchy.}
 
 :::
