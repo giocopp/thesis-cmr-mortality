@@ -117,10 +117,10 @@ spatial means over the Central Mediterranean crossing zone
 |----------|------|----|-------------|
 | SWH | 1.01 | 0.35 | Significant wave height (m) |
 | Wind speed | 1.78 | 1.00 | 10m wind speed (m/s) |
-| $-$MWP | $-$4.83 | 0.64 | Negative mean wave period (higher = shorter = more dangerous) |
+| -MWP | -4.83 | 0.64 | Negative mean wave period (higher = shorter = more dangerous) |
 | Wave max | 2.36 | 0.95 | Monthly max of daily spatial-mean SWH |
 | Wave SD | 0.46 | 0.20 | Monthly SD of daily spatial-mean SWH |
-| Days $>$2m | 4.60 | 6.22 | Count of days with spatial-mean SWH $>$ 2m |
+| Days >2m | 4.60 | 6.22 | Count of days with spatial-mean SWH > 2m |
 
 Ocean current speed was not included because the NetCDF extraction
 was computationally prohibitive for this exploratory analysis. It
@@ -130,23 +130,23 @@ will be integrated in the event-level pipeline.
 
 The correlation matrix revealed extreme redundancy:
 
-|       | SWH  | Wind | $-$MWP | WMax | WSD  | D$>$2m |
+|       | SWH  | Wind | -MWP | WMax | WSD  | D>2m |
 |-------|------|------|--------|------|------|--------|
-| SWH   | 1.00 | 0.58 | $-$0.98 | 0.89 | 0.88 | 0.89 |
-| Wind  | 0.58 | 1.00 | $-$0.50 | 0.47 | 0.49 | 0.66 |
-| $-$MWP | $-$0.98 | $-$0.50 | 1.00 | $-$0.88 | $-$0.87 | $-$0.83 |
-| WMax  | 0.89 | 0.47 | $-$0.88 | 1.00 | 0.97 | 0.80 |
-| WSD   | 0.88 | 0.49 | $-$0.87 | 0.97 | 1.00 | 0.82 |
-| D$>$2m | 0.89 | 0.66 | $-$0.83 | 0.80 | 0.82 | 1.00 |
+| SWH   | 1.00 | 0.58 | -0.98 | 0.89 | 0.88 | 0.89 |
+| Wind  | 0.58 | 1.00 | -0.50 | 0.47 | 0.49 | 0.66 |
+| -MWP | -0.98 | -0.50 | 1.00 | -0.88 | -0.87 | -0.83 |
+| WMax  | 0.89 | 0.47 | -0.88 | 1.00 | 0.97 | 0.80 |
+| WSD   | 0.88 | 0.49 | -0.87 | 0.97 | 1.00 | 0.82 |
+| D>2m | 0.89 | 0.66 | -0.83 | 0.80 | 0.82 | 1.00 |
 
 Key findings:
 
-- **SWH and $-$MWP are correlated at $r = -0.98$**: at monthly
+- **SWH and -MWP are correlated at $r = -0.98$**: at monthly
   spatial-mean resolution, wave period carries essentially no
   independent information beyond SWH. This is expected ---
   monthly means smooth out the fetch-limited vs. swell-dominated
   conditions where period and height diverge.
-- **Wave max, wave SD, and days $>$ 2m are all correlated with
+- **Wave max, wave SD, and days > 2m are all correlated with
   SWH at $r = 0.87$--$0.89$**: they are mechanically derived from
   the same underlying daily SWH series.
 - **Wind speed is the only variable with genuinely distinct
@@ -156,9 +156,9 @@ Key findings:
 
 | PCA specification | PC1 variance explained |
 |---|---|
-| 3-var (SWH, Wind, $-$MWP) | 79.9% |
+| 3-var (SWH, Wind, -MWP) | 79.9% |
 | 6-var (all six) | 81.5% |
-| 4-var (SWH, Wind, $-$MWP, WSD) | 79.7% |
+| 4-var (SWH, Wind, -MWP, WSD) | 79.7% |
 
 Adding variables beyond SWH + Wind barely increases variance
 explained. PC1 in all specifications is dominated by the
@@ -169,7 +169,7 @@ SWH--wave period axis, with wind contributing the second dimension.
 **At monthly frequency with spatial means, PCA does not add value
 over using SWH and wind speed as separate regressors.** The reasons:
 
-1. All wave-derived variables (period, max, SD, days$>$2m) are
+1. All wave-derived variables (period, max, SD, days>2m) are
    redundant with monthly mean SWH ($r > 0.87$).
 2. PC1 is essentially a weighted average of SWH and its derivatives,
    plus wind --- not meaningfully different from just using the two
@@ -203,7 +203,7 @@ Beaufort 0--3 and WMO sea state 2--4 (no month reaches the
 | 5 | Fresh breeze | 8.0--10.7 | 1.5--2.5 |
 | 6 | Strong breeze | 10.8--13.8 | 2.5--4.0 |
 | 7 | Near gale | 13.9--17.1 | 4.0--5.5 |
-| 8+ | Gale and above | $\geq$17.2 | $\geq$5.5 |
+| 8+ | Gale and above | $\geq$ 17.2 | $\geq$ 5.5 |
 
 **Danger threshold for small boats:** Beaufort $\geq$ 6
 (wind $\geq$ 10.8 m/s). For inflatable dinghies, Beaufort
@@ -218,25 +218,64 @@ $\geq$ 5 (wind $\geq$ 8.0 m/s) is already dangerous.
 | 4 | Moderate | 1.25--2.5 |
 | 5 | Rough | 2.5--4.0 |
 | 6 | Very rough | 4.0--6.0 |
-| 7+ | High and above | $\geq$6.0 |
+| 7+ | High and above | $\geq$ 6.0 |
 
 **Danger threshold:** WMO $\geq$ 5 (SWH $\geq$ 2.5 m).
 
-### 3.3 Sensitivity: ERA5 storm indicators (deferred)
+### 3.3 ERA5 storm intensity variables (downloaded)
 
-For robustness at the event level, ERA5 provides additional
-extreme-event variables:
+ERA5 provides two additional variables that directly capture
+storm extremes, complementing the mean-condition variables
+(SWH, wind speed):
 
-- `i10fg`: instantaneous 10m wind gust (peak within the hour)
-- `hmax`: maximum individual wave height (rogue-wave risk)
+- **`i10fg`**: instantaneous 10m wind gust (m/s). The peak
+  gust within the forecast step, not the mean wind. A dinghy
+  may survive 6 m/s mean wind but not a 15 m/s gust. Downloaded
+  on the 0.25° atmospheric grid
+  (`era5_daily_cmr_atm_gust_YYYY.nc`).
+- **`hmax`**: maximum individual wave height (m). The
+  statistically expected tallest single wave, approximately
+  $1.8 \times$ SWH (Rayleigh distribution). A boat faces
+  `hmax`, not `swh`. Downloaded on the 0.5° wave grid
+  (`era5_daily_cmr_wave_hmax_YYYY.nc`).
 
-These require new downloads and are reserved for event-level
-analysis.
+Both are available for 2014--2025 and will be integrated in the
+event-level extraction pipeline (`02_build_event_data.R`).
+They are particularly relevant for the nonlinear/threshold
+specifications in Section 7.3: `hmax` enables a direct
+threshold test (e.g., $I(\text{hmax} > 4\text{m}) \times
+\text{Post}$), and `i10fg` captures the wind-gust extremes
+that are most dangerous for inflatable boats.
 
 
-## 4. Monthly regression results
+## 4. Monthly rate regression results (Model D --- exploratory)
 
-### 4.1 Main specification
+::: {.callout-important}
+### This is Model D (exploratory, with known limitations)
+
+Per the model hierarchy in `estimands.qmd` Section 3.4 and the
+collider analysis in `dag_identification.qmd` Section 5, the
+mortality **rate** as outcome implicitly conditions on crossings,
+opening collider paths through SAR and Boats. The rate regression
+is Model D --- exploratory evidence with acknowledged collider
+bias, not the primary specification.
+
+The $\log(\text{rate} + c)$ transformation introduces an
+**arbitrary constant** $c$. When the mortality rate is zero
+(months with no deaths), $\log(0)$ is undefined, so a small
+constant must be added. With $c = 0.01$, zero-death months get
+$\log(0.01) = -4.6$; with $c = 1$, they get $\log(1) = 0$. The
+coefficient on Wind $\times$ Post changes from +0.80
+($c = 0.01$) to +0.33 ($c = 1$) --- a factor of 2.4 --- though
+the qualitative conclusion (significant positive interaction) is
+robust.
+
+The **clean monthly complement** to Model A is a NegBin on
+monthly death counts (no crossings denominator, no $\log(Y + c)$
+constant). See `monthly_count_negbin.R`.
+:::
+
+### 4.1 Rate regression specification
 
 $$
 \log(\text{rate}_t + 0.01) = \alpha + \beta_1 \cdot \text{SWH}_t +
@@ -253,8 +292,8 @@ Sample: 128 months (Feb 2011 -- Sep 2021). Post-MoU: Feb 2017+.
 | Coefficient | $\hat{\beta}$ | HAC p |
 |---|---|---|
 | SWH | +2.00 | 0.090 |
-| Wind speed | $-$0.71 | 0.104 |
-| Post-MoU | $-$0.87 | 0.297 |
+| Wind speed | -0.71 | 0.104 |
+| Post-MoU | -0.87 | 0.297 |
 | **SWH $\times$ Post** | **+0.38** | **0.709** |
 | **Wind $\times$ Post** | **+0.80** | **0.034** |
 
@@ -342,7 +381,7 @@ autocorrelation in the residuals. The residual ACF confirms:
 | 2 | +0.20 | Yes |
 | 3 | +0.23 | Yes |
 | 4 | +0.18 | Yes |
-| 5 | $-$0.03 | No |
+| 5 | -0.03 | No |
 | 7 | +0.23 | Yes |
 
 Ljung-Box tests reject the null of no autocorrelation at all
@@ -352,7 +391,7 @@ tested lag orders ($p < 0.001$ for lags 1--3, 1--6, and 1--12).
 
 The autocorrelation is concentrated in the **pre-MoU period**
 (ACF(1) = 0.37) and largely absent in the post-MoU period
-(ACF(1) = $-$0.04). This pattern points to specific sources:
+(ACF(1) = -0.04). This pattern points to specific sources:
 
 1. **Omitted slow-moving confounders.** The model controls for
    seasonality (month FE) and the MoU structural break, but
@@ -438,7 +477,7 @@ Adding the lagged dependent variable $\log(\text{rate}_{t-1})$
 to the regression:
 
 - Eliminates autocorrelation: DW rises from 1.36 to 2.02,
-  ACF(1) drops from 0.31 to $-$0.02. Ljung-Box(6) $p = 0.29$
+  ACF(1) drops from 0.31 to -0.02. Ljung-Box(6) $p = 0.29$
   (no remaining autocorrelation).
 - The lagged rate is significant ($\hat{\beta} = 0.29$,
   $p = 0.002$), confirming serial dependence in mortality.
@@ -449,46 +488,250 @@ This confirms the interaction result is not an artifact of
 autocorrelation.
 
 
-## 6. Decision: wind speed as primary weather variable
+## 6. Monthly count model (NegBin)
 
-For the **monthly-level** exploratory regression, we use
-**wind speed** as the primary weather variable:
+### 6.1 Why a count model?
 
-1. It has the strongest and most robust interaction with post-MoU
-   in the mortality rate regression.
-2. It absorbs the SWH signal when entered jointly.
-3. The result survives HAC correction at all bandwidths,
-   alternative functional forms, alternative FE structures, and
-   the lagged dependent variable specification.
+The rate regression (Section 4) uses $\log(\text{rate} + c)$ as
+the outcome, which has two known problems: collider bias from
+conditioning on crossings (`dag_identification.qmd` Section 5)
+and sensitivity to the arbitrary constant $c$. A negative binomial
+on monthly **death counts** avoids both: no crossings in the
+denominator, and zeros handled natively through the count
+distribution. It captures the total effect (danger + volume) at
+monthly level. Results are from `monthly_count_negbin.R`.
 
-SWH remains the dominant variable in the migration literature
-(Deiana et al., Camarena et al.), and will be used as the primary
-variable or alongside wind in the **event-level** analysis, where
-daily point-level data may reveal wave-specific mechanisms invisible
-at monthly spatial-mean resolution.
+### 6.2 Main results
+
+| Specification | $\hat{\beta}_3$ | IRR | $p$ |
+|---|---|---|---|
+| SWH $\times$ Post | +0.33 | 1.39 | 0.64 |
+| **Wind $\times$ Post** | **+0.82** | **2.26** | **0.0008** |
+| SWH (joint) | -0.98 | 0.38 | 0.24 |
+| **Wind (joint)** | **+1.03** | **2.81** | **0.0005** |
+| SWH (year + month-of-year FE) | +0.62 | 1.87 | 0.33 |
+
+All specifications include month-of-year FE. The overdispersion
+is massive (variance/mean = 372, $\hat{\theta} = 0.54$). The
+Poisson is overwhelmingly rejected (LR stat = 28,252; AIC:
+Poisson 29,804 vs. NegBin 1,553).
+
+The count model confirms the rate regression pattern:
+
+- **SWH $\times$ Post is completely null** ($p = 0.64$), across
+  all specifications --- individual, joint, with year FE. The
+  linear SWH interaction has no detectable signal at monthly
+  frequency.
+- **Wind $\times$ Post is highly significant** (IRR = 2.26,
+  $p = 0.0008$). A 1 m/s increase in monthly wind speed is
+  associated with 126% more deaths post-MoU compared to pre-MoU.
+
+### 6.3 The rate regression inflated SWH
+
+The marginal SWH signal in the rate regression ($p = 0.07$) was
+driven by the arbitrary constant:
+
+| Model | $\hat{\beta}_3$ (SWH $\times$ Post) | $p$ |
+|---|---|---|
+| Rate: $\log(\text{rate} + 0.01)$ | +1.58 | 0.07 |
+| Rate: $\log(\text{rate} + 1)$ | +0.48 | 0.18 |
+| NegBin (death counts) | +0.33 | 0.64 |
+
+When $c$ shrinks from 1 to 0.01, zero-death months are pushed to
+$\log(0.01) = -4.6$ on the log scale, amplifying contrasts
+between zero-death and high-death months and mechanically
+inflating coefficients. The NegBin, which models zeros as a
+natural part of the count distribution, shows no SWH signal.
+
+### 6.4 Crossings diagnostic: the signal is about danger
+
+The crossings diagnostic (`dag_identification.qmd` Section 12)
+models crossings as an **outcome** (no collider problem):
+
+| Variable | $\hat{\beta}_3$ (crossings) | $p$ |
+|---|---|---|
+| SWH $\times$ Post | +0.14 | 0.74 |
+| Wind $\times$ Post | +0.18 | 0.26 |
+
+Both interactions are null: weather deterrence of crossings did
+not change post-MoU. The wind $\times$ Post signal in the death
+count model is therefore driven by the **danger channel**
+(weather $\rightarrow$ vulnerability $\rightarrow$ deaths), not
+the volume channel (weather $\rightarrow$ crossings
+$\rightarrow$ deaths). This is a mediation-style argument
+without formal mediation analysis: if the mediator (crossings)
+does not respond to the interaction, the total effect flows
+through the other pathway.
 
 
-## 7. Deferred items
+## 7. Weather variable strategy
 
-### 7.1 Control route weather data
+### 7.1 Why linear SWH is null: a functional form problem
 
-The primary analysis design uses EMR, WMR, and WAAR as control
-routes. Weather data for these routes has not yet been downloaded.
-Deferred until the control route strategy is finalized.
+SWH is the dominant weather variable in the migration literature
+(Deiana et al. 2024, Camarena et al. 2020, Zambiasi &
+Albarosa 2025). Yet the linear SWH $\times$ Post interaction is
+null in **every** monthly specification --- rate regression
+(Section 4), NegBin counts (Section 6), individual and joint
+models, with and without year FE. This is not evidence that waves
+don't matter. It is evidence that the **linear functional form is
+wrong at this resolution**.
 
-### 7.2 Event-level weather matching
+The SAR-buffer mechanism predicts a specific nonlinear pattern.
+In a NegBin with log link, a linear SWH $\times$ Post says: *each
+additional meter of SWH multiplies deaths by a constant ratio,
+and that ratio changed post-MoU*. But the mechanism says something
+different: *in calm seas, SAR or no SAR, people survive. In
+storms, SAR was the difference between life and death*. This is a
+**threshold** or **convexity** story --- the interaction should be
+concentrated at the dangerous end of the weather distribution, not
+spread linearly across the entire SWH range.
 
-The primary analysis (Model A: NegBin triple-diff at incident level)
-requires ERA5 data matched to each incident's coordinates and date.
-This requires daily/sub-daily ERA5 downloads, a spatial matching
-script, and potentially a PCA at incident level (where variable
-independence may be higher). Deferred to the next analysis stage.
+The linear specification picks up an attenuated average across all
+conditions. If most incidents happen in moderate seas where the MoU
+matters little, and a minority happen in storms where it is
+catastrophic, the linear $\beta_3$ averages over both ---
+potentially missing the storm effect or understating it.
 
-### 7.3 Ocean currents
+At monthly frequency, this problem is compounded: monthly
+spatial-mean SWH compresses all variation into the WMO sea state
+2--4 range (mean = 1.01m, SD = 0.35m). The storm events that
+drive the mechanism are averaged away. No month ever reaches the
+danger threshold (WMO $\geq$ 5, SWH $\geq$ 2.5m).
 
-Current speed could not be extracted efficiently from the large
-Copernicus Marine NetCDF for this exploratory analysis. It will be
-integrated in the event-level pipeline via point extraction.
+**Empirical confirmation: storm exposure variables are all null.**
+To rule out that the null SWH result is simply an artifact of the
+linear functional form (as opposed to a resolution problem), we
+tested five storm-specific operationalizations of monthly wave
+conditions in the NegBin count model, all interacted with Post
+(results from `monthly_count_negbin.R`):
+
+| Variable | Description | $\hat{\beta}_3$ | IRR | $p$ |
+|---|---|---|---|---|
+| Storm days ($> 1.0$m) | Days/month with SWH above slight | +0.02 | 1.02 | 0.67 |
+| Storm days ($> 1.5$m) | Days/month with SWH above moderate | +0.03 | 1.03 | 0.40 |
+| Storm days ($> 2.0$m) | Days/month with SWH above rough threshold | +0.04 | 1.04 | 0.42 |
+| Monthly max SWH | Peak daily SWH within the month | +0.17 | 1.19 | 0.49 |
+| Monthly SWH SD | Within-month wave variability | +0.94 | 2.56 | 0.33 |
+
+None approaches significance. The null result is not about
+functional form --- it persists whether SWH is entered linearly,
+as a threshold count, as a monthly maximum, or as variability.
+The problem is **resolution**: monthly aggregation compresses
+daily storm variation into narrow ranges where the interaction
+has no power. For context, even the "storm days $> 2.0$m"
+variable averages only 2.2 days/month (SD = 3.5), and 60% of
+months have zero such days. Monthly data simply cannot
+distinguish storm-exposed from calm months finely enough.
+
+This confirms that the SWH question must be resolved at the
+event level (Section 7.3), where daily SWH at incident
+locations regularly exceeds 2.5m and the threshold mechanism
+can be directly tested.
+
+### 7.2 Wind captures what monthly SWH cannot
+
+Wind speed drives the interaction at monthly frequency
+($p = 0.0008$ in the NegBin, $p = 0.034$ in the rate regression)
+while SWH collapses. This likely reflects a combination of
+factors:
+
+- **More monthly variation**: wind speed has SD = 1.00 m/s
+  (coefficient of variation = 0.56) versus SWH's SD = 0.35m
+  (CV = 0.35). Wind provides more identifying variation.
+- **Inflatable vulnerability**: post-MoU boats are predominantly
+  inflatable dinghies, which are arguably more vulnerable to wind
+  than to waves --- very low freeboard, impossible to steer in
+  wind, spray-induced hypothermia.
+- **Storm proxy**: high monthly wind tends to coincide with the
+  storm events where the SAR-buffer mechanism operates, so wind
+  indirectly captures the threshold effect that linear SWH misses.
+
+### 7.3 Nonlinear specifications for event-level analysis
+
+The theoretically motivated question is: **do storms make
+crossings more lethal post-MoU because SAR is no longer
+available?** At event level, daily SWH at incident locations
+regularly reaches WMO $\geq$ 5 (SWH > 2.5m), enabling direct
+tests of the threshold mechanism:
+
+- **Threshold interaction**: $I(\text{SWH} > 2\text{m}) \times
+  \text{Post}$ --- does storm exposure kill more post-MoU? This
+  is the cleanest test of the SAR-buffer mechanism.
+- **Quadratic interaction**: $\text{SWH}^2 \times \text{Post}$
+  --- did the convexity of the weather--mortality curve change?
+  A positive $\beta(\text{SWH}^2 \times \text{Post})$ means the
+  marginal danger of each additional meter increases faster
+  post-MoU.
+- **Binned interaction**: separate SWH bins (calm: <1m,
+  moderate: 1--2m, rough: >2m) each interacted with Post.
+  Fully nonparametric --- does not impose a functional form.
+
+The "more but smaller incidents" pattern interacts with this.
+Post-MoU incidents are more numerous but involve fewer deaths on
+average, consistent with smaller boats carrying fewer people. If
+baseline deaths per incident are mechanically lower post-MoU,
+then the threshold interaction tests whether storms
+**differentially** increase deaths relative to this new baseline
+--- the specific prediction of the SAR-buffer mechanism.
+
+### 7.4 Strategy summary
+
+| Level | Primary | Secondary | Storm variables | Specifications | Rationale |
+|---|---|---|---|---|---|
+| Monthly | Wind | SWH | N/A | Linear, NegBin counts | Wind has more variation at monthly resolution; SWH compressed |
+| Event (Model A) | SWH | Wind | i10fg, hmax | Linear + threshold + quadratic + binned | SWH follows literature; daily data has sufficient variation; storm variables enable direct threshold tests |
+
+SWH is the primary variable for the event-level analysis because
+it follows the literature, has more variation at daily resolution,
+and enables direct testing of the storm threshold mechanism. Wind
+is included as a secondary variable to capture the
+inflatable-specific mechanism and for comparison with the monthly
+findings.
+
+Both the monthly and event-level analyses are needed: the monthly
+NegBin captures the total effect (danger + volume, Section 6),
+while Model A at event level isolates severity (deaths per
+incident). The crossings diagnostic (Section 6.4) shows the
+monthly signal is about danger, not volume --- supporting the
+interpretation that the event-level analysis should find a
+weather--mortality interaction even when volume effects are
+removed.
+
+
+## 8. Data status and deferred items
+
+### 8.1 ERA5 daily data (downloaded)
+
+All ERA5 variables needed for the event-level analysis are
+downloaded for 2014--2025, daily at 12:00 UTC, covering
+[29N--45N, 4E--26E]:
+
+| File pattern | Grid | Variables | Status |
+|---|---|---|---|
+| `era5_daily_cmr_atm_instant_YYYY.nc` | 0.25° | u10, v10, sst | Complete |
+| `era5_daily_cmr_atm_accum_YYYY.nc` | 0.25° | tp | Complete |
+| `era5_daily_cmr_wave_YYYY.nc` | 0.5° | swh, mwp | Complete |
+| `era5_daily_cmr_atm_gust_YYYY.nc` | 0.25° | i10fg | Complete |
+| `era5_daily_cmr_wave_hmax_YYYY.nc` | 0.5° | hmax | Complete |
+
+The spatial matching script (`02_build_event_data.R`) extracts
+weather at each incident's nearest grid cell for the incident
+day plus 7 preceding days. PCA may be revisited at incident
+level (where daily location-specific data may show more variable
+independence than monthly spatial means). Both linear and
+nonlinear SWH specifications will be tested (see Section 7.3).
+
+### 8.2 Ocean currents (deferred)
+
+Surface current speed is from Copernicus Marine (GLORYS
+reanalysis), a different dataset and API from ERA5. It was not
+included in the current download pipeline. Ocean currents are
+physically distinct from waves and wind (affecting crossing
+duration, fuel consumption, drift trajectory) and perfectly
+exogenous to migration policy, but are lower priority than the
+wave and wind variables that directly capture storm danger.
+Deferred to a later stage if needed for robustness.
 
 
 ## References

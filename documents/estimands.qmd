@@ -37,36 +37,71 @@ complements `dag_identification.qmd` (DAG specification and identification) and
 
 ## 1. Theoretical estimand
 
-### 1.1 Unit-specific quantity
+### 1.1 The estimand: change in the weather--mortality gradient
 
-For each incident $i$ on the Central Mediterranean Route, the
-unit-specific quantity is:
+The thesis asks whether the MoU amplified the lethality of
+environmental hazards at sea. This is naturally a question about
+an *interaction* --- not a simple level change in expected deaths,
+but a change in how weather conditions translate into deaths per
+incident.
 
-$$\tau_i = E[\text{deaths}_i \mid \text{post-MoU}] - E[\text{deaths}_i \mid \text{pre-MoU}]$$
+Before the MoU, SAR infrastructure buffered crossers against bad
+weather: distressed boats were rescued, limiting the effect of
+sea severity on per-incident mortality. The MoU plausibly removed
+this buffer. The theoretical quantity of interest is the **change
+in the weather--mortality gradient**: how much more sensitive did
+per-incident mortality become to weather conditions after the MoU?
 
-interpreted as: the change in expected deaths per incident
-attributable to the system changes induced by the 2017 EU--Libya
-Memorandum of Understanding (SAR withdrawal, boat degradation,
-smuggler network disruption), under the weather conditions $w_i$
-actually experienced at incident $i$.
+Formally, let $g_m(w) = \partial \log E[\text{deaths}_i \mid w] /
+\partial w$ denote the log-linear weather--mortality gradient
+under regime $m \in \{\text{pre}, \text{post}\}$. The theoretical
+estimand is:
 
-This is a **causal** unit-specific quantity: it involves
-counterfactual potential outcomes (what would have happened to
-incident $i$ under the pre-MoU regime?).
+$$\tau = g_{\text{post}}(w) - g_{\text{pre}}(w)$$
+
+interpreted as: the change in the log-linear weather--mortality
+slope attributable to MoU-induced system changes (SAR withdrawal,
+boat degradation, smuggler network disruption). On the
+multiplicative scale, $\exp(\tau)$ is the ratio of weather
+incidence rate ratios across regimes --- how much *more* a unit
+increase in sea severity raises expected deaths per incident
+after the MoU compared to before.
+
+This is a **causal interaction** estimand: it involves
+counterfactual potential outcomes (what would the
+weather--mortality gradient have been under the pre-MoU regime?)
+and asks whether the joint exposure to bad weather and the
+post-MoU regime produces more deaths than the sum of each
+individual effect (see Section 2.2).
 
 ::: {.callout-note}
 ### Why incidents, not crossings?
 
-The IOM Missing Migrants Project records *incidents* (events where
-deaths or disappearances occurred, or were narrowly avoided). An
-incident is a subset of crossings --- many crossings produce no
-recorded incident. The unit-specific quantity is therefore defined
-over *observed incidents*, not all crossings.
+The IOM Missing Migrants Project records *incidents* --- distress
+events at sea where at least one person died or went missing.
+The analysis sample contains $n = 1{,}388$ CMR incidents (type
+"Incident" only; excluding sub-incidents and split-incident
+bookkeeping entries). Every incident has dead + missing $\geq 1$.
 
-This means we estimate the change in severity *conditional on an
-incident occurring*. This is appropriate: it captures whether each
-distress event became more lethal post-MoU, which is the
-operationally meaningful measure of danger at sea.
+SAR operations respond to these distress events. The data
+records survivors when known (available for 577/1,388 CMR
+incidents). Pre-MoU, incidents typically have **many survivors
+alongside deaths**: mean survivors = 243.7 pre-MoU vs.\ 61.1
+post-MoU (among incidents with recorded survivors). This
+indicates SAR arrived at distress events and rescued many, but
+could not prevent all fatalities. The pre-MoU
+weather--mortality gradient is estimated from variation in
+severity across weather conditions among these incidents ---
+incidents where SAR was present but deaths still occurred.
+
+Distress events where everyone was rescued (0 dead, 0 missing)
+do not appear in MMP. This is inherent to the data source and
+does not differentially bias $\beta_3$ unless the probability
+of a distress event producing $\geq 1$ death changed with
+weather differently across periods. The primary selection
+threat is **detection**: incidents that occur but are never
+observed ("ghost boats" that sink without trace). See
+Section 3.6, Exercise 3.
 :::
 
 ### 1.2 Target population
@@ -74,33 +109,48 @@ operationally meaningful measure of danger at sea.
 The target population is **all actual incidents on the Central
 Mediterranean Route during the study period**.
 
-This choice has an important implication: we estimate an effect
-**among those who crossed** (and experienced an incident). In the
-language of causal inference, this is an **Average Treatment Effect
-on the Treated (ATT)**, where "treated" means "exposed to the
-post-MoU regime."
+This choice has an important implication: the estimand is defined
+**among those who crossed** (and experienced an incident), not
+among all potential crossers including those deterred by the MoU.
 
 ::: {.callout-important}
-### Why ATT, not ATE?
+### Why actual crossers, not all potential crossers?
 
-The target population is actual crossings, not the broader set of
-"all potential crossers including those deterred by the MoU." A
-deterred crossing is not a crossing --- it has no coordinates, no
-weather conditions, no boat, no outcome. The unit-specific quantity
-(mortality risk of a crossing) is **undefined** for a non-event.
+A deterred crossing is not a crossing --- it has no coordinates,
+no weather conditions, no boat, no outcome. The
+weather--mortality gradient is **undefined** for a non-event.
 
 This parallels Pager (2003), where the target population is "the
 pool of applications actually sent by two testers in the Milwaukee
 area" --- not all hypothetical applications that could have been
-sent. Pager does not estimate the effect for applications that were
-never submitted.
+sent. Pager does not estimate the effect for applications that
+were never submitted.
 
-From a policy perspective, the ATT answers the right question: **did
-the route become more dangerous for those who cross it?** If the
-goal were to protect *all* potential migrants (including those
-deterred), the policy response would be to open legal pathways ---
-a valid but entirely different question, outside the scope of this
-thesis.
+From a policy perspective, the estimand answers the right
+question: **did the route become more dangerous for those who
+cross it?** If the goal were to protect *all* potential migrants
+(including those deterred), the policy response would be to open
+legal pathways --- a valid but entirely different question,
+outside the scope of this thesis.
+:::
+
+::: {.callout-note}
+### Not a standard ATT
+
+In a standard ATT framework, the estimand is a **level effect**:
+$E[Y(1) - Y(0) \mid T = 1]$ --- how much did the outcome change
+because of treatment, among the treated? The estimand here is
+structurally different: it is a **causal interaction** --- a
+change in the *gradient* mapping weather to deaths, not a change
+in the *level* of deaths. $\exp(\beta_3)$ tells us how much more
+each unit of weather severity kills post-MoU, not how many more
+deaths the MoU caused in total.
+
+The estimand shares with the ATT the restriction to those who
+actually experienced the post-MoU regime. But because it targets
+the weather--mortality *function* rather than a level, it is more
+precisely described as a **causal interaction parameter among
+actual crossers**.
 :::
 
 ### 1.3 The MoU may have changed who crosses
@@ -108,16 +158,14 @@ thesis.
 The composition of crossers likely changed post-MoU. Deterrence may
 have filtered out the most cautious or risk-averse, leaving a
 population that is more desperate or less able to time departures
-safely. This does not invalidate the ATT --- it is *part of what
-the policy did*. The ATT post-MoU answers: "for the people who
-actually cross under the new regime, how dangerous is it?"
+safely. This does not invalidate the estimand --- it is *part of
+what the policy did*. The post-MoU estimand answers: "for the
+people who actually cross under the new regime, how does weather
+translate into deaths?"
 
-This compositional change is relevant for interpretation: the ATT
-post-MoU is defined over a potentially different subpopulation than
-the ATT pre-MoU. The triple-difference design (comparing CMR to
-control routes across periods) partially accounts for secular
-changes in migrant composition, but route-specific selection remains
-a channel through which the MoU operates.
+This compositional change is relevant for interpretation: the
+post-MoU estimand is defined over a potentially different
+subpopulation than the pre-MoU baseline.
 
 ### 1.4 Linking the theoretical estimand to theory
 
@@ -136,8 +184,9 @@ externalization:
     Komiyama 2024).
 -   These system changes increased vulnerability at sea.
 
-The unit-specific quantity (change in deaths per incident) captures
-the net effect of all these channels simultaneously.
+The theoretical estimand (change in the weather--mortality
+gradient) captures the net effect of all these channels
+simultaneously.
 
 ### 1.5 Why the total effect, not decomposition?
 
@@ -173,24 +222,23 @@ empirical estimand must be a function of observable data only.
 The identification strategy exploits exogenous variation in sea
 conditions: if the MoU degraded the safety infrastructure that
 buffered crossers against bad weather, then the relationship
-between weather and deaths should **change** post-MoU on the CMR
-relative to control routes.
+between weather and deaths should **change** post-MoU on the CMR.
 
-The empirical estimand is the **Weather $\times$ Post-MoU $\times$
-CMR triple interaction**, which captures the differential change in
-the weather--mortality gradient on the CMR versus control routes,
-before versus after the MoU.
+The empirical estimand is the **Weather $\times$ Post-MoU
+interaction**, which captures the change in the
+weather--mortality gradient on the CMR before versus after the
+MoU.
 
 In the negative binomial specification with log link:
 
-$$\log \mu_i = \alpha_g + \lambda_t + \beta_3 (\text{SWH}_i \times \text{Post}_t \times \text{CMR}_r) + \text{lower-order interactions} + \mathbf{X}_i'\gamma$$
+$$\log \mu_i = \alpha_g + \lambda_t + \beta_3 (\text{SWH}_i \times \text{Post}_t) + \text{lower-order interactions} + \mathbf{X}_i'\gamma$$
 
 the empirical estimand is $\exp(\beta_3)$:
 
 > For each additional 1m of significant wave height, the expected
 > number of deaths per incident on the CMR post-MoU is
 > $\exp(\beta_3)$ times what it would be based on the pre-MoU
-> weather--mortality gradient (or the gradient on control routes).
+> weather--mortality gradient.
 
 ### 2.2 The causal interaction interpretation
 
@@ -252,13 +300,51 @@ DAG. No backdoor paths from MoU to Deaths exist.
 `adjustmentSets(dag, "MoU", "Deaths")` returns the empty set
 (`dag_identification.qmd` Section 3).
 
-**Assumption 3: Parallel gradient trends.** Absent the MoU, the
-weather--mortality gradient (how weather affects deaths per
-incident) would have evolved similarly on the CMR and control
-routes. This is the parallel trends assumption for the
-triple-difference, applied to the *slope* rather than levels.
-Testable in the pre-period: the weather--mortality gradient should
-be stable and similar across routes before Feb 2017.
+**Assumption 3: Gradient stability.** Absent the MoU, the
+weather--mortality gradient on the CMR would have remained stable
+over time, conditional on the temporal fixed effects in the
+model. No other event coinciding with the MoU changed how
+weather translates into deaths on this specific route. This is
+the identifying assumption of the before--after interaction
+design: the within-CMR weather--mortality slope would not have
+shifted at the MoU date for non-MoU reasons.
+
+The pre-MoU period spans multiple SAR sub-regimes (Mare
+Nostrum, Triton, NGO expansion), so the gradient may exhibit
+some variation across sub-periods. The identifying argument is
+that this variation is **noise around a stable level**, while
+the MoU represents a **structural break** of fundamentally
+different magnitude --- a wholesale externalization of SAR to
+the Libyan Coast Guard, combined with boat degradation and
+smuggler network disruption. The pre-period gradient variation
+provides a quantitative bound on the plausible range of
+non-MoU shifts (see Section 3.6, Exercise 1).
+
+Testable: (1) placebo interaction tests at earlier dates
+(Mare Nostrum end Nov 2014, other pre-period dates) should show
+null effects; (2) the pre-MoU gradient estimated by year or
+sub-period should be stable; (3) the MoU-date interaction
+should stand out against the distribution of placebo
+estimates. If these tests fail, the design is in trouble.
+
+::: {.callout-note}
+### Why no control routes?
+
+Control routes (Eastern Mediterranean, Western Mediterranean,
+West African Atlantic) would strengthen identification by
+enabling a cross-route parallel gradient trends assumption.
+However, each alternative route has characteristics that make it
+a poor control for the CMR: the EMR is contaminated by the 2016
+EU--Turkey deal (a contemporaneous policy shock that shifted
+crossing patterns and volumes --- Tafani & Riccaboni 2025), the
+WMR is climatically different and much smaller, and the WAAR has
+different sea conditions and smuggler networks. Including
+controls with fundamentally different weather--mortality
+relationships would not credibly satisfy a parallel gradient
+trends assumption. The analysis therefore relies on within-CMR
+temporal variation, pre-period stability tests, and placebo
+treatment dates rather than cross-route differencing.
+:::
 
 **Assumption 4: Exclusion restriction for the interaction.** The
 change in $\beta(\text{Weather} \rightarrow \text{Deaths})$
@@ -279,6 +365,18 @@ limitation.
 **Assumption 6: No anticipation.** The weather--mortality gradient
 did not shift before the MoU on the CMR. Testable with placebo
 treatment dates in the pre-period.
+
+**Pre-estimation diagnostic: weather common support.** The
+interaction $\beta_3$ is identified from incidents that occur
+under comparable weather conditions in both periods. If the
+weather distribution at incident locations shifted drastically
+post-MoU (e.g., post-MoU incidents occur only in calm seas
+because storms are now universally fatal and undetected), the
+interaction relies on extrapolation. A pre-estimation check
+should compare the distribution of SWH, wind speed, and other
+weather variables at incident locations pre vs.\ post-MoU,
+verifying overlap across the weather range. This is a standard
+common support diagnostic.
 
 ### 2.4 Fixed effects structure: an open modeling decision
 
@@ -301,7 +399,7 @@ Literature precedents:
     quadrant-specific trends
 
 The identifying variation comes from *within-FE weather variation
-interacted with the Post dummy and route indicator*. Finer temporal
+interacted with the Post dummy*. Finer temporal
 FE absorb more confounding but reduce residual variation for the
 interaction. The analysis should test multiple FE structures and
 report sensitivity of $\beta_3$. Robustness across FE
@@ -318,11 +416,11 @@ coordinates.
 
 The primary specification is:
 
-$$\text{deaths}_i \sim \text{NegBin}(\mu_i), \quad \log \mu_i = \alpha_g + \lambda_t + \beta_3 (\text{SWH}_i \times \text{Post}_t \times \text{CMR}_r) + \text{lower-order terms} + \mathbf{X}_i'\gamma$$
+$$\text{deaths}_i \sim \text{NegBin}(\mu_i), \quad \log \mu_i = \alpha_g + \lambda_t + \beta_3 (\text{SWH}_i \times \text{Post}_t) + \text{lower-order terms} + \mathbf{X}_i'\gamma$$
 
 where:
 
--   $i$ indexes individual incidents (IOM MMP records)
+-   $i$ indexes individual incidents (IOM MMP records, CMR only)
 -   $\alpha_g$ is a grid fixed effect (spatial)
 -   $\lambda_t$ is a temporal fixed effect (granularity TBD, see
     Section 2.4)
@@ -330,17 +428,16 @@ where:
     coordinates and date (from ERA5)
 -   $\text{Post}_t$ is a binary indicator for the post-MoU period
     (Feb 2017 onward)
--   $\text{CMR}_r$ is a binary indicator for the Central
-    Mediterranean Route
 -   $\mathbf{X}_i$ includes additional weather controls (wind speed,
     SST, currents) and any available covariates
 
-**Why negative binomial?** Deaths per incident are non-negative
-counts with overdispersion: ~23% zero-death incidents on the CMR
-and a long right tail (mass-casualty shipwrecks). The Poisson
-assumption (mean = variance) is almost certainly violated. The
-negative binomial adds a dispersion parameter that allows variance
-$>$ mean. See `dag_identification.qmd` Section 14 for diagnostics and
+**Why negative binomial?** The outcome (dead + missing per
+incident) is a positive count ($\geq 1$ by construction, $n =
+1{,}388$ CMR incidents) with clear overdispersion: median = 2,
+mean = 14.4, and a long right tail (mass-casualty shipwrecks up
+to 550). The variance/mean ratio far exceeds 1. The negative
+binomial adds a dispersion parameter that allows variance $>$
+mean. See `dag_identification.qmd` Section 14 for diagnostics and
 alternatives considered.
 
 ### 3.2 Interpreting $\exp(\beta_3)$: the estimand on the
@@ -349,24 +446,24 @@ multiplicative scale
 In the NegBin with log link, $\beta_3$ is a log-multiplicative
 interaction:
 
--   **Pre-MoU on CMR**: a 1m increase in SWH multiplies expected
+-   **Pre-MoU**: a 1m increase in SWH multiplies expected
     deaths per incident by $\exp(\beta_1)$
--   **Post-MoU on CMR**: a 1m increase in SWH multiplies expected
+-   **Post-MoU**: a 1m increase in SWH multiplies expected
     deaths per incident by $\exp(\beta_1 + \beta_3)$
 -   **The ratio**: $\exp(\beta_3)$ --- how much *more*
     (multiplicatively) a unit SWH increase raises expected deaths
-    post-MoU vs. pre-MoU, relative to control routes
+    post-MoU vs. pre-MoU
 
 $\exp(\beta_3)$ **is directly the estimand on the multiplicative
 scale**. It is constant --- it does not depend on covariate values.
-It is an incidence rate ratio of ratios: the ratio of the
-post-MoU weather IRR to the pre-MoU weather IRR (differenced across
-CMR vs. controls).
+It is the ratio of the post-MoU weather IRR to the pre-MoU
+weather IRR --- exactly $\exp(\tau)$ from the theoretical
+estimand in Section 1.1.
 
 **Example**: if $\hat{\beta}_3 = 0.3$, then $\exp(0.3) \approx
 1.35$, meaning a 1m SWH increase raises expected deaths per
-incident by 35% more on the CMR post-MoU than the same increase
-did pre-MoU or on control routes.
+incident by 35% more post-MoU than the same increase did
+pre-MoU.
 
 ### 3.3 When to use average marginal effects
 
@@ -413,13 +510,118 @@ outcome rather than a conditioning variable.
     for crossing counts)
 -   **DML (partially linear)**: doubly-robust machine learning,
     flexibly controls for weather and covariates
+    (Chernozhukov et al. 2018). Uses ML to estimate nuisance
+    functions (expected deaths given controls; propensity for
+    high weather exposure in post-MoU CMR), then estimates
+    $\beta_3$ from orthogonalized residuals with cross-fitting.
+    If $\hat{\beta}_3^{DML} \approx \hat{\beta}_3^{NegBin}$,
+    the log-link functional form is not driving results.
 -   **Causal forest**: treatment effect heterogeneity across
     geographic subgroups
--   **Lee bounds**: sensitivity to potential selection on
-    unobservables
 
 If $\hat{\beta}_3$ is similar across NegBin, Poisson, and DML, the
 functional form choice is not driving results.
+
+### 3.6 Bounds and sensitivity analysis
+
+Three distinct bounding exercises address different threats to
+identification. Each targets a specific assumption and should be
+reported alongside the primary estimate.
+
+**Exercise 1: Pre-period gradient stability → bound on
+gradient stability violation.** The gradient stability assumption
+(Assumption 3) is untestable in the post-period. However, the
+pre-period variability of the weather--mortality gradient over
+time provides a quantitative bound on plausible violations.
+Estimate the gradient $\partial \text{deaths} / \partial
+\text{SWH}$ separately by year (or sub-period) in the pre-MoU
+period. The observed temporal variance in this gradient bounds
+the plausible range of shifts $\delta$ that could have occurred
+absent the MoU. The identified set for $\beta_3$ becomes
+$[\hat{\beta}_3 - \delta_U, \hat{\beta}_3 - \delta_L]$.
+If the pre-period gradient was temporally stable (small $\delta$
+range), the bounds are tight and the result is robust. Placebo
+interaction tests at earlier dates (e.g., false MoU dates in
+2015 or 2016) provide complementary evidence.
+This converts a stability *test* into a *quantitative bound*.
+
+**Exercise 2: Sensitivity to unobserved confounding.** What if an
+omitted variable coincidentally changed the weather--mortality
+gradient on the CMR at the time of the MoU? Following Cinelli
+and Hazlett (2020), benchmark the required confounder strength
+against observed covariates: how much does $\beta_3$ change when
+adding/removing controls? The question is: would an unobserved
+confounder need to be stronger than the strongest observed
+control to nullify $\beta_3$? For the NegBin, a linearized
+version (OLS on log-transformed counts) can be used with
+`sensemakr`, or the Yadlowsky et al. (2022) framework for
+non-linear models can provide bounds on $\beta_3$ as a function
+of a sensitivity parameter $\Gamma$ representing the maximum
+confounding strength.
+
+**Exercise 3: Sensitivity analysis for sample selection
+(detection bias).** The MoU may have changed which incidents are
+*observed* (fewer NGO vessels to witness incidents, Libyan Coast
+Guard not reporting interceptions-gone-wrong). If post-MoU
+detection worsened, observed per-incident severity could be
+inflated or attenuated by selection. Lee (2009) bounds are the
+standard tool for sample selection, but they are not applicable
+here: they target a level effect $E[Y(1) - Y(0)]$ for the
+principal stratum of always-observed units, whereas $\beta_3$ is
+an interaction coefficient capturing a change in the
+weather--mortality *gradient*. Trimming the outcome distribution
+bounds a mean, not a slope; and no extension of Lee bounds in
+the literature (Semenova 2025; Lee \& Liu 2024; Rathnayake,
+Negi, Bartalotti \& Zhao 2024) addresses interaction estimands.
+
+Instead, two complementary strategies address detection bias
+for the interaction estimand:
+
+(a) **Parameterized detection sensitivity analysis.**
+    Model the detection probability as declining by a factor
+    $\pi \in (0, 1]$ post-MoU on the CMR, potentially varying
+    with weather (e.g., $\pi(\text{SWH})$ if NGOs were
+    disproportionately active in bad weather). For a grid of
+    $(\pi, \bar{d})$ values --- where $\bar{d}$ is the assumed
+    mean severity of undetected incidents --- re-estimate
+    $\beta_3$ by imputing the missing observations and report
+    how much detection must have worsened to nullify the result.
+    This is analogous to the Cinelli \& Hazlett (2020) logic in
+    Exercise 2, but applied to the missingness mechanism rather
+    than confounding.
+
+(b) **Sign-of-bias argument.** Document the direction of
+    selection bias qualitatively. Post-MoU, the geographic shift
+    is stark: 81\% of incidents occur within 100 km of the
+    Libyan coast (vs.\ 22--26\% during earlier periods). If the
+    most lethal incidents --- far-from-shore sinkings in bad
+    weather, unwitnessed by any vessel --- are the ones most
+    likely to go undetected, then missing them *attenuates*
+    $\beta_3$. The observed estimate is then a conservative
+    lower bound on the true interaction. Conversely, if missing
+    incidents are low-mortality Libyan Coast Guard interceptions,
+    the direction is ambiguous. Reporting the conditions under
+    which selection is conservative vs.\ non-conservative
+    strengthens the result without requiring formal bounds.
+
+**Priority**: All three exercises are high priority. Exercise 1
+addresses parallel gradient trends, Exercise 2 addresses
+unobserved confounding, and Exercise 3 addresses sample
+selection --- the three main identification threats.
+
+::: {.callout-note}
+### Functional form sensitivity (Roth 2022)
+
+The NegBin log link imposes stability on the **multiplicative**
+scale: the weather--mortality gradient (on the log scale) would
+have remained constant absent the MoU. On the **additive**
+(count) scale, stability means the absolute change in deaths per
+unit SWH would have remained constant. These cannot both hold
+exactly. The choice of scale is an untestable assumption. The
+Poisson QMLE and DML robustness checks partially address this;
+reporting results under an identity-link linear model would
+further assess scale sensitivity.
+:::
 
 
 ## 4. The ITT interpretation
@@ -430,7 +632,7 @@ The post-MoU dummy is an **assignment** to a policy regime, not a
 precise measure of treatment receipt. Not all post-MoU crossings
 faced equally degraded conditions: some still had NGO SAR coverage,
 some used wooden boats, enforcement varied over time. The Weather
-$\times$ Post $\times$ CMR interaction therefore estimates an
+$\times$ Post interaction therefore estimates an
 **intention-to-treat (ITT)** effect: the total effect of being in
 the post-MoU period on the weather--mortality gradient.
 
@@ -536,23 +738,7 @@ Key effect modifiers for the weather--mortality relationship:
 -   Crossing route geometry (distance, exposure to open sea)
 -   Migrant demographics and physical condition
 
-### 6.2 Transportability to other routes
-
-The triple-difference uses EMR, WMR, and WAAR as control routes.
-These routes differ substantially in effect modifier distributions:
-
--   **EMR** (Eastern Mediterranean): shorter crossings, Turkish
-    SAR more functional, different boat types
--   **WMR** (Western Mediterranean): shorter crossings, different
-    SAR regime (Spanish/Moroccan)
--   **WAAR** (Atlantic/West Africa): very long crossings, minimal
-    SAR, different boat technology
-
-The control routes serve to absorb common time trends, not to
-claim that effects would be identical across routes. The results
-speak to the CMR specifically.
-
-### 6.3 Transportability to future periods
+### 6.2 Transportability to future periods
 
 The results inform future policy if the MoU $\rightarrow$ SAR/Boats
 mechanism remains operative. If the policy regime changes (e.g.,
@@ -568,12 +754,14 @@ standard limitation of any policy evaluation.
 | **Research question** | Did the 2017 EU--Libya MoU make the CMR more dangerous? |
 | **Unit-specific quantity** | Change in expected deaths per incident attributable to MoU-induced system changes, under observed weather |
 | **Target population** | All actual incidents on the CMR during the study period |
-| **Estimand type** | ATT (effect among those who crossed) |
+| **Estimand type** | Causal interaction among actual crossers (gradient change, not level effect) |
 | **Causal structure** | Causal interaction: joint effect of bad weather and post-MoU regime exceeds sum of individual effects |
 | **What is estimated** | ITT: total effect of being in the post-MoU period on the weather--mortality gradient |
-| **Empirical estimand** | $\exp(\beta_3)$ from NegBin triple-difference: the multiplicative change in the weather--mortality IRR, CMR vs. controls, post vs. pre |
-| **Identification** | Weather exogeneity $\mid$ FE; MoU exogeneity; parallel gradient trends; exclusion restriction; SUTVA; no anticipation |
+| **Empirical estimand** | $\exp(\beta_3)$ from NegBin: the multiplicative change in the weather--mortality IRR, post vs. pre |
+| **Identification** | Weather exogeneity $\mid$ FE; MoU exogeneity; gradient stability; exclusion restriction; SUTVA; no anticipation |
 | **FE structure** | Temporal (granularity TBD) + grid (0.25 degree ERA5). Sensitivity across FE specifications reported. |
+| **Robustness** | Poisson QMLE; DML (partially linear, cross-fitted); identity-link linear model for scale sensitivity |
+| **Bounds & sensitivity** | (1) Pre-period gradient stability → bound on gradient stability violation; (2) Sensitivity to unobserved confounding (Cinelli & Hazlett / Yadlowsky et al.); (3) Parameterized detection sensitivity analysis + sign-of-bias argument for sample selection |
 | **Complementary models** | Monthly death counts (total effect); crossings diagnostic (volume channel); rate regression (exploratory, collider caveat) |
 | **Extensions (proposed)** | LATE via SAR instrument; NDE/NIE decomposition (SAR vs. boats channels); channel-specific CATE |
 

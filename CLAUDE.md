@@ -9,10 +9,12 @@ IOM Missing Migrants Project incident data matched to ERA5 weather.
 
 ## Research design
 
-- **Primary (Model A):** NegBin triple-diff at event level:
-  `deaths_i ~ NegBin(mu_i)`, `log(mu_i) = grid_FE + month_FE + beta_3(SWH x Post x CMR) + X'gamma`
-  Uses EMR/WMR/WAAR as control routes.
-- **Robustness:** DML (partially linear), Lee bounds (selection), causal forest (heterogeneity)
+- **Primary (Model A):** NegBin at event level, CMR only:
+  `deaths_i ~ NegBin(mu_i)`, `log(mu_i) = grid_FE + month_FE + beta(SWH x Post) + X'gamma`
+  Identification from weather x post-MoU interaction within CMR.
+  No control routes: EMR contaminated by EU-Turkey deal (2016), WMR/WAAR climatically different.
+  Estimand is a causal interaction (change in weather-mortality gradient), not a standard ATT.
+- **Robustness:** DML (partially linear), detection sensitivity analysis (selection), causal forest (heterogeneity)
 - **Complementary (monthly):** death counts ~ weather x post, crossings as outcome (diagnostic), rate regression (exploratory, collider caveat)
 
 ## Repository structure
@@ -36,7 +38,7 @@ IOM Missing Migrants Project incident data matched to ERA5 weather.
 ## Data sources
 
 - **IOM MMP:** incident-level records (geocoded, 2014-2025)
-- **ERA5:** SWH, wind, SST, currents (daily, 0.25 degree)
+- **ERA5:** SWH, wind (u10/v10), SST, precip, mean wave period (0.25°/0.5°, daily); storm variables: i10fg (wind gust), hmax (max wave height). Ocean currents deferred (Copernicus Marine, separate API).
 - **UNHCR:** daily arrivals to Italy
 - **IOM monthly:** crossings by route (arrivals + interceptions + deaths)
 - **UNITED:** death list (supplementary)

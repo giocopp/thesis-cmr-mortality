@@ -144,6 +144,50 @@ MoU consequences but is outside the scope of the Weather × Post
 identification strategy.
 :::
 
+::: {.callout-important}
+### Detection and sample selection
+
+The DAG models the data generating process for **all** incidents
+on the CMR. However, IOM MMP records only incidents where at
+least one person died or went missing ($n = 1{,}388$ CMR
+incidents; every record has dead + missing $\geq 1$). The data
+also records survivors when known (577/1,388 incidents).
+
+**Incident-formation selection.** Distress events where SAR
+rescued everyone (0 dead, 0 missing) do not appear in MMP. This
+is inherent to the data source. Pre-MoU, when SAR capacity was
+high, incidents still recorded deaths alongside many survivors
+(mean survivors = 243.7 pre-MoU vs.\ 61.1 post-MoU, among
+incidents with recorded survivors), indicating that SAR
+responded but could not prevent all fatalities. The pre-MoU
+weather--mortality gradient is estimated from this variation in
+severity across weather conditions. The key question is whether
+fully-rescued events (0 dead, 0 missing) are disproportionately
+concentrated in bad weather pre-MoU --- if so, the pre-MoU
+gradient is attenuated. This is difficult to assess directly but
+is partially addressed by the weather common support diagnostic
+(`estimands.qmd` Section 2.3).
+
+**Detection selection (genuine threat).** Post-MoU, the
+detection environment changed: NGO SAR vessels --- which
+witnessed and reported many incidents --- were restricted
+(Cusumano & Villa 2019), and the Libyan Coast Guard does not
+systematically report interceptions-gone-wrong. If detection
+probability changed differentially with weather post-MoU
+(e.g., NGO vessels that operated disproportionately in bad
+weather withdrew), the observed Weather × Post interaction
+conflates true danger amplification with detection-driven
+composition change.
+
+Detection bias is not modeled in the DAG because it operates on
+the *observation process*, not on the causal data generating
+process for outcomes. It is addressed by the parameterized
+sensitivity analysis in `estimands.qmd` Section 3.6, Exercise 3,
+which models detection probability as a function of weather and
+period, and asks how much detection must have worsened to nullify
+the result.
+:::
+
 ## 2. All causal paths
 
 ### MoU → Deaths
@@ -431,8 +475,13 @@ If Vulnerability were observed:
 - Conditioning on {FE, Vulnerability} would block the Weather → Vulnerability → Deaths
   front-door path and **isolate the volume channel** only
 - NOT conditioning on Vulnerability gives the **total effect** (both channels)
-- This highlights that our Weather × Post interaction estimates the
-  total effect change (danger + volume), not the pure danger channel
+- For the **monthly count model**, the Weather × Post interaction
+  captures the total effect (danger + volume combined). For
+  **Model A** (event-level), which conditions on incident
+  occurrence by the nature of the data, $\beta_3$ captures the
+  **severity channel** --- the change in the weather--mortality
+  gradient per incident. The volume channel (more crossings →
+  more incidents) is already selected on at event level
 
 ## 11. Estimand decomposition and model hierarchy
 
@@ -636,11 +685,13 @@ direction.
 
 ### Why negative binomial?
 
-Deaths per incident is a non-negative count with clear overdispersion:
-most incidents produce a few deaths, but mass-casualty shipwrecks can
-produce hundreds. The IOM MMP data show ~23% zero-death incidents on
-the CMR (490/2,090), with a long right tail. The Poisson assumption
-(mean = variance) is almost certainly violated.
+Dead + missing per incident is a positive count ($\geq 1$ by
+construction) with clear overdispersion: most incidents produce a
+few dead/missing (median = 2), but mass-casualty shipwrecks can
+produce hundreds (max = 550). The sample contains $n = 1{,}388$
+CMR incidents with mean = 14.4, variance/mean ratio far exceeding
+1. The Poisson assumption (mean = variance) is almost certainly
+violated.
 
 The negative binomial adds a dispersion parameter $\alpha$ that
 allows variance $> $ mean. Standard diagnostics to justify this
@@ -664,7 +715,7 @@ choice is not driving results.
 |-------|----------------------|
 | Poisson | Mean = variance almost certainly violated (mix of small rubber-boat incidents and mass-casualty shipwrecks) |
 | Quasi-Poisson | Robust to overdispersion but less efficient; does not model the dispersion structure |
-| Zero-inflated NB | Defensible given 23% zeros, but zeros likely reflect reporting (missing confirmed dead, not a separate DGP) |
+| Zero-inflated NB | Not applicable: the outcome is dead + missing, which is $\geq 1$ for every CMR incident ($n = 1{,}388$). There are no zeros to inflate |
 | OLS on $\log(\text{deaths} + 1)$ | Arbitrary constant, loses count structure, inconsistent under heteroskedasticity |
 
 ### Weather covariate selection and multicollinearity
@@ -710,19 +761,20 @@ reported.
 In the NegBin framework with log link:
 
 $$\log \mu_i = \alpha_g + \lambda_m + \beta_3 (\text{SWH}_i \times
-\text{Post}_t \times \text{CMR}_r) + \mathbf{X}_i'\gamma$$
+\text{Post}_t) + \mathbf{X}_i'\gamma$$
 
-$\beta_3$ is a **triple-difference semi-elasticity**:
+$\beta_3$ is the **change in the weather--mortality gradient**
+(see `estimands.qmd` Section 1.1):
 
 > For each additional 1m of significant wave height, the expected
 > number of deaths per incident on the CMR post-MoU is
 > $\exp(\beta_3)$ times what it would be based on the pre-MoU
-> weather–mortality gradient (or the gradient on control routes).
+> weather–mortality gradient.
 
 **Substantive example:** if $\hat{\beta}_3 = 0.3$, then
 $\exp(0.3) \approx 1.35$, meaning a 1m SWH increase raises expected
-deaths per incident by 35% **more** on the CMR post-MoU than the
-same increase did pre-MoU or on control routes. If the pre-MoU
+deaths per incident by 35% **more** post-MoU than the
+same increase did pre-MoU. If the pre-MoU
 gradient was essentially zero (SAR rescued distressed boats regardless
 of weather), then $\beta_3$ captures nearly the full post-MoU
 weather-lethality effect.
@@ -784,6 +836,7 @@ ggdag_adjustment_set(dag, text = FALSE) +
 | SAR → Boats | Yes (Deiana et al. 2024: SAR enables inflatable boat use) | **None** — all paths remain front-door from MoU (parentless). Not included but acknowledged as a real mechanism. See discussion in Section 1 callout |
 | MoU → Vulnerability directly | Possible (detention conditions, pre-departure exploitation) | **None** — MoU has no parents. Not included because Vulnerability here captures at-sea vulnerability specifically. Relevant for broader discussion of MoU consequences |
 | Weather → Deaths directly | No — every mechanism (waves capsizing boats, storms preventing rescue, exposure at sea) operates through crossing vulnerability | Not applicable; exclusion restriction is defensible |
+| Detection mechanism (MoU → Detection, Weather → Detection) | Yes — post-MoU: fewer NGO witnesses; bad weather: harder to observe incidents in storms | **Not a confounding problem** but a sample selection problem. Does not create backdoor bias for the total effect, but threatens $\beta_3$ if detection probability changed differentially with weather post-MoU. Addressed by parameterized sensitivity analysis (`estimands.qmd` Section 3.6, Exercise 3), not by DAG conditioning |
 
 ### Literature support for DAG edges
 

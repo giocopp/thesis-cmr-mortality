@@ -1341,16 +1341,16 @@ $\beta_3 > 0$.
 
 **Mitigation strategies:**
 
-- \textbf{Lee (2009) bounds} (pipeline step 3):
-  if MoU changes the \textit{number} of detected
-  incidents (selection into the sample), bias. 
-  Lee bounds trim the
-  "excess" observations from the period with more
-  incidents, keeping only the share that would exist
-  under both regimes.
-  This yields a \textbf{worst-case interval} for
-  $\beta_3$: if the lower bound is still $> 0$,
-  the effect survives even under maximal selection
+- \textbf{Detection sensitivity analysis} (pipeline
+  step 3): Lee (2009) bounds are not applicable here
+  --- they target level effects, not interaction
+  estimands like $\beta_3$. Instead, parameterize
+  detection probability as declining by $\pi \in (0,1]$
+  post-MoU on the CMR, potentially varying with weather.
+  For a grid of $(\pi, \bar{d})$ values (detection drop
+  $\times$ mean severity of undetected incidents),
+  re-estimate $\beta_3$ and report how much detection
+  must worsen to nullify the result
 - \textbf{Sensitivity analysis:} assume $x\%$ undetected
   incidents with mean $\bar{d}$ deaths; show how
   $\hat{\beta}_3$ changes as $(x, \bar{d})$ vary.
@@ -1392,7 +1392,7 @@ $n \approx 4{,}067$:
 |--|----|---------|
 | 1 | NegBin triple-diff | Main: SWH $\times$ Post $\times$ CMR |
 | 2 | DML (partially linear) | Flexible nuisance; valid CI for $\beta_3$ |
-| 3 | Lee (2009) bounds | Worst-case $\beta_3$ under selection |
+| 3 | Detection sensitivity | Parameterized selection analysis for $\beta_3$ |
 | 4 | Causal forest | Heterogeneity (where/when effect strongest) |
 
 **Level 2 --- Monthly (complementary),**
@@ -1405,7 +1405,7 @@ $n \approx 520$:
 | 7 | Rate regression (Model D) | Exploratory (collider caveat) |
 | 8 | Matrix completion/SCM | Counterfactual CMR mortality |
 
-Steps 1--3 = core. Steps 4--8 = complementary/robustness.
+Steps 1--3 = core (NegBin, DML, detection sensitivity). Steps 4--8 = complementary/robustness.
 
 :::
 ::: {.column width="50%"}
@@ -1503,8 +1503,9 @@ What it does is make \textbf{estimation} more robust and reveal
 \scriptsize
 \textbf{Pipeline logic:} parametric first (NegBin)
 for interpretability $\to$ DML for robustness $\to$
-Lee bounds for selection $\to$ causal forest for
-heterogeneity. Each step adds a layer of credibility.
+detection sensitivity analysis for selection $\to$
+causal forest for heterogeneity. Each step adds a
+layer of credibility.
 
 :::
 ::::

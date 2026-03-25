@@ -13,6 +13,7 @@ df <- readRDS("replication/rodriguez-sanchez/extension/data/df_extended.RDS") %>
          month_fac = factor(month(date)))
 
 m <- lm(log_rate ~ wave_height_central_med * post_mou +
+          
          wind_speed_central_med * post_mou + month_fac, data = df)
 e <- residuals(m)
 n <- length(e)
