@@ -1,0 +1,13 @@
+post_mou,sea,obs,deaths,crossings,fat_rate,level
+Pre-MoU,Calm,66,575,84486,0.68,Daily
+Pre-MoU,Medium,284,2626,197345,1.33,Daily
+Pre-MoU,Rough,42,59,8343,0.71,Daily
+Post-MoU,Calm,532,1716,198586,0.86,Daily
+Post-MoU,Medium,1086,3602,272402,1.32,Daily
+Post-MoU,Rough,262,1270,34368,3.7,Daily
+Pre-MoU,Calm,3,232,20876,1.11,Weekly
+Pre-MoU,Medium,45,2796,207550,1.35,Weekly
+Pre-MoU,Rough,8,231,7047,3.28,Weekly
+Post-MoU,Calm,63,1176,149997,0.78,Weekly
+Post-MoU,Medium,240,4136,328367,1.26,Weekly
+Post-MoU,Rough,68,1151,22785,5.05,Weekly
