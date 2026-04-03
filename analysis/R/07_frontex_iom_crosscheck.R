@@ -32,8 +32,9 @@ frx <- readRDS(file.path(BASE_DIR, "data", "processed", "frontex_incidents.RDS")
 cat(sprintf("  Frontex Themis: %d incidents, %s to %s\n",
     nrow(frx), min(frx$date), max(frx$date)))
 
-# Aggregate Frontex to daily
+# Aggregate Frontex to daily (CMR departures only)
 frx_daily <- frx %>%
+  filter(country_of_departure %in% c("Libya", "Tunisia", "Algeria")) %>%
   group_by(date) %>%
   summarise(
     frx_incidents  = n(),
@@ -42,6 +43,9 @@ frx_daily <- frx %>%
     frx_migrants   = sum(num_migrants, na.rm = TRUE),
     frx_pct_sar    = mean(sar_flag == 1, na.rm = TRUE) * 100,
     frx_n_sar      = sum(sar_flag == 1, na.rm = TRUE),
+    frx_n_ngo      = sum(ngo_involved == TRUE, na.rm = TRUE),
+    frx_ngo_persons = sum(num_persons[ngo_involved == TRUE], na.rm = TRUE),
+    frx_pct_ngo    = mean(ngo_involved == TRUE, na.rm = TRUE) * 100,
     frx_n_inflatable = sum(grepl("inflatable|rubber|zodiac|dinghy",
                                   transport_type, ignore.case = TRUE), na.rm = TRUE),
     .groups = "drop"
@@ -83,18 +87,30 @@ cat(sprintf("  SAR daily: %d days\n", nrow(sar)))
 # ── 2. Merge all to daily ─────────────────────────────────
 cat("\n--- 2. Merging to daily panel ---\n")
 
+# Coverage boundaries
+FRX_START <- min(frx$date)
+FRX_END   <- max(frx$date)
+RS_NGO_END <- as.Date("2021-10-31")  # last date with R-S NGO vessel data
+
 combined <- tibble(date = seq(as.Date("2014-01-01"), as.Date("2023-12-31"), by = "day")) %>%
   left_join(frx_daily, by = "date") %>%
   left_join(iom_daily, by = "date") %>%
   left_join(panel, by = "date") %>%
   left_join(sar, by = "date") %>%
-  replace_na(list(
-    frx_incidents = 0, frx_persons = 0, frx_deaths = 0, frx_migrants = 0,
-    frx_pct_sar = 0, frx_n_sar = 0, frx_n_inflatable = 0,
-    iom_incidents = 0, iom_dead_missing = 0, iom_core_deaths = 0,
-    deaths = 0, n_incidents = 0
-  )) %>%
-  mutate(year = year(date), month = month(date))
+  mutate(
+    # Zero-fill Frontex only within its coverage period
+    across(c(frx_incidents, frx_persons, frx_deaths, frx_migrants,
+             frx_pct_sar, frx_n_sar, frx_n_ngo, frx_ngo_persons, frx_pct_ngo,
+             frx_n_inflatable),
+           ~ ifelse(date >= FRX_START & date <= FRX_END & is.na(.x), 0, .x)),
+    # Zero-fill IOM and deaths (IOM covers full period)
+    across(c(iom_incidents, iom_dead_missing, iom_core_deaths,
+             deaths, n_incidents),
+           ~ replace_na(.x, 0)),
+    # R-S NGO data: set to NA after coverage ends (zeros are not real)
+    n_ngo_vessels = ifelse(date > RS_NGO_END, NA_real_, n_ngo_vessels),
+    year = year(date), month = month(date)
+  )
 
 cat(sprintf("  Combined panel: %d days\n", nrow(combined)))
 
@@ -136,8 +152,8 @@ yearly_volume <- combined %>%
 cat("\n  Annual volume by source:\n")
 print(yearly_volume, n = 12)
 
-# ── 5. SAR validation: Frontex SAR flag vs R-S NGO count ──
-cat("\n--- 5. SAR validation: Frontex vs Rodriguez-Sanchez ---\n")
+# ── 5. NGO SAR validation: Frontex NGO flag vs R-S NGO count
+cat("\n--- 5. NGO SAR validation: Frontex vs Rodriguez-Sanchez ---\n")
 
 # Weekly aggregation for comparison
 weekly_sar <- combined %>%
@@ -145,19 +161,19 @@ weekly_sar <- combined %>%
   mutate(week = floor_date(date, "week")) %>%
   group_by(week) %>%
   summarise(
-    frx_sar_incidents = sum(frx_n_sar),
+    frx_ngo_incidents = sum(frx_n_ngo),
     frx_total_incidents = sum(frx_incidents),
-    frx_sar_pct = ifelse(sum(frx_incidents) > 0,
-                          sum(frx_n_sar) / sum(frx_incidents) * 100, NA),
+    frx_ngo_pct = ifelse(sum(frx_incidents) > 0,
+                          sum(frx_n_ngo) / sum(frx_incidents) * 100, NA),
     rs_ngo_vessels = mean(n_ngo_vessels, na.rm = TRUE),
     .groups = "drop"
   ) %>%
-  filter(!is.na(frx_sar_pct), frx_total_incidents > 0)
+  filter(!is.na(frx_ngo_pct), frx_total_incidents > 0)
 
 cat(sprintf("  Weekly obs with Frontex data: %d\n", nrow(weekly_sar)))
 if (nrow(weekly_sar) > 10) {
-  cat(sprintf("  Cor(frx_sar_pct, rs_ngo_vessels): %.3f\n",
-      cor(weekly_sar$frx_sar_pct, weekly_sar$rs_ngo_vessels, use = "complete.obs")))
+  cat(sprintf("  Cor(frx_ngo_pct, rs_ngo_vessels): %.3f\n",
+      cor(weekly_sar$frx_ngo_pct, weekly_sar$rs_ngo_vessels, use = "complete.obs")))
 }
 
 # Monthly for a cleaner view
@@ -166,18 +182,18 @@ monthly_sar <- combined %>%
   mutate(ym = floor_date(date, "month")) %>%
   group_by(ym) %>%
   summarise(
-    frx_sar_pct = ifelse(sum(frx_incidents) > 0,
-                          sum(frx_n_sar) / sum(frx_incidents) * 100, NA),
+    frx_ngo_pct = ifelse(sum(frx_incidents) > 0,
+                          sum(frx_n_ngo) / sum(frx_incidents) * 100, NA),
     rs_ngo_vessels = mean(n_ngo_vessels, na.rm = TRUE),
     frx_incidents = sum(frx_incidents),
     .groups = "drop"
   ) %>%
-  filter(!is.na(frx_sar_pct), frx_incidents > 0)
+  filter(!is.na(frx_ngo_pct), frx_incidents > 0)
 
 cat(sprintf("  Monthly obs: %d\n", nrow(monthly_sar)))
 if (nrow(monthly_sar) > 10) {
-  cat(sprintf("  Cor(frx_sar_pct, rs_ngo_vessels) monthly: %.3f\n",
-      cor(monthly_sar$frx_sar_pct, monthly_sar$rs_ngo_vessels, use = "complete.obs")))
+  cat(sprintf("  Cor(frx_ngo_pct, rs_ngo_vessels) monthly: %.3f\n",
+      cor(monthly_sar$frx_ngo_pct, monthly_sar$rs_ngo_vessels, use = "complete.obs")))
 }
 
 cat("\n  Monthly SAR comparison (sample):\n")
@@ -218,53 +234,319 @@ monthly <- combined %>%
   mutate(ym = floor_date(date, "month")) %>%
   group_by(ym) %>%
   summarise(
-    frx_deaths = sum(frx_deaths),
+    frx_deaths = if (all(is.na(frx_deaths))) NA_real_ else sum(frx_deaths, na.rm = TRUE),
     iom_deaths = sum(iom_dead_missing),
-    frx_persons = sum(frx_persons),
-    panel_arrivals = sum(arrivals, na.rm = TRUE),
-    frx_sar_pct = ifelse(sum(frx_incidents) > 0,
-                          sum(frx_n_sar) / sum(frx_incidents) * 100, NA),
+    frx_persons = if (all(is.na(frx_persons))) NA_real_ else sum(frx_persons, na.rm = TRUE),
+    panel_arrivals = if (all(is.na(arrivals))) NA_real_ else sum(arrivals, na.rm = TRUE),
+    frx_ngo_count = if (all(is.na(frx_n_ngo))) NA_real_ else sum(frx_n_ngo, na.rm = TRUE),
+    frx_ngo_persons = if (all(is.na(frx_ngo_persons))) NA_real_ else sum(frx_ngo_persons, na.rm = TRUE),
+    frx_total = if (all(is.na(frx_incidents))) NA_real_ else sum(frx_incidents, na.rm = TRUE),
     rs_ngo = mean(n_ngo_vessels, na.rm = TRUE),
     .groups = "drop"
   )
 
+# Total crossings per month = arrivals + LCG/TCG interceptions + deaths
+ic_monthly <- readRDS(file.path(BASE_DIR, "data", "processed",
+                                 "iom_med_crossings_monthly.RDS")) %>%
+  transmute(ym = as.Date(date),
+            lcg = as.numeric(interceptions_by_libyan_coast_guard),
+            tcg = as.numeric(interceptions_by_tunisian_coast_guard))
+
+monthly <- monthly %>%
+  left_join(ic_monthly, by = "ym") %>%
+  mutate(
+    # Arrivals: use UNHCR when available, Frontex persons as fallback
+    arrivals_best = ifelse(!is.na(panel_arrivals), panel_arrivals, frx_persons),
+    total_crossings = replace_na(arrivals_best, 0) +
+                      replace_na(lcg, 0) + replace_na(tcg, 0) + iom_deaths,
+    # NGO persons as share of total crossings (all in persons)
+    frx_ngo_share = ifelse(!is.na(frx_ngo_persons) & total_crossings > 0,
+                            frx_ngo_persons / total_crossings * 100, NA_real_)
+  )
+
 p1 <- ggplot(monthly, aes(x = ym)) +
-  geom_line(aes(y = frx_deaths, colour = "Frontex"), linewidth = 0.6) +
-  geom_line(aes(y = iom_deaths, colour = "IOM MMP"), linewidth = 0.6) +
-  scale_colour_manual(values = c("Frontex" = "#D32F2F", "IOM MMP" = "#1565C0")) +
-  labs(title = "Monthly deaths: Frontex vs IOM MMP",
-       y = "Deaths", x = NULL, colour = "Source") +
+  geom_line(aes(y = frx_deaths, colour = "deaths recorded by Frontex during interceptions"), linewidth = 0.6) +
+  geom_line(aes(y = iom_deaths, colour = "deaths recorded by IOM MMP"), linewidth = 0.6) +
+  scale_colour_manual(values = c("deaths recorded by Frontex during interceptions" = "#D32F2F", 
+                                 "deaths recorded by IOM MMP" = "#1565C0")) +
+  labs(title = "Monthly death count in Central Mediterranean",
+       y = "Number of deaths and missing persons", x = NULL, colour = "Source") +
   theme_minimal(base_size = 11) +
   theme(legend.position = "top")
 
 p2 <- ggplot(monthly, aes(x = ym)) +
-  geom_line(aes(y = frx_persons, colour = "Frontex persons"), linewidth = 0.6) +
-  geom_line(aes(y = panel_arrivals, colour = "Panel arrivals"), linewidth = 0.6) +
-  scale_colour_manual(values = c("Frontex persons" = "#D32F2F", "Panel arrivals" = "#1565C0")) +
-  labs(title = "Monthly volume: Frontex total persons vs daily panel arrivals",
-       y = "Persons", x = NULL, colour = "Source") +
+  geom_line(aes(y = frx_persons, colour = "number of persons detected (Frontex)"), linewidth = 0.6) +
+  geom_line(aes(y = panel_arrivals, colour = "number of arrivals to Italy (UNHCR)"), linewidth = 0.6) +
+  scale_colour_manual(values = c("number of persons detected (Frontex)" = "#D32F2F", 
+                                 "number of arrivals to Italy (UNHCR)" = "#E08A00")) +
+  labs(title = "Monthly volume of crossings in Central Medierranean",
+       y = "Number of persons", x = NULL, colour = "Source") +
   theme_minimal(base_size = 11) +
   theme(legend.position = "top")
 
-p3 <- monthly %>%
-  filter(!is.na(frx_sar_pct), !is.na(rs_ngo)) %>%
-  ggplot(aes(x = ym)) +
-  geom_line(aes(y = frx_sar_pct, colour = "Frontex SAR %"), linewidth = 0.6) +
-  geom_line(aes(y = rs_ngo * 10, colour = "R-S NGO vessels (x10)"), linewidth = 0.6) +
-  scale_colour_manual(values = c("Frontex SAR %" = "#D32F2F", "R-S NGO vessels (x10)" = "#2E7D32")) +
+# p3a: NGO operation counts — Frontex NGO incidents vs R-S vessel count
+p3a <- ggplot(monthly, aes(x = ym)) +
+  geom_line(data = monthly %>% filter(!is.na(frx_ngo_count)),
+            aes(y = frx_ngo_count, colour = "Number of NGO operations (Frontex)"), linewidth = 0.6) +
+  geom_line(data = monthly %>% filter(!is.na(rs_ngo)),
+            aes(y = rs_ngo * 8, colour = "Active NGO vessels (Rodriguez-Sanchez et al., 2023)"), linewidth = 0.6) +
+  scale_colour_manual(values = c("Number of NGO operations (Frontex)" = "#D32F2F",
+                                  "Active NGO vessels (Rodriguez-Sanchez et al., 2023)" = "#2E7D32")) +
   scale_y_continuous(
-    name = "Frontex SAR %",
-    sec.axis = sec_axis(~ . / 10, name = "NGO vessels (R-S)")
+    name = "Number of NGO operations",
+    limits = c(0, 104),
+    sec.axis = sec_axis(~ . / 8, name = "Number of active NGO vessels")
   ) +
-  labs(title = "SAR validation: Frontex SAR flag vs Rodriguez-Sanchez NGO count",
+  labs(title = "NGO operations: Frontex incident count vs active vessel count",
        x = NULL, colour = NULL) +
   theme_minimal(base_size = 11) +
   theme(legend.position = "top")
 
-p_combined <- p1 / p2 / p3
+# p3b: NGO rescue share of total crossings vs R-S vessel count
+p3b <- ggplot(monthly, aes(x = ym)) +
+  geom_line(data = monthly %>% filter(!is.na(frx_ngo_share)),
+            aes(y = frx_ngo_share, colour = "Share of people crossing rescued by NGOs"), linewidth = 0.6) +
+  geom_line(data = monthly %>% filter(!is.na(rs_ngo)),
+            aes(y = rs_ngo * 8, colour = "Active NGO vessels (Rodriguez-Sanchez et al., 2023)"), linewidth = 0.6) +
+  scale_colour_manual(values = c("Share of people crossing rescued by NGOs" = "#D32F2F",
+                                  "Active NGO vessels (Rodriguez-Sanchez et al., 2023)" = "#2E7D32")) +
+  scale_y_continuous(
+    name = "Percentage of people crossing rescued by NGOs",
+    limits = c(0, 104),
+    sec.axis = sec_axis(~ . / 8, name = "Number of active NGO vessels")
+  ) +
+  labs(title = "NGO rescue share and vessel presence in the Central Mediterranean",
+       x = NULL, colour = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "top")
+
+# p4: Stacked area — event type composition over time
+# Monthly counts by event_type (CMR departures only)
+frx_cmr <- frx %>%
+  filter(country_of_departure %in% c("Libya", "Tunisia", "Algeria"))
+
+monthly_type <- frx_cmr %>%
+  mutate(ym = floor_date(date, "month")) %>%
+  group_by(ym, event_type) %>%
+  summarise(n = n(), .groups = "drop")
+
+# Order: SAR categories first (bottom), then Not SAR (top)
+type_order <- c("SAR: EU operations (IRINI)",
+                "SAR: Commercial vessels", "SAR: NGO",
+                "SAR: Italian authorities", "SAR: Other",
+                "Not SAR: Coast Guard", "Not SAR: Land patrol",
+                "Not SAR: Self-arrived", "Not SAR: Other")
+
+type_colours <- c(
+  "SAR: EU operations (IRINI)" = "#7570B3",
+  "SAR: Commercial vessels"    = "#E7298A",
+  "SAR: NGO"                   = "#D95F02",
+  "SAR: Italian authorities"   = "#1F78B4",
+  "SAR: Other"                 = "#A6CEE3",
+  "Not SAR: Coast Guard"       = "#B2DF8A",
+  "Not SAR: Land patrol"       = "#FDBF6F",
+  "Not SAR: Self-arrived"      = "#FB9A99",
+  "Not SAR: Other"             = "#CAB2D6"
+)
+
+type_order_b <- c(type_order,
+                  "LCG interceptions", "TCG interceptions")
+type_colours_b <- c(type_colours,
+                    "LCG interceptions" = "#333333",
+                    "TCG interceptions" = "#AAAAAA")
+
+monthly_type <- monthly_type %>%
+  mutate(event_type = factor(event_type, levels = type_order_b))
+
+# Monthly persons by event_type (CMR departures)
+monthly_persons <- frx_cmr %>%
+  mutate(ym = floor_date(date, "month")) %>%
+  group_by(ym, event_type) %>%
+  summarise(persons = sum(num_persons, na.rm = TRUE), .groups = "drop") %>%
+  mutate(event_type = factor(event_type, levels = type_order))
+
+# LCG/TCG monthly interceptions (persons) from clean IOM crossings data
+ic <- readRDS(file.path(BASE_DIR, "data", "processed",
+                         "iom_med_crossings_monthly.RDS")) %>%
+  transmute(ym = as.Date(date),
+            lcg = as.numeric(interceptions_by_libyan_coast_guard),
+            tcg = as.numeric(interceptions_by_tunisian_coast_guard))
+
+PLOT_XLIM <- c(as.Date("2014-01-01"), FRX_END)
+
+# Panel A: incidents by event type
+p4a <- ggplot(monthly_type, aes(x = ym, y = n, fill = event_type)) +
+  geom_col(position = "stack", width = 25) +
+  scale_fill_manual(values = type_colours_b, drop = FALSE, name = NULL) +
+  coord_cartesian(xlim = PLOT_XLIM) +
+  labs(title = "Number of Frontex detections by event type",
+       y = "Number of detections", x = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "none")
+
+# Panel B: persons by event type + LCG/TCG as stacked bars
+# Add interceptions as extra event types
+ic_long <- ic %>%
+  filter(!is.na(lcg) | !is.na(tcg)) %>%
+  tidyr::pivot_longer(cols = c(lcg, tcg), names_to = "type", values_to = "persons") %>%
+  filter(!is.na(persons)) %>%
+  mutate(event_type = case_when(
+    type == "lcg" ~ "LCG interceptions",
+    type == "tcg" ~ "TCG interceptions"
+  )) %>%
+  select(ym, event_type, persons)
+
+# Combine Frontex persons + interceptions
+persons_all <- bind_rows(
+  monthly_persons %>% select(ym, event_type, persons),
+  ic_long
+)
+
+persons_all <- persons_all %>%
+  filter(ym <= FRX_END) %>%
+  mutate(event_type = factor(event_type, levels = type_order_b))
+
+# Total crossings = arrivals + deaths + interceptions (monthly)
+crossings_monthly <- readRDS(file.path(BASE_DIR, "data", "processed",
+                                        "iom_med_crossings_monthly.RDS")) %>%
+  transmute(
+    ym = as.Date(date),
+    arrivals = as.numeric(sea_arrivals_in_italy),
+    interceptions = replace_na(as.numeric(interceptions_by_libyan_coast_guard), 0) +
+                    replace_na(as.numeric(interceptions_by_tunisian_coast_guard), 0)
+  )
+
+iom_monthly_deaths <- readRDS(file.path(BASE_DIR, "data", "processed",
+                                         "iom_mmp_incidents.RDS")) %>%
+  filter(Route == "Central Mediterranean",
+         tolower(`Incident Type`) != "sub-incident") %>%
+  mutate(ym = floor_date(as.Date(incident_date_clean), "month"),
+         dead_missing = pmax(as.numeric(`No. dead/missing`), 0, na.rm = TRUE)) %>%
+  filter(!is.na(ym)) %>%
+  group_by(ym) %>%
+  summarise(deaths = sum(dead_missing), .groups = "drop")
+
+crossings_monthly <- crossings_monthly %>%
+  left_join(iom_monthly_deaths, by = "ym") %>%
+  replace_na(list(deaths = 0)) %>%
+  mutate(total_crossings = replace_na(arrivals, 0) + deaths + interceptions) %>%
+  filter(ym <= FRX_END)
+
+
+p4b <- ggplot(persons_all, aes(x = ym, y = persons, fill = event_type)) +
+  geom_col(position = "stack", width = 25) +
+  geom_line(data = crossings_monthly,
+            aes(x = ym, y = total_crossings, fill = NULL),
+            colour = "black", linewidth = 1) +
+  scale_fill_manual(values = type_colours_b, name = NULL) +
+  coord_cartesian(xlim = PLOT_XLIM) +
+  labs(title = "Number of persons crossing by event type",
+       y = "Number of persons", x = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "none")
+
+# Panel C: 100% stacked area (composition)
+# Complete grid: every month × every event type, fill 0s
+all_months <- seq(min(persons_all$ym, na.rm = TRUE),
+                  floor_date(FRX_END, "month"), by = "month")
+
+complete_grid <- tidyr::expand_grid(
+  ym = all_months,
+  event_type = factor(type_order_b, levels = type_order_b)
+)
+
+persons_complete <- complete_grid %>%
+  left_join(persons_all %>% mutate(event_type = factor(event_type, levels = type_order_b)),
+            by = c("ym", "event_type")) %>%
+  replace_na(list(persons = 0)) %>%
+  group_by(ym) %>%
+  mutate(total = sum(persons),
+         pct = ifelse(total > 0, persons / total * 100, 0)) %>%
+  ungroup()
+
+p4c <- ggplot(persons_complete, aes(x = ym, y = pct, fill = event_type)) +
+  geom_area(position = "stack") +
+  scale_fill_manual(values = type_colours_b, name = NULL) +
+  scale_y_continuous(name = "Share of detected persons (%)") +
+  coord_cartesian(xlim = PLOT_XLIM) +
+  labs(title = "CMR crossing composition by event type (%)",
+       x = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "right",
+        legend.text = element_text(size = 8))
+
+p4b <- p4b + theme(legend.position = "right",
+                    legend.justification = "center",
+                    legend.text = element_text(size = 9),
+                    legend.key.size = unit(0.4, "cm"))
+
+p4_combined <- (p4a + theme(legend.position = "none")) /
+               p4b /
+               (p4c + theme(legend.position = "none"))
+ggsave(file.path(BASE_DIR, "output", "figures", "frontex_event_types.png"),
+       p4_combined, width = 12, height = 14, dpi = 200)
+cat("Saved: output/figures/frontex_event_types.png\n")
+
+# Figure 1: p1 + p2 (deaths and volume comparison)
+fig_crosscheck <- p1 / p2
 ggsave(file.path(BASE_DIR, "output", "figures", "frontex_iom_crosscheck.png"),
-       p_combined, width = 11, height = 12, dpi = 200)
+       fig_crosscheck, width = 11, height = 8, dpi = 200)
 cat("Saved: output/figures/frontex_iom_crosscheck.png\n")
+
+# Figure 2: p3a + p3b (NGO operations and rescue share)
+fig_ngo <- p3a / p3b
+ggsave(file.path(BASE_DIR, "output", "figures", "frontex_ngo_validation.png"),
+       fig_ngo, width = 11, height = 8, dpi = 200)
+cat("Saved: output/figures/frontex_ngo_validation.png\n")
+
+# Figure 4: Crossing attempt components
+# Build monthly components: Frontex persons, UNHCR extra, LCG, TCG, deaths
+crossing_components <- monthly %>%
+  filter(ym <= FRX_END) %>%
+  mutate(
+    frontex_persons = replace_na(frx_persons, 0),
+    unhcr_extra     = pmax(replace_na(panel_arrivals, 0) - replace_na(frx_persons, 0), 0),
+    lcg_persons     = replace_na(lcg, 0),
+    tcg_persons     = replace_na(tcg, 0),
+    deaths_missing  = iom_deaths
+  ) %>%
+  select(ym, frontex_persons, unhcr_extra, lcg_persons, tcg_persons, deaths_missing) %>%
+  tidyr::pivot_longer(-ym, names_to = "component", values_to = "persons")
+
+comp_order <- c("deaths_missing", "frontex_persons", "unhcr_extra",
+                "lcg_persons", "tcg_persons")
+comp_labels <- c(
+  "deaths_missing"  = "Deaths and missing (IOM)",
+  "frontex_persons" = "Persons detected by Frontex",
+  "unhcr_extra"     = "Arrivals not detected by Frontex (UNHCR - Frontex)",
+  "lcg_persons"     = "LCG interceptions",
+  "tcg_persons"     = "TCG interceptions"
+)
+comp_colours <- c(
+  "deaths_missing"  = "#D32F2F",
+  "frontex_persons" = "#1F78B4",
+  "unhcr_extra"     = "#A6CEE3",
+  "lcg_persons"     = "#333333",
+  "tcg_persons"     = "#AAAAAA"
+)
+
+crossing_components <- crossing_components %>%
+  mutate(component = factor(component, levels = comp_order, labels = comp_labels[comp_order]))
+
+p5 <- ggplot(crossing_components, aes(x = ym, y = persons, fill = component)) +
+  geom_col(position = "stack", width = 25) +
+  scale_fill_manual(values = setNames(comp_colours, comp_labels[names(comp_colours)]),
+                    name = NULL) +
+  coord_cartesian(xlim = PLOT_XLIM) +
+  labs(title = "Estimated total crossing attempts by component (monthly)",
+       y = "Number of persons", x = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "right",
+        legend.text = element_text(size = 9))
+
+ggsave(file.path(BASE_DIR, "output", "figures", "crossing_attempts_components.png"),
+       p5, width = 12, height = 6, dpi = 200)
+cat("Saved: output/figures/crossing_attempts_components.png\n")
 
 # ── 8. Save text summary ──────────────────────────────────
 cat("\n--- 8. Saving summary ---\n")
@@ -283,10 +565,10 @@ cat("\nFRONTEX BOAT TYPE (inflatable share by year):\n")
 boat_yearly %>% filter(boat_cat == "Inflatable") %>%
   select(year, n, pct) %>% print(n = 12)
 
-cat("\nSAR VALIDATION (monthly):\n")
+cat("\nNGO SAR VALIDATION (monthly):\n")
 if (nrow(monthly_sar) > 0) {
-  cat(sprintf("Cor(Frontex SAR%%, R-S NGO vessels): %.3f\n",
-      cor(monthly_sar$frx_sar_pct, monthly_sar$rs_ngo_vessels, use = "complete.obs")))
+  cat(sprintf("Cor(Frontex NGO%%, R-S NGO vessels): %.3f\n",
+      cor(monthly_sar$frx_ngo_pct, monthly_sar$rs_ngo_vessels, use = "complete.obs")))
 }
 sink()
 cat("Saved: output/tables/frontex_iom_crosscheck.txt\n")
