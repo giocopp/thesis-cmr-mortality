@@ -10,57 +10,78 @@ oscillates substantially over the full period (2014-2025), and the MoU
 date does not stand out in placebo tests. The thesis documents this
 instability and discusses its implications.
 
-## Current status (March 2025)
+## Current status (March 2026)
 
-- Primary analysis complete: daily panel NegBin with week-year FE
+- Primary analysis complete: daily NegBin with month-year FE and NW(28) SEs
 - Key finding: weather-mortality gradient oscillates over time
-  (negative 2015-16, positive 2017-19, negative again 2020-21)
+  (negative 2015-16, positive 2018+, with year-to-year variation)
 - Placebo tests show MoU date is not special — many dates give
   similar or larger coefficients
-- Thesis framing in progress — writing phase, one month to submission
+- Falsification test passes: future weather (next-7d) has no effect
+- SE diagnostic complete: HC SEs are anti-conservative; NW(28) is primary
 
-## Analysis pipeline (run in order)
+## Analysis pipeline
 
-1. `01b_core_corridor_dataset.R` — build clean incident-level dataset for core corridor
-2. `02_build_event_data.R` — build event-level dataset from IOM MMP + ERA5
-3. `02b_daily_weather_panel.R` — build daily panel with spatial-mean weather
-4. `03a_weather_overlap_diagnostic.R` — pre/post weather distribution overlap
-5. `03b_placebo_stability.R` — placebo dates (day-0 spec, archival comparison)
-6. `03b2_gradient_evolution.R` — rolling-window gradient + expanding-window β₃
-7. `03b3_placebo_lag1.R` — placebo dates (lag-1 spec, primary diagnostic)
-8. `03c_daily_panel_model.R` — **primary model**: core SWH lag-1 × Post, NegBin, week-year FE
-9. `03d_event_model_revised.R` — complementary event-level analysis
+### Current scripts (in `analysis/R/`)
+- `00_define_sea_zones.R` — define sea zone boundaries
+- `00b_build_daily_panel.R` — build daily panel
+- `01_weather_danger_analysis.R` — weather danger analysis
+- `02_fatality_rate_timeseries.R` — fatality rate time series
+- `03_crossing_components.R` — crossing components
+- `04_swh_vs_fatality_rate.R` — SWH vs fatality rate
+- `05_reduced_form_model.R` — **primary model**: NegBin, SWH×PostMoU, NW(28) SEs
+- `05b_reduced_form_plots.R` — reduced-form plots
+- `05c_migrant_files_diagnostic.R` — Migrant Files data diagnostic
+- `05d_fe_structure_diagnostic.R` — FE structure diagnostic
+- `05e_weekly_panel_model.R` — weekly panel model
+- `05f_se_diagnostic.R` — SE diagnostic (ACF, Breusch-Godfrey, NW vs HC comparison)
 
-Archived (in `analysis/R/archive/`): `03_negbin_model_a.R` (original event model),
-`03e_fe_sensitivity.R`, `04a_dml_robustness.R`, `04b_sensitivity_analysis.R`.
+## Primary specification (05_reduced_form_model.R)
 
-Exploratory (not in pipeline): `autocorrelation_diagnostics.R`,
-`explore_pca_sea_danger.R`, `monthly_count_negbin.R`,
-`monthly_weather_mortality_regression.R`.
+- **Design:** Daily reduced-form (not conditioning on crossings)
+- **Outcome:** `n_dead_missing` (daily count of dead + missing, drowning + mixed/unknown)
+- **Weather:** `swh_prevweek_z` — standardized previous-week average SWH (spatial mean from ERA5 daily panel)
+- **Core corridor:** lon [10.0, 15.1] × lat [32.4, 37.8]
+- **Interaction:** `swh_prevweek_z × post_mou` (β₃), treatment = 2017-07-01
+- **FE:** Month-by-year (`month_year`)
+- **Distribution:** Negative binomial (`fixest::fenegbin`)
+- **SEs:** Newey-West(28) primary; NW(14) and HC as robustness
+- **Timing:** Previous-week average SWH is primary; prev-3d as robustness
+- **Falsification:** Next-7d future SWH (should be null — confirmed)
+- **Sample periods:** 2014-2021 and 2014-2024 (both reported)
+- **Relation to Deiana et al. (2024):** Shares the logic of testing whether
+  a policy changed the weather-outcome elasticity. Key differences: they study
+  crossings (not deaths), use a triple interaction with boat-type fraction,
+  Poisson QMLE, and treat SAR expansion (not MoU) as the policy event.
 
-## Primary specification
+## Key results (NW(28) SEs)
 
-- **Design:** Daily panel, Deiana et al. (2024) style
-- **Outcome:** `n_dead_missing` (daily count of dead + missing, drowning only)
-- **Weather:** `swh_core_lag1` — spatial mean SWH over core corridor [10.5,15.5]×[32.3,36.2], lag-1
-- **Interaction:** `swh_core_lag1 × post_mou` (β₃)
-- **FE:** Week-by-year (primary) and month-by-year (robustness)
-- **Distribution:** Negative binomial (extreme overdispersion)
-- **SEs:** Heteroskedasticity-robust (clustered SEs reported as robustness)
-- **Timing:** Lag-1 is primary (IOM date = reporting date; lag-1 captures transit weather)
-- **No wind control:** SWH already incorporates wind effects (Deiana et al. do not include wind separately)
+### Primary interaction (β₃ = swh_prevweek_z × post_mou)
+- **2014-2021:** β₃ = +1.241 (SE=0.540, IRR=3.46, p=0.022)
+- **2014-2024:** β₃ = +0.996 (SE=0.446, IRR=2.71, p=0.026)
 
-## Key results
+### Robustness
+- All CMR (no corridor restriction): p=0.011 (2014-2021), p=0.023 (2014-2024)
+- No outliers (>100 deaths removed): p=0.024 (2014-2021), p=0.021 (2014-2024)
+- Prev-3d SWH: weaker, not significant (p≈0.19 both periods)
+- Next-7d falsification: null as expected (p=0.61 and p=0.89)
 
-- Primary β₃ = +1.355 (IRR = 3.88, p = 0.011) with week-year FE
-- Month-year FE: β₃ = +1.394 (p < 0.001, N = 4,143)
-- Lag-2 confirms: β₃ = +1.380 (p = 0.012); lag-3/lag-7 null (timing falsification passes)
-- Clustered SEs: p rises to 0.105
-- Event-level model: same direction (+0.56 at lag-1, +0.88 at lag-2)
-- **Placebo test: MoU date is not uniquely special** — among the strongest
-  dates under week-year FE, but matched by 2015-04 and 2021-01
-- **Gradient evolution:** rolling 2-year window shows gradient is always
-  negative (deterrence) but oscillates; less negative around MoU period
+### SE sensitivity (2014-2024 primary spec)
+- HC: SE=0.250, p<0.001 (anti-conservative)
+- NW(14): SE=0.400, p=0.013
+- NW(28): SE=0.446, p=0.026 (primary)
+- Cluster(week): SE=0.337, p=0.003
+
+### Year-by-year gradient (2014-2024, NW(28))
+- Negative: 2015 (-1.75), 2016 (-0.56), 2017 (-0.71), 2022 (-0.88*)
+- Positive: 2018 (+0.75), 2021 (+0.76), 2023 (+0.67)
+- Wide CIs for most years; gradient oscillates, not a clean break at MoU
+
+### Diagnostics
+- **Placebo test:** MoU date is not uniquely special — many dates give
+  similar or larger coefficients
+- **Residual ACF:** individually small (lag-1 = -0.012) but Breusch-Godfrey
+  rejects no serial correlation at all orders → NW SEs are appropriate
 
 ## Repository structure
 

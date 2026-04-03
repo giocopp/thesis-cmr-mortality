@@ -1,0 +1,16 @@
+MIGRANT FILES DIAGNOSTIC: SWH-MORTALITY GRADIENT (2008-2013)
+Core corridor, drowning + mixed/unknown causes
+
+N = 2185 days | deaths > 0: 127 (5.8%)
+Overall gradient: b = +0.173 (SE=0.229) p=0.4507 — null
+
+Year-by-year:
+  2008: +0.392 (SE=0.444) 
+  2009: +1.770 (SE=0.390) *
+  2010: -0.921 (SE=0.890) 
+  2011: -2.284 (SE=0.409) *
+  2012: +0.536 (SE=0.360) 
+  2013: -3.259 (SE=0.847) *
+
+Conclusion: MF data too sparse to identify SWH-mortality gradient.
+Daily panel analysis restricted to 2014+ (IOM MMP).

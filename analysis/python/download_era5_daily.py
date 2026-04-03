@@ -33,7 +33,7 @@ from pathlib import Path
 # ============================================================
 
 AREA = [45, 4, 29, 26]  # [N, W, S, E]
-YEARS = list(range(2014, 2026))
+YEARS = list(range(2008, 2026))
 MONTHS = [f"{m:02d}" for m in range(1, 13)]
 DAYS = [f"{d:02d}" for d in range(1, 32)]
 

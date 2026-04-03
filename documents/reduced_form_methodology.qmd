@@ -1,0 +1,464 @@
+---
+title: "Reduced-Form Analysis: Weather-Mortality Gradient on the CMR"
+author: "Giorgio Coppola"
+date: "2026-04-02"
+format:
+  pdf:
+    documentclass: article
+    geometry: margin=2.5cm
+    fontsize: 11pt
+    toc: false
+    number-sections: true
+---
+
+# Research Question
+
+Did the 2017 EU--Libya Memorandum of Understanding change how sea conditions
+affect migrant drowning deaths in the Central Mediterranean? Specifically, did
+weather deterrence --- the pattern where rough seas reduce deaths because fewer
+people attempt crossing --- weaken or reverse after the MoU?
+
+# Estimand
+
+The coefficient $\beta_3$ in:
+
+$$
+\mathbb{E}[\text{deaths}_t] = \exp\!\bigl(\beta_1 \cdot \text{SWH}_t + \beta_3 \cdot \text{SWH}_t \times \text{post\_mou} + \alpha_{\text{month-year}}\bigr)
+$$
+
+- $\beta_1$: SWH--mortality gradient in the pre-MoU period
+- $\beta_3$: change in this gradient after the MoU
+- $\exp(\beta_3)$ = IRR: multiplicative change in the SWH--deaths elasticity
+
+**Interpretation:**
+
+- $\beta_1 < 0$ (deterrence): rougher weather $\to$ fewer deaths (fewer crossings)
+- $\beta_3 > 0$: deterrence weakened post-MoU
+- $\beta_1 + \beta_3$: total gradient post-MoU (if positive: rough weather now increases deaths)
+
+# Data
+
+## Outcome: Drowning Deaths
+
+**Source:** IOM Missing Migrants Project (2014+), Migrant Files (pre-2014)
+
+**Filters applied to IOM data:**
+
+- Route: Central Mediterranean only
+- Incident Type: "Incident" only (excludes Cumulative and Split Incidents, which have imprecise dates and can double-count)
+- Cause of death: "Drowning" or "Mixed or unknown" (bodies found at sea where cause was undetermined). Excludes sickness, violence, vehicle accidents --- SWH does not mechanistically cause these.
+- Geography: Core corridor $[10.0, 15.1] \times [32.4, 37.8]$ for primary specification (matches SWH extraction zone). All CMR as robustness.
+
+**Migrant Files (2008--2013):**
+
+- Researcher-compiled database from media reports and NGO sources
+- Used for pre-IOM period only (before 2014-01-01); IOM takes precedence for all dates it covers
+- Diagnostic (script 05c) shows MF data too sparse at daily level (127 non-zero days in 6 years, 5.8% event density) for gradient estimation. Overall gradient is null ($b = +0.173$, $\text{SE} = 0.229$, $p = 0.45$).
+- MF used at weekly level in the weekly panel robustness (05e), where data density is viable
+
+## Weather: Significant Wave Height (SWH)
+
+**Source:** ERA5 reanalysis (ECMWF), daily, 0.5-degree resolution
+
+**Extraction:** Spatial mean over ocean cells within the `sea_zone_core` polygon,
+defined in `00_define_sea_zones.R`. The polygon follows Tunisian/Libyan coastlines,
+diagonal Cap Bon to W Sicily, Sicily south coast, east edge at 16E.
+Approximately $[10.0, 15.1] \times [32.4, 37.8]$.
+
+**Lag structure:**
+
+- Primary: `swh_prevweek` --- mean SWH over days $t{-}1$ to $t{-}7$ (captures transit weather during the $\sim$1--7 day crossing)
+- Robustness: `swh_prev3days` --- mean SWH over days $t{-}1$ to $t{-}3$
+- Falsification: `swh_next7avg` --- mean SWH over days $t{+}1$ to $t{+}7$ (future weather cannot cause past deaths)
+
+**Standardization:** All SWH variables $z$-scored (mean 0, SD 1) within each sample period so coefficients are per 1-SD and comparable across lag structures.
+
+## Additional Data (built into daily panel by 00b)
+
+| Variable | Frequency | Source |
+|----------|-----------|--------|
+| UNHCR daily arrivals to Italy | Daily | UNHCR |
+| IOM official sea arrivals | Monthly | IOM MMP spreadsheet |
+| LCG + TCG interceptions | Monthly | IOM MMP spreadsheet (2016+, NA before) |
+| NGO SAR vessel count (24 tracked) | Daily | Rodriguez-Sanchez et al. (2023) |
+| Government SAR operations | Daily | Rodriguez-Sanchez et al. (2023) |
+
+**Note on the daily panel (`00b_build_daily_panel.R`):** The panel spans 2008--2025
+and includes: date, deaths, n_incidents, arrivals, intercept_per_day,
+official_arrivals, interceptions, swh, swh_prev3days, swh_prevweek, crossings,
+crossings_no_ic, ym, iso_week. Deaths come from Migrant Files (2008--2013) and
+IOM MMP (2014+) with no overlap. Arrivals are available from Oct 2015 (UNHCR).
+Interceptions are monthly totals spread to daily rate.
+
+# Descriptive Analysis Pipeline (Scripts 01--04)
+
+## Weather Danger Analysis (01)
+
+Descriptive analysis of crossing danger by sea state, answering three questions:
+
+- **Q1:** How dangerous is being at sea during different weather? Fatality rate (deaths/crossings) computed by sea state category (Calm $<$ 0.5m, Medium 0.5--1.25m, Rough $>$ 1.25m), using prev-3d SWH.
+- **Q2:** Is being at sea during rough conditions more dangerous post-MoU? Same fatality rates split by pre/post-MoU period.
+- **Q3:** Have crossings in rough conditions increased or decreased? Share of total crossings by sea state and period.
+
+Computed at both daily and weekly frequency. Period: 2015--2021 (where arrivals data is available).
+
+## Fatality Rate Time Series (02)
+
+Weekly and monthly fatality rate time series. Compares two definitions:
+deaths/(deaths+arrivals) vs deaths/(deaths+arrivals+interceptions). Monthly panel
+also overlays IOM's official CMR death rate.
+
+## Crossing Components (03)
+
+Stacked area plots decomposing total crossings into arrivals, interceptions, and
+deaths, with fatality rate overlaid as LOESS-smoothed black line. Weekly (from Oct
+2015) and monthly (from 2014) panels.
+
+## SWH vs Fatality Rate (04)
+
+Camarena et al. (2020)-style dual-axis time series: LOWESS-smoothed death rate
+($\text{bw} = 0.025$) + raw prior-week SWH. Three-panel comparison: (A) Camarena et al.
+replication data, (B) our data without interceptions, (C) our data with interceptions.
+
+# Primary Model Specification (Script 05)
+
+## Estimator
+
+**Distribution:** Negative Binomial (`fixest::fenegbin`)
+
+- NegBin chosen over Poisson due to extreme overdispersion ($\text{variance}/\text{mean} \gg 1$)
+- Overdispersion from mass-casualty events (days with $>$100 deaths)
+
+**Fixed effects:** Month-year ($\sim$96 cells for 2014--2021, $\sim$132 for 2014--2024)
+
+- Absorbs seasonality AND year-specific level shifts in deaths
+- Identification from day-to-day weather variation within months
+- Justified over coarser alternatives (see @sec-fe-diagnostic)
+
+**Standard errors:** Newey--West(28) primary, justified by SE diagnostic (@sec-se-diagnostic)
+
+- NW(14) and HC as robustness
+- Cluster(iso_week) as additional robustness
+
+**Formula:**
+
+```
+n_dead_missing ~ swh_prevweek_z + swh_prevweek_z:post_mou | month_year
+```
+
+The main effect of `post_mou` is absorbed by month-year FE (each month-year cell
+is entirely pre or post). A `unit = 1L` panel ID is created for the NW variance
+estimator (`panel.id = ~unit + date`).
+
+## Robustness Specifications
+
+| Spec | What varies | Purpose |
+|------|------------|---------|
+| Prev-3d SWH | Lag window | Shorter transit time assumption |
+| All CMR geography | Incident geography | Tests sensitivity to corridor restriction |
+| No outliers (deaths $\leq$ 100) | Outcome trimming | Tests if mass-casualty events drive result |
+| Next-7d SWH (falsification) | Timing | Future weather cannot cause past deaths |
+
+## Year-by-Year Gradient
+
+**No break date assumed.** One SWH coefficient per year:
+
+```
+n_dead_missing ~ swh_prevweek_z:year_fac | month_year
+```
+
+Shows how the gradient evolves over time without imposing a pre/post structure.
+NW(28) SEs used for inference.
+
+## Sample Periods
+
+All specifications run for two periods:
+
+- **2014--2021:** Primary period
+- **2014--2024:** Extended period (tests stability over longer horizon)
+
+SWH is re-standardized within each sample period.
+
+# SE Diagnostic (Script 05f) {#sec-se-diagnostic}
+
+## Motivation
+
+The choice of standard errors matters substantially for inference. Script 05f
+diagnoses serial correlation in residuals and compares SE approaches.
+
+## Residual Autocorrelation
+
+Pearson residuals from the primary NegBin model (2014--2024, $N = 4{,}018$) show:
+
+- Individual autocorrelations are small (lag-1 $= -0.012$, lag-7 $= -0.020$)
+- But **Breusch--Godfrey rejects no serial correlation at all orders** (OLS proxy):
+  - Order 7: LM $= 48.38$, $p < 0.001$
+  - Order 14: LM $= 113.27$, $p < 0.001$
+  - Order 28: LM $= 312.11$, $p < 0.001$
+
+This means HC SEs are anti-conservative despite small individual autocorrelations.
+NW SEs are required.
+
+## SE Comparison (2014--2024, primary specification)
+
+From `output/tables/se_diagnostic_comparison.txt`:
+
+| VCOV | $\beta$ | SE | $z$ | $p$ |
+|------|------|----|---|---|
+| HC | +0.996 | 0.250 | +3.98 | 0.0001 |
+| NW(7) | +0.996 | 0.351 | +2.83 | 0.0046 |
+| NW(14) | +0.996 | 0.400 | +2.49 | 0.0127 |
+| **NW(28)** | **+0.996** | **0.446** | **+2.23** | **0.0255** |
+| Cluster(week) | +0.996 | 0.337 | +2.96 | 0.0031 |
+
+SE inflation relative to HC: NW(7) $= 1.40\times$, NW(14) $= 1.60\times$,
+**NW(28) $= 1.78\times$**, Cluster $= 1.35\times$.
+
+**Decision:** NW(28) is primary because Breusch--Godfrey rejects at all orders up
+to 28, and NW(28) is the most conservative parametric option tested. The result
+remains significant ($p = 0.026$) but substantially less so than with HC
+($p = 0.0001$).
+
+# Diagnostic Tests (Scripts 05b--05e)
+
+## Cutoff Sensitivity / Placebo Test (05b) {#sec-placebo}
+
+**Question:** Is the MoU date (July 2017) uniquely special?
+
+**Method:** Re-estimate the interaction model at every possible monthly cutoff
+date within the sample period. Uses HC SEs for computational feasibility across
+all placebo runs.
+
+**Answer:** No. Many dates produce $|\beta_3| \geq$ the MoU's $|\beta_3|$.
+
+The gradient shift is a broad pattern across $\sim$2016--2019, not a sharp break
+at the MoU. Consistent with a gradual policy transition (LCG operations ramped up
+slowly; NGO pullback was incremental; Code of Conduct implemented in steps).
+
+Also produces a NegBin model-implied gradient plot showing pre vs post
+SWH--deaths relationship with confidence bands.
+
+## FE Structure Diagnostic (05d) {#sec-fe-diagnostic}
+
+**Question:** Why month-year FE rather than week-of-year (Deiana et al. 2024) or
+month-of-year (Zambiasi \& Albarosa 2025)?
+
+**Three tests (all use HC SEs for within-diagnostic comparability):**
+
+**Test 1:** Post-MoU deaths dropped $\sim$60% at ALL SWH levels (low, medium, high
+terciles). This is a level shift, not a gradient shift. Coarser FE that don't
+absorb year-specific levels conflate the two.
+
+**Test 2:** FE comparison (2014--2021, HC SEs):
+
+| FE | $\beta_3$ | $p$ |
+|----|--------|---|
+| Month-of-year (Zambiasi) | +0.160 | 0.453 |
+| Week-of-year (Deiana) | +0.251 | 0.181 |
+| Month-of-year + Year | +0.451 | 0.048 |
+| Month-year (primary) | +1.241 | $<$0.001 |
+
+Adding year controls recovers the signal. Note: the $p < 0.001$ for month-year FE
+uses HC SEs; with NW(28), $p = 0.022$ (see @sec-results).
+
+**Test 3:** A single `post_mou` dummy (instead of year FE) is insufficient:
+$\beta_3 = +0.209$ ($p = 0.332$). Year-by-year variation in death levels cannot
+be captured by one binary indicator.
+
+**Conclusion:** Coarser FE work for Deiana (who exploits SAR operation timing
+variation) and Zambiasi (who uses spatial distance variation). Our design uses
+only temporal weather variation, requiring month-year FE to absorb year-specific
+death levels unrelated to weather.
+
+## Migrant Files Diagnostic (05c)
+
+**Question:** Can we extend the pre-period to 2008 using Migrant Files?
+
+**Answer:** No, at daily level. From `output/tables/migrant_files_diagnostic.txt`:
+
+- $N = 2{,}185$ days, only 127 with deaths (5.8%) vs IOM's 13.6%
+- Overall gradient: $b = +0.173$ ($\text{SE} = 0.229$, $p = 0.45$) --- null
+- Year-by-year oscillates wildly: 2009 ($+1.77^*$), 2011 ($-2.28^*$), 2013 ($-3.26^*$)
+
+**Decision:** Daily panel starts from 2014 (IOM). Weekly panel extends to 2011 for robustness.
+
+## Weekly Panel (05e)
+
+**Question:** Does the result hold at weekly frequency?
+
+**Method:** Same reduced-form design aggregated to weekly level. FE:
+month-of-year + year (since month-year has only $\sim$4 obs per cell at weekly
+frequency). Extends to 2011 using Migrant Files.
+
+**Answer:** No --- weekly panel gives null results.
+From `output/tables/weekly_panel_results.txt`:
+
+| Period | Spec | $\beta_3$ | SE | $p$ |
+|--------|------|--------|-----|---|
+| 2011--2021 | Primary | +0.273 | 0.259 | 0.291 |
+| 2011--2021 | All CMR | +0.351 | 0.207 | 0.090 |
+| 2011--2024 | Primary | +0.252 | 0.213 | 0.236 |
+| 2011--2024 | All CMR | +0.344 | 0.175 | 0.049 |
+
+**Root cause:** Weekly averaging smooths out high-frequency weather variation. FE
+absorb 46% of weekly SWH variation vs 23% of daily. After absorbing seasonality,
+insufficient residual SWH variation remains at weekly frequency.
+
+**This is a power issue, not evidence against the daily result.** The daily model
+exploits day-to-day weather swings within months; these are averaged out at weekly
+level.
+
+# Key Results (NW(28) SEs) {#sec-results}
+
+## Primary Estimates
+
+From `output/tables/reduced_form_results.txt`:
+
+**2014--2021:**
+
+| Spec | $\beta_3$ | SE | IRR | $p$ |
+|------|--------|-----|-----|---|
+| Prev-week (primary) | +1.241 | 0.540 | 3.458 | 0.0215 |
+| Prev-3d (robustness) | +0.465 | 0.359 | 1.592 | 0.1956 |
+| All CMR (robustness) | +1.027 | 0.402 | 2.792 | 0.0106 |
+| No outliers (robustness) | +1.028 | 0.457 | 2.795 | 0.0244 |
+| Next-7d (falsification) | $-$0.234 | 0.456 | 0.791 | 0.6074 |
+
+**2014--2024:**
+
+| Spec | $\beta_3$ | SE | IRR | $p$ |
+|------|--------|-----|-----|---|
+| Prev-week (primary) | +0.996 | 0.446 | 2.707 | 0.0255 |
+| Prev-3d (robustness) | +0.342 | 0.262 | 1.407 | 0.1920 |
+| All CMR (robustness) | +0.755 | 0.332 | 2.128 | 0.0230 |
+| No outliers (robustness) | +0.806 | 0.348 | 2.239 | 0.0205 |
+| Next-7d (falsification) | +0.049 | 0.357 | 1.051 | 0.8901 |
+
+## Robustness Summary
+
+- **Spatial definition:** Robust. All CMR (no corridor restriction) significant at $p < 0.025$ in both periods.
+- **Outlier trimming:** Robust. Removing days with $>$100 deaths: $p = 0.024$ / $0.021$.
+- **Timing window:** Not robust. Prev-3d SWH is not significant ($p = 0.20$ / $0.19$). The 3-day window is likely too short to capture crossing transit weather.
+- **Falsification:** Passes. Future weather (next-7d) has no effect ($p = 0.61$ / $0.89$).
+
+## Year-by-Year Gradient
+
+From the year-by-year model. The gradient is not stable --- it oscillates
+substantially over the full period (NW(28) SEs):
+
+- **Negative (deterrence):** 2015 ($-1.75$), 2016 ($-0.56$), 2017 ($-0.71$), 2022 ($-0.88^*$)
+- **Positive (danger):** 2018 ($+0.75$), 2021 ($+0.76$), 2023 ($+0.67$)
+- Wide CIs for most years; few individually significant
+
+The transition from deterrence to danger occurs around 2018, not at the MoU
+signing (Feb/July 2017). The effect is not permanent --- it partially reverses
+in 2022 and oscillates after.
+
+*Note: Year-by-year coefficients are printed to console by script 05 but not
+saved to file. The numbers above are from CLAUDE.md, which recorded them from a
+prior run. They should be verified by re-running the script.*
+
+## Interpretation
+
+The reduced-form interaction $\beta_3$ is positive and significant: after the MoU,
+the SWH--mortality gradient shifted. Pre-MoU, the gradient was negative (rough
+weather associated with fewer deaths --- deterrence). Post-MoU, the total gradient
+($\beta_1 + \beta_3$) became positive (rough weather associated with more deaths
+--- danger dominates).
+
+However, the placebo test (@sec-placebo) shows this date is not uniquely special
+--- many cutoff dates produce similar or larger coefficients. The year-by-year
+gradient oscillates rather than showing a clean break. The result documents a real
+shift in the weather--mortality relationship, but cannot attribute it specifically
+to the MoU.
+
+# Limitations
+
+1. **The MoU date is not uniquely identified.** The placebo test shows many dates
+   give comparable coefficients. The gradient shift is gradual, not a sharp break.
+   This limits causal attribution to the MoU specifically.
+
+2. **The prev-3d timing alternative is not significant.** The result is robust to
+   spatial definition and outlier trimming, but not to the shorter weather window
+   ($p \approx 0.19$). This may reflect that 3 days is too short to capture the
+   relevant transit weather window, rather than a fragility of the result.
+
+3. **The reduced-form mixes channels.** We cannot separate whether the gradient
+   shift is because (a) more people cross in rough weather (deterrence collapse) or
+   (b) each rough-weather crossing became more dangerous. Both are consistent with
+   $\beta_3 > 0$.
+
+4. **Extreme overdispersion.** Driven by mass-casualty events. NegBin handles
+   this, and the no-outliers robustness confirms the result isn't driven by the
+   largest events.
+
+5. **IOM reporting dates.** The IOM date is the reporting date, not the crossing
+   date. Lag-1 to lag-7 SWH addresses this. Reporting coverage may have changed
+   post-MoU as SAR patterns shifted.
+
+6. **No crossing-level data.** Without individual crossing records (boat-level
+   data), we cannot decompose the reduced-form into deterrence vs danger channels.
+
+7. **HC vs NW SEs matter substantially.** HC SEs give $p < 0.001$; NW(28) gives
+   $p = 0.026$. All primary results use NW(28), the most conservative option. This
+   SE sensitivity should be transparently reported.
+
+# Output Files
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `00_define_sea_zones.R` | Define core corridor sea zone polygon |
+| `00b_build_daily_panel.R` | Build daily panel (weather + deaths + arrivals + interceptions) |
+| `01_weather_danger_analysis.R` | Fatality rate by sea state, pre/post MoU |
+| `02_fatality_rate_timeseries.R` | Weekly and monthly fatality rate time series |
+| `03_crossing_components.R` | Stacked crossing components with fatality rate overlay |
+| `04_swh_vs_fatality_rate.R` | Camarena-style SWH vs death rate dual-axis plots |
+| `05_reduced_form_model.R` | Primary model, both periods, all specs + year-by-year |
+| `05b_reduced_form_plots.R` | Gradient plot + placebo sensitivity plot |
+| `05c_migrant_files_diagnostic.R` | Why daily panel starts from 2014 |
+| `05d_fe_structure_diagnostic.R` | Why month-year FE is necessary |
+| `05e_weekly_panel_model.R` | Weekly robustness + why it gives null |
+| `05f_se_diagnostic.R` | Residual ACF, Breusch--Godfrey, NW vs HC comparison |
+
+## Key Figures
+
+| File | Content |
+|------|---------|
+| `reduced_form_coefplot.png` | Coefficient plot: $\beta_3$ across specs and periods |
+| `reduced_form_yearly_gradient.png` | Year-by-year SWH coefficient trajectory |
+| `reduced_form_gradient.png` | Model-implied gradient, pre vs post, with CIs |
+| `reduced_form_placebo.png` | Cutoff sensitivity: $\beta_3$ at all placebo dates |
+| `fe_structure_comparison.png` | FE structure comparison |
+| `se_diagnostic_acf.png` | ACF and PACF of Pearson residuals |
+
+## Key Tables
+
+| File | Content |
+|------|---------|
+| `reduced_form_results.txt` | Full interaction results (NW(28) SEs) |
+| `fe_structure_diagnostic.txt` | FE diagnostic results (HC SEs) |
+| `se_diagnostic_comparison.txt` | SE comparison across VCOV types |
+| `weekly_panel_results.txt` | Weekly panel results + variation loss explanation |
+| `migrant_files_diagnostic.txt` | MF sparsity diagnostic |
+
+# Relationship to Literature
+
+**Deiana, Maheshri, and Mastrobuoni (2024, AEJ:EP):** Use daily Poisson QMLE with
+week-of-year FE to study how SAR affects the SWH--crossings elasticity. Our model
+adapts their weather interaction approach but uses NegBin (for overdispersion) and
+month-year FE (for year-specific level shifts). They study crossings; we study
+deaths. Their Corollary 1 (crossings become less elastic to weather under SAR) is
+the mechanism behind our finding.
+
+**Zambiasi and Albarosa (2025, JEG):** Use spatial DiD (distance from Libya
+$\times$ post) with month + quadrant FE. They control for SWH as a covariate. We
+use SWH as the key independent variable. Their finding (deaths moved closer to
+Libya) complements ours (weather deterrence collapsed). They use month-of-year FE
+--- our FE diagnostic shows why month-year FE is necessary for our design.
+
+**Camarena et al. (2020):** Dual-axis plots of death rate and wave height. Script
+04 replicates their visualization approach with our data. Our contribution is
+formalizing the SWH--mortality relationship in a regression framework rather than
+visual inspection.

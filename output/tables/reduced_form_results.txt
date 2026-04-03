@@ -1,0 +1,18 @@
+REDUCED-FORM MODEL: n_dead_missing ~ SWH x post_mou | month-year FE
+NegBin | Newey-West(28) SEs | Standardized SWH (per 1-SD)
+Outcome: drowning + mixed/unknown, Incident type only
+
+=== 2014-2021 ===
+  Prev-week (primary)           b3 = +1.241 (SE=0.540)  IRR = 3.458  p = 0.0215
+  Prev-3d (robustness)          b3 = +0.465 (SE=0.359)  IRR = 1.592  p = 0.1956
+  All CMR (robustness)          b3 = +1.027 (SE=0.402)  IRR = 2.792  p = 0.0106
+  No outliers (robustness)      b3 = +1.028 (SE=0.457)  IRR = 2.795  p = 0.0244
+  Next-7d (falsification)       b3 = -0.234 (SE=0.456)  IRR = 0.791  p = 0.6074
+
+=== 2014-2024 ===
+  Prev-week (primary)           b3 = +0.996 (SE=0.446)  IRR = 2.707  p = 0.0255
+  Prev-3d (robustness)          b3 = +0.342 (SE=0.262)  IRR = 1.407  p = 0.1920
+  All CMR (robustness)          b3 = +0.755 (SE=0.332)  IRR = 2.128  p = 0.0230
+  No outliers (robustness)      b3 = +0.806 (SE=0.348)  IRR = 2.239  p = 0.0205
+  Next-7d (falsification)       b3 = +0.049 (SE=0.357)  IRR = 1.051  p = 0.8901
+

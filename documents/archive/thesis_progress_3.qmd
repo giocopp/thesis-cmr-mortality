@@ -1,0 +1,1514 @@
+---
+title: "Mortality on the Central Mediterranean Route"
+subtitle: "Thesis Progress Update"
+date: today
+author: "Giorgio Coppola"
+format:
+  beamer:
+    pdf-engine: xelatex
+    theme: default
+    fonttheme: professionalfonts
+    aspectratio: 169
+    fontsize: 9pt
+    navigation: empty
+    classoption:
+      - t
+    include-in-header:
+      text: |
+        \usepackage{fontspec}
+        \usepackage{xcolor}
+        \usepackage{adjustbox}
+        \usepackage{etoolbox}
+        \usepackage{booktabs}
+        \usepackage{tikz}
+        \usetikzlibrary{arrows.meta, positioning}
+
+        % Fonts
+        \setsansfont{Helvetica Neue}
+
+        % Colors
+        \definecolor{lightblue}{RGB}{70,130,180}
+        \definecolor{darkblue}{RGB}{25,55,95}
+        \definecolor{alertred}{RGB}{180,50,50}
+        \definecolor{okgreen}{RGB}{50,130,70}
+
+        % Beamer styling
+        \setbeamercolor{structure}{fg=lightblue}
+        \setbeamercolor{frametitle}{fg=darkblue,bg=lightblue!15}
+        \setbeamercolor{title}{fg=darkblue}
+        \setbeamercolor{item}{fg=lightblue}
+        \setbeamertemplate{frametitle continuation}{}
+        \setbeamertemplate{navigation symbols}{}
+        \setbeamertemplate{footline}[frame number]
+
+        % Spacing and typography
+        \setlength{\parskip}{0.5em}
+        \linespread{1.15}
+        \setbeamerfont{frametitle}{size=\large}
+        \setbeamerfont{itemize/enumerate body}{size=\small}
+        \setbeamerfont{itemize/enumerate subbody}{size=\footnotesize}
+        \setbeamertemplate{itemize items}[circle]
+        \setlength{\leftmargini}{1em}
+        \addtobeamertemplate{frametitle}{}{\vspace{0.3em}}
+
+        % Tables
+        \AtBeginEnvironment{tabular}{\small}
+        \AtBeginEnvironment{longtable}{\small}
+        \setlength{\tabcolsep}{4pt}
+        \renewcommand{\arraystretch}{1.0}
+
+        % Images
+        \setkeys{Gin}{keepaspectratio}
+editor:
+  markdown:
+    wrap: 72
+---
+
+## Outline
+
+\bigskip
+
+1. **Research question** and replication
+2. **What Model C actually proves** (and what it doesn't)
+3. **Extending to mortality:** two specifications, one puzzle
+4. **Diagnosing the puzzle:** volume vs.\ danger
+5. **Conditioning on crossings:** isolating per-crossing
+   danger
+6. **Beneath the aggregate:** structural shift and
+   smuggler adaptation
+7. **Proposed design:** weather $\times$ period interaction
+
+## Research Question
+
+**Original paper (Rodriguez Sanchez et al. 2023):**
+
+- Do SAR operations act as a **pull factor** for
+  crossings?
+- Method: CausalImpact/BSTS on monthly crossing attempts
+  with $\sim4,700$ predictors
+- Finding: **no pull factor effect** (Models A/B null)
+- Model C (EU-Libya MoU): p = 0.012, --15\% crossings
+
+\bigskip
+
+**Our extension:**
+
+- Did the **2017 EU-Libya MoU** make the Central
+  Mediterranean route more **dangerous**?
+- Same method, different outcome: **mortality rate** and
+  **death counts**
+
+## Replication
+
+Replicated all three interventions. Results match.
+
+\bigskip
+
+| Model | Paper | Repl.\ p | Rel.\ effect | 95\% CI |
+|---|--|--|--|----|
+| A. Mare Nostrum | Not sig. | 0.092 | +47\% | [--36\%, +102\%] |
+| B. NGO SAR | Not sig. | 0.198 | --14\% | [--51\%, +40\%] |
+| C. EU-Libya | Sig.\ (neg.) | **0.012** | **--15\%** | [**--22\%, --5\%**] |
+
+\bigskip
+
+- **Models A and B**: no pull factor $\checkmark$
+- **Model C**: p = 0.012, but the authors themselves call it only
+  ``\textit{suggestive} of a reduction" --- not causal.
+- **This matters for our identification analysis**: if causality is uncertain for
+  crossings (where covariates are strong),
+  it will be even harder for mortality
+  (where covariates are weak).
+
+## Replication: Counterfactual Plots (Crossings)
+
+:::: {.columns}
+::: {.column width="50%"}
+**Original**
+\tiny
+-- screenshot from original paper
+\normalsize
+
+![](../../Rodriguez-Sanchez-paper-replication/Original-code-and-data/Figure2-original.png){height="75%"}
+:::
+::: {.column width="50%"}
+**Replicated**
+\tiny
+-- own calculations with original code and data
+\normalsize
+
+![](../../Rodriguez-Sanchez-paper-replication/Replication/replicated_results/figures/png/Figure2.png){height="75%"}
+:::
+::::
+
+\vspace{-0.5em}
+\begin{center}
+\tiny \textit{Note: I don't fully understand the reason of these visual differences; they may reflex MCMC variation across software versions. Qualitative inferential conclusions match.}
+\end{center}
+\normalsize
+
+## Repication: What Model C Actually Proves
+
+:::: {.columns}
+::: {.column width="48%"}
+
+**A/B null (no pull factor):**
+
+The $\sim4,700$ push-pull covariates already explain 
+crossing volumes during the SAR periods. The difference between
+observed and counterfactual is not significant.
+
+\medskip
+
+$\Rightarrow$
+"\textit{SAR does not seem to be a further
+causal driver of migration}" (p.6) and "\textit{SAR is a
+response to the higher flow, not a cause}" (p.6).
+
+\medskip
+
+No strong causal identification needed for this.
+
+:::
+::: {.column width="52%"}
+
+**C positive (MoU reduced flows) --- suggestive only:**
+
+Here the BSTS predicts (statistically) significantly more
+crossings than observed post-MoU $\Rightarrow$ something 
+reduced crossings beyond what push-pull
+factors predict $\Rightarrow$ coherent with MoU story but
+only "\textit{suggestive}".
+The results read as: 
+"the covariates predict (explain) a higher level of
+crossings, meaning that a part of the observed crossing
+(the reduction/gap) must be attributed to the intervention" 
+$\Rightarrow$ they don't dig any further.
+
+:::
+::::
+
+\bigskip
+
+\textbf{The asymmetry:} for A/B, the covariates explain
+everything $\Rightarrow$ SAR is irrelevant (no causal
+identification needed). For C, the unexplained
+residual must be attributed to the policy regime change. 
+For mortality, the covariates are far weaker
+predictors (as we will show).
+
+## Replication: The Data
+
+:::: {.columns}
+::: {.column width="55%"}
+![](../../Rodriguez-Sanchez-paper-replication/Extension-2-new-data/output/figures/eda/01_cmr_time_trends.png){height="85%"}
+:::
+::: {.column width="45%"}
+
+\bigskip
+
+Three panels, four policy periods.
+
+- **Top:** crossings surge during MN/SAR
+  ($\sim14$k/mo), drop post-MoU ($\sim6$k/mo)
+- **Middle:** deaths track crossings closely
+- **Bottom:** mortality rate \textit{returns} to
+  pre-MN levels after the MoU
+
+\bigskip
+
+Mean rate by period: Pre-MN 2.93\% $\to$
+MN 1.83\% $\to$ SAR 2.22\% $\to$
+\textbf{MoU 2.90\%}
+
+:::
+::::
+
+## Extension - Naive: Original Predictors
+
+Keep all 4,820 original predictors, swap outcome to
+mortality. Model C (MoU) results:
+
+\footnotesize
+
+| | Crossings (orig.) | Rate (naive) | Deaths (naive) |
+|---|---|---|---|
+| Pred.\ $>5\%$ incl. | hundreds | **2** | 10 |
+| Top predictors | trade, weather, Trends | Algeria violence, soy | Kenya violence, airflows |
+| p-value (Model C) | **0.012** | 0.094 | 0.058 |
+
+\normalsize
+
+\medskip
+
+- The **rate** model is effectively empty
+- The **death count** model selects volume-channel
+  variables (unemployment, airflows, exchange rates)
+  that predict \textit{who crosses}, not
+  \textit{who dies}
+
+\medskip
+
+\textbf{First hint:} deaths find signal through the
+volume channel; rates do not.   
+
+$\Rightarrow$ Remove all volume-channel predictors.
+
+## Extension - Refined: Exogenous-Only (38 + 11 Dummies)
+
+Keep only variables that are (a) exogenous to migration
+policy and (b) physically related to crossing danger:
+waves, wind, SST, currents, cloud cover, precipitation.
+
+Each at lag 0 and lag 1 $\Rightarrow$ 38 covariates +
+11 month dummies (absorbing
+seasonality) = **49 predictors**.
+
+\footnotesize
+
+| Model | Outcome | p-value | Cum.\ effect | 95\% CI | RMSE/SD |
+|-------|---------|--------:|---:|---|--------:|
+| A | rate | 0.085 | +54.7 | [--22.6, 136.2] | 0.75 |
+| A | deaths | **0.0004** | **+127.1** | **[65.5, 191.8]** | **0.62** |
+| B | rate | 0.002 | +100.4 | [37.4, 161.2] | 0.86 |
+| B | deaths | **0.0001** | **+127.4** | **[73.8, 178.7]** | **0.77** |
+| C | rate | **0.008** | +45.7 | [8.2, 82.9] | 0.97 |
+| C | deaths | 0.176 | +18.1 | [--20.8, 56.9] | 0.92 |
+
+\normalsize
+
+\medskip
+
+\textcolor{alertred}{Reversed pattern:} A/B deaths
+significant, C rate significant --- but C deaths null.
+Why?
+
+## Extension: Counterfactual Plots
+
+:::: {.columns}
+::: {.column width="50%"}
+**Mortality rate**
+
+![](../../Rodriguez-Sanchez-paper-replication/Extension-2-new-data/output/figures/png/Figure2_mortality_counterfactual.png){height="65%"}
+
+\footnotesize
+Model C diverges post-MoU --- but is this driven by
+covariates or just by the trend component?
+\normalsize
+:::
+::: {.column width="50%"}
+**Death counts**
+
+![](../../Rodriguez-Sanchez-paper-replication/Extension-2-new-data/output/figures/png/Figure6_deaths_counterfactual.png){height="65%"}
+
+\footnotesize
+A/B: counterfactual stays low while deaths surge
+(volume). C: counterfactual overlaps observed
+$\Rightarrow$ no detectable effect.
+\normalsize
+:::
+::::
+
+## Diagnosing the Puzzle: The Volume Channel
+
+\begin{center}
+\large \textbf{Death counts} = volume $\times$
+per-crossing risk
+\end{center}
+
+\bigskip
+\footnotesize
+
+- **A/B deaths seem to be "working"** because pre-period is
+  low-volume (3,600/mo). MN/SAR brings 14,000/mo
+  $\Rightarrow$ deaths surge \textit{mechanically}.
+  The model detects volume, not danger.
+- **C deaths fail** because pre-period
+  \textit{includes} the high-volume era. Post-MoU
+  volume drops, offsetting any danger increase.
+- **C rate seems to be "working"** because dividing by crossings
+  removes the volume channel.
+
+\normalsize
+\bigskip
+
+\begin{center}
+\textbf{Let's explore better what happens and run some tests!}
+\end{center}
+
+## Test 1: Covariate Signal -- Crossings vs.\ Mortality
+
+:::: {.columns}
+::: {.column width="55%"}
+![](../../Rodriguez-Sanchez-paper-replication/Extension-2-new-data/output/figures/eda/07_correlation_dotplot.png){height="75%"}
+
+\scriptsize
+\textit{Note:} full-period correlations (2011--2021). Figure using lag0 only (19 covariates), table using lag0 and lag1 (38 covariates)
+\normalsize
+:::
+::: {.column width="45%"}
+
+\footnotesize
+Same 19 exogenous covariates (lag 0 + lag 1 = 38):
+
+| Outcome | Sig.\ / 38 | Max $|r|$ | Notes |
+|-----|:--:|:-:|------|
+| \textcolor[RGB]{70,130,180}{Crossings} | 30 | 0.52 | strong |
+| \textcolor[RGB]{178,34,34}{Death counts} | 22 | 0.28 | follow crossings, weaker |
+| \textcolor[RGB]{255,140,0}{Death rates} | 1 | 0.01 | clustered at zero |
+
+\medskip
+
+Sea-danger variables (waves, currents) all have the
+\textbf{wrong sign} for deaths: rougher seas
+$\Rightarrow$ fewer crossings $\Rightarrow$ fewer
+deaths. The covariates track \textit{who crosses},
+not \textit{who dies}.
+
+\normalsize
+
+:::
+::::
+
+## Test 2: Covariates Predict Volume, Not Danger
+
+\footnotesize
+
+**Model C (EU-Libya MoU) --- spike-and-slab selection:**
+
+| | Rate | Deaths | Deaths + log(cross.) |
+|---|:---:|:---:|:---:|
+| Covariates $>10\%$ incl. | 0 / 49 | 3 / 49 | 1 / 50 |
+| Covariates $>1\%$ incl. | 3 / 49 | 10 / 49 | 1 / 50 |
+| RMSE / SD | 0.98 | 0.92 | 0.73 |
+| p-value | 0.008 | 0.197 | 0.021 |
+
+**Deaths + log(crossings):** all other covariates
+  drop out --- the 10 in the death model were proxying
+  for volume. Only log(crossings) retained (100\%). More 
+  details in next slides.
+
+- For **crossings**, the 4,700 covariates build a credible counterfactual regardless of
+mechanism.  
+- For **mortality**, it breaks down: the covariates are weak predictors $\Rightarrow$
+essentially a structural-break test.
+
+\normalsize
+
+## Test 3: Forecasting Diagnostic - Do Covariates Help?
+
+\footnotesize
+
+**Test:** pre-MoU period only (Feb 2011 -- Jan 2017),
+3-fold rolling-origin CV. Train on expanding past window,
+forecast 7--12 unseen months. Compare RMSE:
+
+\medskip
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**Mortality rate:**
+
+| Specification | RMSE | vs.\ baseline |
+|------|:---:|---:|
+| Seasonal mean baseline | 1.870 | --- |
+| Trend + seasonality (state-space) | 1.853 | +0.9\% |
+| **Month dummies only** | **1.545** | **+17.5\%** |
+| **Weather covariates only** | **1.590** | **+15.0\%** |
+| Month dummies + weather covariates | 1.576 | +15.8\% |
+
+Best $=$ month dummies alone. Adding covariates
+\textbf{worsens} it by $-2\%$.
+
+:::
+::: {.column width="50%"}
+
+**Death count:**
+
+| Specification | RMSE | vs.\ baseline |
+|------|:---:|---:|
+| Seasonal mean baseline | 2.278 | --- |
+| **Trend + seasonality (state-space)** | **1.939** | **+14.9\%** |
+| Month dummies only | 1.987 | +12.8\% |
+| **Weather covariates only** | **1.987** | **+12.8\%** |
+| Month dummies + weather covariates | 1.971 | +13.5\% |
+
+Best $=$ trend + seasonality (state-space). No
+covariate-enhanced variant beats it.
+
+:::
+::::
+
+\medskip
+
+For \textbf{both} outcomes, 38 exogenous environmental
+covariates add \textbf{no predictive signal}.
+$\Rightarrow$ CausalImpact's counterfactual is
+identified by trend + seasonality, not by covariates.
+
+\normalsize
+
+## Test 4: Placebo Tests
+
+\footnotesize
+
+Placebo design: re-run the same model at \textit{fake}
+intervention dates in the pre-period.
+If identification is credible, fake dates should rarely
+be significant and the real date should stand out.
+
+:::: {.columns}
+::: {.column width="56%"}
+
+| Model | \# placebos | FPR | Placebos $p \leq$ actual |
+|------|:--:|--:|---:|
+| A rate | 7 | 100\% | 7 / 7 (all worse) |
+| A deaths | 7 | 100\% | 2 / 7 |
+| B rate | 9 | 67\% | 5 / 9 |
+| B deaths | 9 | 56\% | 1 / 9 |
+| C rate | 18 | 44\% | 3 / 18 |
+| C deaths | 18 | 89\% | 17 / 18 (nearly all worse) |
+
+:::
+::: {.column width="44%"}
+
+- **FPR:** share of fake intervention dates declared significant.
+- **Placebos $p \leq$ actual:** how many fake dates produce a p-value at least as strong as the real intervention date. Near zero is ideal.
+
+\medskip
+
+Many models have high FPR (44--100\%), and for C deaths, 17/18 placebos are at least as extreme as the real date. So most mortality "effects" are not date-specific evidence of the MoU, but likely generic trend-break artifacts.
+
+:::
+::::
+
+\bigskip
+
+\footnotesize
+**Note** that mortality rate $=$
+deaths/crossings inherits denominator-driven bias
+(Kronmal 1993): 30/38 covariates predict crossings. 
+\normalsize
+
+## The Fundamental Problem
+
+\bigskip
+
+\begin{center}
+\large
+CausalImpact needs covariates that are both\\
+\textbf{exogenous} and \textbf{predictive}.\\[1em]
+For mortality, these requirements \textbf{conflict}.
+\end{center}
+
+\bigskip
+
+- Variables that **predict** per-crossing danger (SAR
+  capacity, vessel type, smuggler behavior) are
+  **endogenous** to the MoU
+- Variables that are **exogenous** (weather, waves)
+  predict **crossing volume**, not danger
+- Without predictive covariates, CausalImpact is just a
+  **structural-break test** --- p-values depend on
+  trend specification, not regression identification
+
+## Conditioning on Crossings?
+
+\footnotesize
+
+Adding $\log(\text{crossings})$ as a covariate absorbs
+the volume channel: the model asks whether deaths are
+higher than expected \textit{at the observed crossing
+level}.
+
+:::: {.columns}
+::: {.column width="52%"}
+
+| Model | p (orig.) | p (cond.) | log\_cr.\ incl. |
+|---|---:|---:|---:|
+| A deaths | **0.0003** | 0.375 | 99\% |
+| B deaths | **0.0009** | 0.083 | 100\% |
+| C deaths | 0.197 | **0.021** | 100\% |
+
+\medskip
+
+A/B flip to null (pure volume). C flips to significant
+(per-crossing danger increase). Converges with C rate
+(p $=$ 0.008).
+
+:::
+::: {.column width="48%"}
+
+**Why this doesn't solve identification:**
+
+Crossings are a \textbf{mediator} affected by the MoU
+(MoU $\to$ fewer crossings $\to$ fewer deaths).
+Conditioning on a mediator requires:
+
+1. No unmeasured mediator--outcome confounders
+   (VanderWeele 2015) --- violated: smuggler behavior,
+   seasonal composition jointly affect both
+2. Covariates \textit{unaffected} by the intervention
+   (Brodersen et al.\ 2015) --- crossings are
+   directly affected by the MoU
+
+:::
+::::
+
+\medskip
+
+$\Rightarrow$ Useful as a \textbf{sensitivity check}
+(confirms volume channel), not a valid causal estimand.
+log(crossings) is also the \textit{only} predictor
+(100\% incl., all others $\approx 0$\%).
+
+\normalsize
+
+## What We've Found on the Method
+
+\bigskip
+
+1. CausalImpact works for crossings (rich covariate
+   signal) but \textbf{fails for mortality} (no
+   covariate signal for per-crossing danger)
+2. Exogenous covariates predict volume, not danger
+   --- wrong sign, --2\% marginal contribution
+3. Without covariates, CausalImpact is a
+   structural-break test, not a covariate-identified
+   counterfactual
+4. Model C in the original paper is "suggestive",
+   not proven --- post-intervention contamination
+   and endogenous timing
+
+\bigskip 
+
+\begin{center}
+\textbf{And on the phenomenon?} \\
+Let's check better the event-level data (IOM MMP Panel) and the literature.
+\end{center}
+
+\normalsize
+
+## Event-Level Data
+
+:::: {.columns}
+::: {.column width="55%"}
+![](../../Rodriguez-Sanchez-paper-replication/Extension-2-new-data/output/figures/eda/24_incident_structure_over_time.png){height="85%"}
+:::
+::: {.column width="45%"}
+
+
+**Top panel -- Incidents / month:**
+Count of IOM MMP recorded incidents on the
+CMR per calendar month (2014--2025).
+
+\medskip
+
+**Middle panel -- Mean deaths / incident:**
+Average number of dead \& missing per
+incident each month. LOESS smoother
+($\text{span} = 0.4$) highlights the trend.
+
+\medskip
+
+**Bottom panel -- Concentration:**
+Share of a month's total deaths attributable
+to the single largest incident. Decline post-MoU
+reflects a shift from rare mass-casualty
+shipwrecks to frequent small-boat losses.
+
+\medskip
+
+\tiny
+\textit{Source:} IOM Missing Migrants Project
+incident records (CMR, Jan 2014 -- Dec 2025).
+Crossing attempts = Italy + Malta arrivals +
+LCG + Tunisian CG interceptions + deaths
+(UNHCR / IOM monthly).
+Dashed lines mark Mare Nostrum end (Nov 2014)
+and EU--Libya MoU (Feb 2017).
+
+:::
+::::
+
+## IOM monthly data (Hoffmann Pham \& Komiyama, 2024)
+
+:::: {.columns}
+::: {.column width="55%"}
+![](../../Hoffman-Pham-Komiyama-replication/replicated results/figures/pham_komiyama_fig3_extended.png){width="82%"}
+:::
+::: {.column width="45%"}
+
+
+**Top panel -- Number of crossings:**
+Monthly crossing attempts on the CMR
+(arrivals in Italy + Malta + LCG and
+Tunisian CG interceptions + deaths).
+6-month centered moving average overlay.
+
+\medskip
+
+**Bottom panel -- Outcome probabilities:**
+Monthly share of crossings ending in rescue (arrivals)
+(\textcolor[RGB]{11,125,26}{green}),
+interception
+(\textcolor[RGB]{26,39,216}{blue}), or
+death (\textcolor[RGB]{225,12,12}{red}).
+6-month centered moving average overlays.
+
+\medskip
+
+The Hoffmann Pham \& Komiyama (2024) paper consider "arrivals" as "rescued".
+
+\medskip
+
+\tiny
+\textit{Source:} Reproduction of Hoffmann
+Pham \& Komiyama (2024) Fig.\ 3, extended
+with updated IOM monthly data (Jan 2016 --
+Dec 2024; CMR deaths missing in 2025
+source table). Crossings = arrivals +
+interceptions + deaths.
+
+:::
+::::
+
+## Geographic Shift: Deaths Moved Closer to Shore
+
+:::: {.columns}
+::: {.column width="55%"}
+![](../../Rodriguez-Sanchez-paper-replication/Extension-2-new-data/output/figures/eda/28_death_incident_map.png){height="85%"}
+:::
+::: {.column width="45%"}
+
+
+\scriptsize
+
+Each dot is one IOM MMP incident with
+$\geq 1$ death or missing person.
+Size $\propto$ deaths; color $=$ policy
+period.
+
+\medskip
+
+**Distance zones** (dashed contours from
+Libya/Tunisia coastline):
+
+- $<100$ km: near departure coast
+- $100$--$250$ km: mid-sea
+- $\geq 250$ km: near Italy/Malta
+
+\medskip
+
+**Key shift post-MoU:**
+
+- Median distance: **7 km** vs.\ 150--161 km
+  during MN/SAR
+- 81\% of incidents within 100 km of coast
+  vs.\ 35--41\% during MN/SAR
+- Only 4\% reach $\geq 250$ km
+  (vs.\ 22--26\% during MN/SAR)
+
+\medskip
+
+\tiny
+\textit{Source:} IOM Missing Migrants Project
+incident records (CMR, 2014--2025).
+Distance computed from nearest point on
+Libya/Tunisia border (Natural Earth).
+
+:::
+::::
+
+## Evidence from the Literature
+
+\scriptsize
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**Zambiasi & Albarosa (2025)**
+
+- **Question:** Did the 2017 MoU make crossings more dangerous and redirect migrants toward other routes?
+- **Findings:** Areas closer to Libya became significantly deadlier; effects fade from July 2017, when departures drop and monitoring/NGO restrictions intensify; evidence of diversion to WMR (migrants from nationalities previously more likely to arrive in Italy were about 41% more likely to arrive in Spain after the MoU).
+- **Methods:** Spatial DiD on grid cells (quadrant-months), interacting distance to Libya × post-MoU. Outcome: indicator for at least one deadly event in a cell-month. Includes quadrant and month fixed effects plus controls for sea conditions, NGO presence, conflict, maritime traffic, spatial dynamics, and robustness checks with alternative grid sizes and death counts. Complemented by an event study and a non-parametric treatment-effect curve by distance from Tripoli.
+- **Data:** IOM MMP + UNHCR arrivals, Niger flow-monitoring, NGO activity, weather/sea conditions, maritime traffic, conflict, and boat-type data.
+
+:::
+::: {.column width="50%"}
+
+\scriptsize
+**Hoffmann Pham & Komiyama (2024)**
+
+\scriptsize
+- **Question:** How the flow of crossings in CMR responds (deterrence, rerouting) to the growing rate of LCG interceptions and the decline of NGO and EU-led SAR?
+- **Findings:** Deterrence pattern: lower rescue probability is associated with fewer CMR crossings. Smugglers uses smaller boats as LCG interceptions rise, and crossings are likely more perilous (reduced rescue capacity). Long-run positive rescue-crossing relationship in the post-period: coherent with Rodriguez-Sanchez. Diversion to WMR when rescue probability falls. 
+- **Methods:** Error correction model on monthly TS (rescue probability - crossings) + conditional logit model of smuggler boat-size choice at incident-level. More direct on deterrence, but rescue probability may be endogenous. Gravity model on country-pair flows across routes. 
+- **Data:** IOM monthly TS for gravity model + ECM TS); Frontex JORA incident records (boat type and size per incident for structural boat choice model). 
+
+:::
+::::
+
+\normalsize
+
+## Evidence from the Literature (cont)
+
+:::: {.columns}
+::: {.column width="50%"}
+
+\scriptsize
+**Camarena, Claudy, Wang & Wright (2020)**
+
+\scriptsize
+- **Question:** How do transit environment in North Africa, influenced by political risk (riots) and environmental risk (sea conditions) affect migration outcomes, and did MoU intervention reduce flows?
+- **Findings:** Higher riots are associated with higher arrivals; higher wave height is associated with lower arrivals. They also find higher sea risk is associated with higher mortality risk. The 2017 intervention is estimated to reduce arrivals strongly (about 343 fewer arrivals/day) - not able to clearly identify rerouting and increase in death rates.
+- **Methods:** Daily time-series regressions with month and day-of-week fixed effects; event-study on weekly 2017 data using a 2016 seasonality-based counterfactual (only seasonal shocks are absorbed, all the other are confounders). For mortality, they model `deathrate` on sea-state measures and lags (problematic?).
+- **Data:** UNHCR + Italian Ministry for arrivals, ACLED riots, Copernicus wave heights, IOM deaths/missing.
+ 
+
+:::
+::: {.column width="50%"}
+
+\scriptsize
+**Tafani & Riccaboni (2025)**
+
+\scriptsize
+- **Question:** Did the 2016 EU-Turkey agreement reduce irregular migration overall, or mainly divert migrants from the Eastern Mediterranean to other routes?
+- **Findings:** Strong diversion effect from Eastern to Central Mediterranean for treated nationalities. Increased volume in CMR and increase in deaths due to the diversion.
+- **Methods:** Causal panel approach using Matrix Completion to estimate counterfactual flows without the agreement. Treatment assignment: nationalities heavily using Eastern Med before policy. Second step: route-level two-way fixed-effects regression linking estimated ATT (diversion) to missing migrants.
+- **Data:** Frontex monthly irregular crossings by route and nationality, IOM MMP for second step, various controls.
+
+:::
+::::
+
+\normalsize
+
+## Evidence from the literature (cont. 2)
+
+\scriptsize
+**Deiana, Maheshri & Mastrobuoni (2024)**
+
+\scriptsize
+- **Question:** How did SAR operations in the Central Mediterranean affect attempted crossings, boat choice, and the ex post riskiness?
+- **Findings:** SAR increased crossings on vulnerable boats, even though crossing attempts drop a lot when weather is bad. The entire pool of crossing has shifted towards more vulnerable boats. This implies that those that still cross in non-perfect conditions (or in marginally worse weather conditions) are much more at danger. This *might* offset safety gains from SAR.
+- **Methods:** They do this by **1.** assessing the crossing elasticity in SAR period to weather (with daily Poisson QMLE regression using three ways interaction + a panel study), and **2.** with a model that estimates how much more dangerous the boats must be to have such elasticity to weather, compared to wooden boats. Assuming all the assumptions needed for the structural model to make sense, they estimate that the rubber boats are 20x more "dangerous" (even if this is a very specific definition of "danger", derived by this model). However, they do not really calculate this danger because do not take into consideration that those might be saved by SAR. So they do not really estimate real dangerousness, but they detect a behavioural change.
+- **Data:** Police daily arrivals to Italy and departure-country + deaths (daily); boat-type; ECMWF wave-height data. Daily data of intercepted by LCG is missing.  
+
+## Evidence from the literature (summary)
+
+:::: {.columns}
+::: {.column width="50%"}
+\scriptsize
+**Does SAR act as a "pull factor"?**
+
+- At the monthly level, crossing volumes during SAR periods are fully explained by structural factors (conflict, commodity prices, environment) — no residual SAR effect detected (Rodríguez Sánchez et al., 2023)
+- At the daily level, SAR changes *how* crossings happen: smugglers substitute toward inflatable boats ~20× more dangerous than wooden vessels $\Rightarrow$ moral hazard (Deiana et al., 2024)
+- Compatible findings: SAR may not change *how many* cross, but changes the composition and riskiness of crossings
+
+**The role of weather and sea conditions**
+
+- Rougher seas strongly reduce arrivals to Italy (Camarena et al., 2020)
+- Under intense SAR, crossings on inflatable boats become far more sensitive to waves — the marginal crossing enabled by rescue is on a fragile vessel (Deiana et al., 2024)
+- Daily wave-height variation serves as an exogenous shifter, avoiding reliance on before/after comparisons and instead using within-week variation to detect behavioral change.
+
+:::
+
+::: {.column width="50%"}
+\scriptsize
+**Route diversion**
+
+- Closing one route pushes migrants to more dangerous alternatives
+- EU–Turkey deal: diverted ~2,000 migrants from Eastern to Central route, causing an estimated 45 additional deaths (Tafani & Riccaboni, 2025)
+- Italy–Libya MoU: eightfold increase in deadly incidents within 120 km of Tripoli; partial rerouting toward Spain (Zambiasi & Albarosa)
+- ~15% of deterred Central-route migrants shifted westward (Hoffmann, Pham & Komiyama)
+
+**Enforcement and smuggler adaptation**
+
+- Pushback policies reduce aggregate crossings on targeted routes (Rodríguez Sánchez et al., 2023)
+- Disrupting smuggling networks sharply cuts arrivals in the short run (Camarena et al., 2020)
+- But smugglers adapt: higher interception risk $\Rightarrow$ smaller boats and changed logistics (Hoffmann, Pham & Komiyama); available SAR $\Rightarrow$ cheaper inflatable boats (Deiana et al., 2024).
+
+:::
+:::
+
+## Next Steps and Discussion
+
+\bigskip
+
+\begin{center}  
+\textbf{Idea to study mortality in the CMR}
+
+\bigskip
+
+How to study the effect of Feb 2017 MoU on fatality risk per crossing attempt? 
+
+\bigskip
+
+\textbf{Event-level weather $\times$ mortality interaction:}
+   match each IOM incident to ERA5 weather at its
+   exact date and coordinates. Test whether bad
+   weather became \textit{more lethal} post-MoU.
+   Direct mechanism test.
+\end{center}
+
+## Why Weather? Connecting the Evidence
+
+\footnotesize
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**The problem we diagnosed:**
+
+CausalImpact fails for mortality because exogenous
+covariates predict \textit{volume}, not \textit{danger}.
+Weather deters crossings $\Rightarrow$ rougher seas
+correlate with \textbf{fewer} deaths (wrong sign).
+
+\medskip
+
+**The insight:** weather's relationship to mortality is
+\textit{indirect} --- mediated by selection (who crosses)
+and vulnerability (what happens when they do). The MoU
+changed \textbf{both channels}:
+
+\medskip
+
+1. \textbf{Deterrence weakened:} Hoffmann Pham \&
+   Komiyama (2024) show smugglers compress departures
+   into narrow windows under enforcement pressure
+   $\Rightarrow$ less ability to wait for calm seas
+
+2. \textbf{Vulnerability increased:} same paper documents
+   switch to smaller rubber dinghies (cheaper, disposable).
+   A 2m wave that a wooden boat in 2015 survives capsizes
+   a dinghy in 2018
+
+3. \textbf{SAR withdrawn:} during MN/SAR, Italian vessels
+   rescued distress calls even in storms. Post-MoU, same
+   distress $\Rightarrow$ death (no rescue capacity nearby)
+
+:::
+::: {.column width="50%"}
+
+**Why weather is the right test variable:**
+
+- \textbf{Exogenous to policy:} the MoU cannot change wave
+  height. Weather varies independently of the
+  intervention $\Rightarrow$ clean ``treatment intensity''
+- \textbf{Selection into exposure is endogenous} (smugglers
+  choose departure timing), but this doesn't bias
+  $\beta_3$: the interaction asks \textit{given} you're
+  in 2m waves, do you die more post-MoU?
+- \textbf{Grid FE absorb spatial selection:} the geographic
+  shift toward the coast (59\% post-MoU vs.\ 38--40\%)
+  is controlled; what remains is within-grid,
+  within-weather variation in lethality
+
+\medskip
+
+**The causal chain (reduced form):**
+
+$$\text{MoU} \xrightarrow{\text{enforcement}}
+  \underbrace{\text{smaller boats, worse timing, reduced SAR}}_
+  {\text{Hoffmann Pham \& Komiyama}} \xrightarrow{}
+  \underbrace{\Delta \text{vulnerability}}_
+  {\text{our } \beta_3}$$
+
+We don't need to observe boat type directly ---
+$\beta_3 > 0$ captures the net effect of all
+adaptation channels on weather-conditional lethality.
+
+:::
+::::
+
+\normalsize
+
+## Causal Structure (DAG)
+
+:::: {.columns}
+::: {.column width="52%"}
+
+\medskip
+
+![](../dag-1.pdf){height="80%"}
+
+\tiny
+MoU $\to$ Crossings edge added (direct deterrence).
+Vulnerability is latent (unobserved).
+
+\medskip
+\scriptsize
+**Key assumptions:**
+
+- Weather $\perp$ MoU 
+- No Weather $\to$ Deaths path outside Vulnerability
+  (exclusion restriction)
+- FE absorb seasonal/spatial confounding
+
+:::
+::: {.column width="48%"}
+
+\scriptsize
+
+**Nodes:**
+
+- \textbf{MoU}: Feb 2017 policy shock (treatment)
+- \textbf{SAR}: search and rescue capacity
+  (withdrawn post-MoU; mostly unobserved)
+- \textbf{Boats}: vessel type/quality
+  (shifts to dinghies post-MoU; partially observed)
+- \textbf{Vulnerability} \textit{(dashed = latent)}:
+  crossing vulnerability (boat quality, rescue
+  capacity, overcrowding, \ldots)
+- \textbf{Weather}: SWH, wind, SST (exogenous)
+- \textbf{Crossings}: volume (\textbf{endogenous, post-treatment})
+- \textbf{FE}: seasonality, grid fixed effects
+
+\medskip
+
+**Key identification results (dagitty):**
+
+- MoU $\to$ Deaths: \textbf{no backdoor paths}
+  (MoU is exogenous, no parents)
+- Weather $\to$ Deaths: condition on \textbf{FE}
+  $\Rightarrow$ identified
+- $\beta_3$ (Weather $\times$ Post) captures how
+  MoU changed Weather $\to$ Vulnerability $\to$ Deaths
+  --- without observing Vulnerability
+
+:::
+::::
+
+\normalsize
+
+## The Crossings Problem: Collider Bias
+
+\footnotesize
+
+Using the mortality \textbf{rate} (deaths/crossings) as outcome
+implicitly \textbf{conditions on Crossings}. Per the DAG, this
+opens spurious paths --- the \textbf{Kronmal (1993)} problem
+formalized as collider bias (Elwert \& Winship 2014).
+
+\medskip
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**Crossings is a collider:**
+
+Multiple parent nodes feed into Crossings:
+
+- Weather $\to$ Crossings $\leftarrow$ SAR
+- Weather $\to$ Crossings $\leftarrow$ Boats
+- MoU $\to$ Crossings $\leftarrow$ FE
+
+\medskip
+
+**Conditioning on Crossings opens:**
+
+- Weather $\to$ \textbf{[Crossings]}
+  $\leftarrow$ SAR $\to$ Vulnerability $\to$ Deaths
+- Weather $\to$ \textbf{[Crossings]}
+  $\leftarrow$ Boats $\to$ Vulnerability $\to$ Deaths
+
+These are \textbf{spurious non-causal paths}
+that bias the weather--mortality association.
+
+:::
+::: {.column width="50%"}
+
+**Can we fix it?**
+
+- dagitty confirms: \{FE, Crossings, SAR, Boats\}
+  is a valid adjustment set $\checkmark$
+- But SAR and Boats are \textbf{not fully observed}:
+  SAR data is low quality; Boats data requested
+  from Frontex (JORA)
+- $\Rightarrow$ The fix is \textbf{not currently available}
+
+\medskip
+
+**Implications for analysis design:**
+
+- \textcolor{alertred}{$\times$} Death \textit{rate}
+  as primary outcome
+- \textcolor{okgreen}{$\checkmark$} Death \textit{counts}
+  at event level (Model~A: no crossings needed)
+- \textcolor{okgreen}{$\checkmark$} Death \textit{counts}
+  at monthly level (total effect, complementary)
+- \textcolor{okgreen}{$\checkmark$} Model crossings as
+  \textit{outcome} (diagnostic: DAG-valid per
+  Section 12 of dag_identification.qmd)
+
+:::
+::::
+
+\normalsize
+
+## Estimands and Model Hierarchy
+
+\footnotesize
+
+:::: {.columns}
+::: {.column width="48%"}
+
+**Preferred theoretical estimand (infeasible):**
+
+$$\frac{\text{deaths}_t}{\text{crossings}_t} =
+  \underbrace{\frac{\text{incidents}_t}{\text{crossings}_t}}_
+  {\text{frequency}}
+  \times
+  \underbrace{\frac{\text{deaths}_t}{\text{incidents}_t}}_
+  {\text{severity}}$$
+
+Isolates per-crossing danger. But \textbf{infeasible}:
+
+1. Crossings data are \textbf{monthly only}
+   (LCG/TCG interceptions monthly)
+2. Crossings is \textbf{post-treatment}
+   $\Rightarrow$ collider bias (previous slide)
+
+\medskip
+
+**Alternative decomposition:**
+
+$$\text{deaths}_t =
+  \underbrace{\text{incidents}_t}_{\text{frequency}}
+  \times
+  \underbrace{E[\text{deaths} \mid \text{incident}]_t}_
+  {\text{severity}}$$
+
+No collider. But incidents$_t$ conflates
+\textbf{volume} (more crossings $\to$ more incidents)
+with \textbf{per-crossing danger}.
+
+:::
+::: {.column width="52%"}
+
+\scriptsize
+
+**Model hierarchy (from DAG analysis):**
+
+| Model | Estimand | Crossings? |
+|-------|----------|------------|
+| \textbf{A} (primary) | $E[\text{deaths} \mid \text{incident}]$ | No |
+| Monthly counts | $E[\text{deaths}_t]$ | No |
+| Crossings diag. | $E[\text{crossings}_t]$ | As outcome |
+| \textbf{D} (exploratory) | deaths$_t$/crossings$_t$ | Yes $\to$ bias |
+| C (aspirational) | + SAR + Boats | Yes, fixed |
+
+\footnotesize
+
+- \textbf{Model A}: event-level severity. Did weather
+  kill more people \textit{per incident} post-MoU?
+  \textbf{No crossings} $\Rightarrow$ no collider
+- \textbf{Monthly counts}: total $\beta_3$ effect.
+  Mixes volume + danger but avoids collider
+- \textbf{Crossings diagnostic}: Crossings $\sim$
+  Weather $\times$ Post + FE. \textbf{DAG-valid}
+  (Crossings as outcome, not conditioning set).
+  Disentangles volume channel from danger
+- \textbf{Model D}: rate regression. Collider bias
+  partially differenced out (next slide),
+  but bias magnitude changes across periods
+- \textbf{Model C}: requires SAR + Boats data
+  (pending Frontex response)
+
+:::
+::::
+
+\normalsize
+
+## Monthly Evidence: Model D (Exploratory Rate Regression)
+
+\footnotesize
+
+Death rate $= \text{deaths}/\text{crossings}$ has collider
+bias (Kronmal problem). However, $\beta_3$ (interaction) is
+\textbf{partially protected}: the bias exists in both periods,
+so differencing removes the constant component.
+\textbf{Caveat:} bias magnitude \textit{changes} across periods
+because MoU shifted SAR and Boats $\Rightarrow$
+\textbf{exploratory evidence only}.
+
+\medskip
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**Pre vs.\ post regressions:**
+$\log(\text{death rate} + 0.01) \sim$ weather + month FE
+
+| Variable | Pre $\beta$ | p | Post $\beta$ | p |
+|---|---:|---:|---:|---:|
+| Wave height | +1.51 | .420 | +2.90 | \textbf{.013} |
+| Wind speed | --0.50 | .254 | +0.37 | .083 |
+| Current speed | --49.7 | .064 | +45.0 | \textbf{.008} |
+| Days $>$2m | +0.07 | .332 | +0.12 | \textbf{.007} |
+
+\scriptsize
+$n_{\text{pre}} = 72$ months, $n_{\text{post}} = 56$ months.
+Rodriguez-Sanchez et al.\ data + ERA5.
+
+:::
+::: {.column width="50%"}
+
+**Weather $\times$ Post interaction (HAC SEs):**
+
+| Variable | Interact $\beta$ | HAC p |
+|---|---:|---:|
+| Current speed | \textbf{+79.1} | \textbf{.001} |
+| Wind speed | \textbf{+0.90} | \textbf{.008} |
+| Days $>$2m waves | +0.10 | .088 |
+| Wave height | +1.58 | .135 |
+
+**Joint F-test:** $F = 2.94$, $p = 0.024$
+
+\medskip
+
+Pre-MoU: no weather signal.
+Post-MoU: 3/4 variables significant.
+$\Delta R^2 = 0.22$ post vs.\ $0.08$ pre.
+
+\medskip
+
+\scriptsize
+\textit{Status:} motivating evidence for the event-level
+analysis. Not primary due to collider bias.
+
+:::
+::::
+
+\normalsize
+
+## Proposed Primary Analysis: Model A (Event-Level)
+
+\footnotesize
+
+**Core question:** Did the same weather conditions become
+\textit{more lethal per incident} after the MoU?
+
+\medskip
+
+**Why event-level is primary (per DAG analysis):**
+
+- No crossings in the model $\Rightarrow$ \textbf{no collider bias}
+- Captures the \textbf{severity margin}:
+  $E[\text{deaths} \mid \text{incident}, \text{weather}, \text{post}]$
+- Exact weather matching to each incident's date
+  and coordinates
+
+\medskip
+
+**Event-level model (IOM incidents, $n \approx 4{,}067$
+across all Mediterranean routes):**
+
+$$\text{deaths}_i \sim \text{NegBin}(\mu_i), \quad
+  \log \mu_i = \alpha_g + \lambda_m +
+  \beta_3 (\text{SWH}_i \times \text{Post}_t
+  \times \text{CMR}_r) + \mathbf{X}_i'\gamma$$
+
+$\alpha_g$ = \textbf{grid cell FE} (1$^\circ$ cells);
+$\lambda_m$ = month FE.
+$\beta_3$ = \textbf{triple interaction}: did bad weather
+become more lethal, specifically on the CMR,
+specifically post-MoU?
+EMR/WMR/WAAR serve as \textbf{control routes}
+--- they share Mediterranean weather trends but
+were not targeted by the EU--Libya MoU.
+
+\medskip
+
+$\mathbf{X}_i$: wind, SST, all lower-order
+interactions, month dummies.
+At 1$^\circ$ resolution: 32 CMR grid cells with incidents in
+both periods (82\% coverage).
+
+\medskip
+
+**Weather variable construction:** weather variables are
+highly correlated ($r = 0.58$--$0.89$). Two options:
+(a)~use individual variables one-at-a-time (interpretable
+but ignores joint variation);
+(b)~\textbf{PCA} on all weather features $\Rightarrow$
+use PC1 (``overall sea harshness'') in the triple
+interaction. PC1 captures the dominant dimension of
+harsh conditions; $\beta_3$ then tests whether
+\textit{general sea harshness} became more lethal
+post-MoU.
+
+\normalsize
+
+## Data and Feasibility
+
+\footnotesize
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**IOM MMP incidents (all 100\% geocoded):**
+
+| Route | Incidents | Deaths$>$0 |
+|-------|----------:|-----------:|
+| CMR   | 2,090     | 1,600      |
+| WMR   | 960       | 747        |
+| EMR   | 578       | 502        |
+| WAAR  | 439       | 355        |
+| **Total** | **4,067** | **3,204** |
+
+\medskip
+
+**Other data:**
+
+| Source | Resolution |
+|----|--------|
+| ERA5 (SWH, wind, SST) | Daily, 0.25$^\circ$ |
+| IOM monthly crossings | Route $\times$ month |
+| UNHCR daily arrivals (Italy) | Daily |
+
+:::
+::: {.column width="50%"}
+
+**What the triple-diff tests (and doesn't):**
+
+- \textcolor{okgreen}{\checkmark} Whether weather--mortality
+  relationship \textit{changed} post-MoU
+- \textcolor{okgreen}{\checkmark} Uses EMR/WMR/WAAR as
+  \textbf{control routes} (shared weather trends,
+  no MoU treatment)
+- \textcolor{okgreen}{\checkmark} Within-period weather
+  variation (not just pre/post level shift)
+- \textcolor{okgreen}{\checkmark} Grid FE absorb spatial
+  selection
+- \textcolor{okgreen}{\checkmark} Event-level avoids
+  Kronmal (1993) ratio bias and monthly
+  aggregation loss
+- \textcolor{alertred}{$\times$} Does not isolate MoU from
+  concurrent policies (bundle problem)
+- \textcolor{alertred}{$\times$} Conditions on detected
+  incidents (see selection slide)
+
+:::
+::::
+
+\normalsize
+
+## Selection and Detection: What the Data Capture
+
+\scriptsize
+
+IOM MMP records \textit{detected incidents} with $\geq 1$
+death or disappearance. Our estimand conditions on three
+selection stages --- $\beta_3$ captures lethality
+\textit{given a detected incident}, not given a crossing
+attempt.
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**Three layers of selection:**
+
+1. \textbf{Crossing attempt} (extensive margin):
+   only those who depart enter the data. If the MoU
+   deters the \textit{safest} crossings, the remaining
+   pool is more vulnerable (compositional selection)
+
+2. \textbf{Incident occurrence:} successful crossings
+   appear in UNHCR arrival data, not MMP.
+   We condition on ``something went wrong''
+
+3. \textbf{Detection/reporting:} a boat that sinks
+   without trace (``ghost boat'') never enters MMP.
+   Post-MoU, SAR withdrawal $\Rightarrow$ fewer assets
+   witnessing open-sea sinkings $\Rightarrow$
+   detection probability \textit{falls} for mid-sea
+   incidents
+
+\medskip
+
+**Bias direction for $\beta_3$:**
+ghost boats bias $\hat{\beta}_3$ \textbf{downward}
+(worst incidents missed). Near-shore shift (81\%
+post-MoU) favors better-observed, lower-fatality
+events $\Rightarrow$ works \textit{against} finding
+$\beta_3 > 0$.
+
+:::
+::: {.column width="50%"}
+
+**Mitigation strategies:**
+
+- \textbf{Detection sensitivity analysis} (pipeline
+  step 3): Lee (2009) bounds are not applicable here
+  --- they target level effects, not interaction
+  estimands like $\beta_3$. Instead, parameterize
+  detection probability as declining by $\pi \in (0,1]$
+  post-MoU on the CMR, potentially varying with weather.
+  For a grid of $(\pi, \bar{d})$ values (detection drop
+  $\times$ mean severity of undetected incidents),
+  re-estimate $\beta_3$ and report how much detection
+  must worsen to nullify the result
+- \textbf{Sensitivity analysis:} assume $x\%$ undetected
+  incidents with mean $\bar{d}$ deaths; show how
+  $\hat{\beta}_3$ changes as $(x, \bar{d})$ vary.
+  Quantifies how bad undetected sinkings must be
+  to overturn the result
+- \textbf{Cross-route comparison:} if detection bias is
+  similar across routes, it differences out in the
+  triple interaction $\text{SWH} \times \text{Post}
+  \times \text{CMR}$
+- \textbf{Aggregate cross-check:} monthly death count
+  model as complementary evidence;
+  Model~D rate regression as exploratory robustness
+
+\medskip
+
+**Implication:** These biases make our test
+\textbf{conservative}. If we find $\beta_3 > 0$
+despite conditioning on detected incidents (which
+over-represent near-shore, lower-fatality events
+post-MoU), the true effect on all crossing attempts
+is likely \textit{at least as large}.
+
+:::
+::::
+
+\normalsize
+
+## Analysis Pipeline
+
+\scriptsize
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**Level 1 --- Event-level (primary = Model A),**
+$n \approx 4{,}067$:
+
+| Step | Method | Purpose |
+|--|----|---------|
+| 1 | NegBin triple-diff | Main: SWH $\times$ Post $\times$ CMR |
+| 2 | DML (partially linear) | Flexible nuisance; valid CI for $\beta_3$ |
+| 3 | Detection sensitivity | Parameterized selection analysis for $\beta_3$ |
+| 4 | Causal forest | Heterogeneity (where/when effect strongest) |
+
+**Level 2 --- Monthly (complementary),**
+$n \approx 520$:
+
+| Step | Method | Status |
+|--|-------|-------|
+| 5 | Death counts $\sim$ Weather $\times$ Post | Complementary (no crossings) |
+| 6 | Crossings $\sim$ Weather $\times$ Post | Diagnostic (DAG-valid) |
+| 7 | Rate regression (Model D) | Exploratory (collider caveat) |
+| 8 | Matrix completion/SCM | Counterfactual CMR mortality |
+
+Steps 1--3 = core (NegBin, DML, detection sensitivity). Steps 4--8 = complementary/robustness.
+
+:::
+::: {.column width="50%"}
+
+**Why two levels?**
+
+- \textbf{Event-level (Model A)}: weather matched to each
+  incident's exact date and coordinates $\Rightarrow$
+  identification power from within-month variation.
+  No offset needed (deaths per incident, not per
+  attempt). \textbf{Avoids Kronmal ratio bias}
+
+- \textbf{Monthly}: total effect on death counts (step 5);
+  volume channel assessment (step 6: Crossings as
+  \textit{outcome}, not conditioning set --- DAG-valid);
+  rate as exploratory evidence (step 7)
+
+\medskip
+
+**Why event-level, not daily?**
+
+- Interceptions/deaths not available daily
+  (only monthly from IOM)
+- Daily aggregation creates artificial zeros
+  (missing $\neq$ zero incidents)
+- Incident-level preserves exact coordinates
+  for ERA5 weather matching
+
+\medskip
+
+\scriptsize
+\textit{See dag_identification.qmd (Sections 11--13) for full DAG-based
+justification of the model hierarchy.}
+
+:::
+::::
+
+\normalsize
+
+## Role of Causal ML
+
+\footnotesize
+
+Causal ML \textbf{does not solve identification} --- that comes
+from the DAG (weather exogeneity, exclusion restriction).
+What it does is make \textbf{estimation} more robust and reveal
+\textbf{heterogeneity}.
+
+\medskip
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**What causal ML adds:**
+
+- \textbf{DML} (step 2): partially linear model
+  $\text{deaths}_i = \beta_3 \cdot (\text{SWH} \times
+  \text{Post} \times \text{CMR}) + g(\mathbf{X}_i)
+  + \varepsilon_i$.
+  $g(\cdot)$ estimated flexibly by ML (random forest,
+  boosting); cross-fitting gives valid inference for
+  $\beta_3$ even if $g$ is complex.
+  \textbf{Protects $\beta_3$ from functional form
+  misspecification} in nuisance parameters
+  (\texttt{DoubleML} package)
+
+- \textbf{Causal forest} (step 4): within CMR, treat
+  Post as binary treatment, estimate CATE
+  $\tau(\text{SWH}, \text{grid})$. If $\tau$ increases
+  with SWH $\Rightarrow$ effect concentrates in
+  bad-weather conditions. Reveals \textit{where} and
+  \textit{when} the effect is strongest
+
+:::
+::: {.column width="50%"}
+
+**What it does not solve:**
+
+- \textbf{Identification}: still requires Weather $\perp$
+  MoU and the exclusion restriction (from DAG)
+- \textbf{Propensity scores}: unnecessary --- weather is
+  exogenous by physics, no selection on observables
+
+\medskip
+
+**Feasibility with our data:**
+
+| Method | Min.\ $n$ | Our $n$ | Status |
+|--------|-------:|------:|--------|
+| DML | $\sim$1,000 | 4,067 | \textcolor{okgreen}{Feasible} |
+| Causal forest | $\sim$2,000 | 2,090 (CMR) | \textcolor{okgreen}{Workable} |
+
+\medskip
+
+\scriptsize
+\textbf{Pipeline logic:} parametric first (NegBin)
+for interpretability $\to$ DML for robustness $\to$
+detection sensitivity analysis for selection $\to$
+causal forest for heterogeneity. Each step adds a
+layer of credibility.
+
+:::
+::::
+
+\normalsize
+

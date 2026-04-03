@@ -1,0 +1,61 @@
+SAR MODERATION: do NGO vessels weaken the SWH-mortality link?
+NegBin | NW(28) SEs | Standardized SWH and NGO vessels | Month-year FE
+Sample: 2014-2021, N = 2922
+Cor(ngo, post_mou): 0.280
+
+m0: Baseline (SWH x post_mou)
+m1: SAR linear (SWH x ngo_z)
+m2: SAR quadratic (SWH x ngo_z + SWH x ngo_z^2)
+m3: Horse race (SWH x post_mou + SWH x ngo_z)
+
+                                        m0               m1               m2
+                                  Baseline       SAR linear    SAR quadratic
+Dependent Var.:             n_dead_missing   n_dead_missing   n_dead_missing
+                                                                            
+swh_prevweek_z                    -0.6804          -0.0385           0.3058 
+                                  (0.3613)         (0.2708)         (0.3673)
+swh_prevweek_z x post_mou          1.241*                                   
+                                  (0.5398)                                  
+swh_prevweek_z x ngo_z                              0.4833           0.4932 
+                                                   (0.2746)         (0.3134)
+swh_prevweek_z x ngo_z_sq                                           -0.3831 
+                                                                    (0.2825)
+Fixed-Effects:              --------------   --------------   --------------
+month_year                             Yes              Yes              Yes
+_________________________   ______________   ______________   ______________
+S.E. type                 New.-West (L=28) New.-West (L=28) New.-West (L=28)
+Observations                         2,711            2,711            2,711
+Squared Cor.                       0.04264          0.04180          0.02963
+Pseudo R2                          0.04011          0.03950          0.04004
+BIC                                5,957.4          5,960.7          5,965.6
+Over-dispersion                    0.04882          0.04854          0.04872
+
+                                        m3
+                                Horse race
+Dependent Var.:             n_dead_missing
+                                          
+swh_prevweek_z                    -0.6648*
+                                  (0.3142)
+swh_prevweek_z x post_mou          1.158* 
+                                  (0.4877)
+swh_prevweek_z x ngo_z             0.4267 
+                                  (0.2590)
+swh_prevweek_z x ngo_z_sq                 
+                                          
+Fixed-Effects:              --------------
+month_year                             Yes
+_________________________   ______________
+S.E. type                 New.-West (L=28)
+Observations                         2,711
+Squared Cor.                       0.04368
+Pseudo R2                          0.04078
+BIC                                5,961.6
+Over-dispersion                    0.04906
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Binned SWH-mortality gradient by NGO count (HC SEs):
+  0 vessels       N= 298  beta=-0.030 (SE=0.437)
+  1-4 vessels     N= 613  beta=-1.651 (SE=0.321)
+  5-8 vessels     N=1483  beta=+0.713 (SE=0.207)
+  9+ vessels      N= 528  beta=+0.108 (SE=0.268)

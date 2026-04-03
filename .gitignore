@@ -3,6 +3,7 @@
 .RData
 .Rproj.user/
 *.Rproj.user
+.Rapp.history
 
 # renv library (lockfile is tracked)
 renv/library/
@@ -15,14 +16,14 @@ renv/python/
 # targets cache
 _targets/
 
-# Large model objects
-*.RData
-*.rds
-*.RDS
-
-# Data (raw data tracked selectively; large files excluded)
-data/raw/era5/*.nc
-data/raw/era5/*.grib
+# Raw data (large, not tracked — obtain from original sources)
+data/raw/era5/
+data/raw/iom/
+data/raw/acled/
+data/raw/frontex/
+data/raw/unhcr/
+data/raw/united/
+data/raw/migrant files/
 
 # OS
 .DS_Store

@@ -1,0 +1,27 @@
+FE STRUCTURE DIAGNOSTIC
+Why month-year FE is the appropriate specification
+
+CONTEXT:
+  Deiana et al. (2024): week-of-year FE (52 cells, seasonality only)
+  Zambiasi & Albarosa (2025): month-of-year FE (12 cells, seasonality only)
+  This paper: month-year FE (~96 cells, seasonality + year-specific levels)
+
+TEST 1: Post-MoU death drop is uniform across SWH terciles
+  Deaths dropped ~60% at all SWH levels — a level shift, not gradient.
+
+TEST 2: FE comparison (2014-2021)
+  Month-of-year only (Zambiasi)           b3 = +0.160  p = 0.4525
+  Week-of-year only (Deiana)              b3 = +0.251  p = 0.1808
+  Month-of-year + Year FE                 b3 = +0.451  p = 0.0479
+  Month-year FE (primary)                 b3 = +1.241  p = 0.0000
+  Adding year controls recovers the gradient signal.
+
+TEST 3: post_mou main effect insufficient
+  Month-of-year + post_mou dummy: interaction b3 = +0.209 (p=0.3315)
+  A single dummy cannot substitute for year-level FE.
+
+CONCLUSION:
+  Month-year FE absorbs year-specific level shifts in deaths that are
+  unrelated to weather (policy changes, crossing volumes, SAR coverage).
+  Without absorbing these, the SWH x post_mou interaction conflates the
+  gradient change with the level change. Month-year FE is necessary.

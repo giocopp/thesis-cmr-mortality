@@ -1,0 +1,23 @@
+WEEKLY PANEL: REDUCED-FORM MODEL
+Period start: 2011 | NegBin | Month-of-year + Year FE
+Outcome: drowning + mixed/unknown, Incident type only, core corridor
+MF for pre-2014, IOM for 2014+
+
+=== 2011-2021 ===
+  Weekly mean (primary)         b3 = +0.273 (SE=0.259)  IRR = 1.314  p = 0.2907
+  All CMR (robustness)          b3 = +0.351 (SE=0.207)  IRR = 1.420  p = 0.0896
+  No outliers (robustness)      b3 = +0.434 (SE=0.266)  IRR = 1.543  p = 0.1036
+
+=== 2011-2024 ===
+  Weekly mean (primary)         b3 = +0.252 (SE=0.213)  IRR = 1.287  p = 0.2364
+  All CMR (robustness)          b3 = +0.344 (SE=0.175)  IRR = 1.411  p = 0.0490
+  No outliers (robustness)      b3 = +0.350 (SE=0.209)  IRR = 1.419  p = 0.0944
+
+
+=== WHY WEEKLY GIVES NULL RESULTS ===
+
+Weekly aggregation smooths out high-frequency weather variation.
+FE absorb 46% of weekly SWH variation vs 23% of daily.
+After absorbing seasonality, there is insufficient residual SWH
+variation at weekly frequency to identify the gradient change.
+The daily panel is the correct frequency for this question.

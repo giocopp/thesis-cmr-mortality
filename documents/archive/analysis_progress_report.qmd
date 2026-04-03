@@ -1,0 +1,459 @@
+---
+title: "Analysis Summary: Weather, Policy, and Mortality on the Central Mediterranean Route"
+author: "Giorgio Coppola | MDS Thesis, Hertie School | March 2025"
+date: today
+format:
+  docx:
+    toc: false
+editor:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  message = FALSE, warning = FALSE,
+  fig.width = 7, fig.height = 5, dpi = 150
+)
+```
+
+# 1. Research Question and Design
+
+## 1.1 The Question
+
+Did the 2017 EU-Libya Memorandum of Understanding (MoU) make the Central Mediterranean Route more dangerous? Specifically: did the MoU change how sea conditions translate into deaths at sea?
+
+The MoU externalized search and rescue (SAR) to the Libyan Coast Guard, degrading rescue capacity. Smuggler networks responded by shifting to cheaper, more dangerous boats. The thesis asks whether these system changes amplified the lethality of environmental hazards: whether bad weather became more deadly after the policy.
+
+
+## 1.2 The Estimand
+
+Following the framework of Lundberg, Johnson, and Stewart (2021), the theoretical estimand is the change in the weather-mortality gradient:  
+
+    tau = g_post(w) - g_pre(w)
+
+where g_m(w) = d log E[deaths | w] / dw is the log-linear weather-mortality gradient under regime m.  
+
+My specification is  
+
+    log E[deaths_t] = λ_FE + β₁·SWH_{t-1} + β₃·(SWH_{t-1} × Post_t)
+
+where:  
+
+- **log E[deaths_t]** is the log of the expected daily death count (dead + missing) on day t.  
+- **λ_FE** is the week-by-year (or month-by-year) fixed effects, absorbing everything that does not vary day-to-day within the FE cell (from Deiana, Maheshri, and Mastrobuoni, 2024). The only variation left is day-to-day weather fluctuations within the same week (or month).  
+- **β₁ and β₃** are the gradient: β₁ is the pre-MoU gradient and β₃ is the change in the gradient.
+
+More specifically:  
+
+- **Pre-MoU (Post = 0)**: log E[deaths_t] = λ_FE + β₁ · SWH_{t-1}  
+- **Post-MoU (Post = 1)**: log E[deaths_t] = λ_FE + (β₁ + β₃) · SWH_{t-1}  
+
+Importantly, the MoU happened once, on a specific date. After that date, every day is "post-MoU." So within any given week, either all days are pre-MoU or all days are post-MoU. That means the week-year fixed effects already capture any overall difference in death levels between the pre and post periods. There's nothing left for a separate Post_t term to estimate. What the fixed effects cannot capture is whether rough days within a week became more deadly relative to calm days after the MoU. That's the interaction, and that's the only thing β₃ measures. SWH is measured at lag-1 (yesterday's conditions) because IOM records the documentation date, not the crossing date; lag-1 captures weather during departure and transit (see Section 1.5).  
+
+On the multiplicative scale, exp(tau) measures how much more a unit increase in sea severity raises expected deaths post-MoU compared to pre-MoU. This is a causal interaction estimand: it requires both weather (exogenous, conditional on temporal FE) and the MoU (no parents, no backdoor paths) to be valid treatments.  
+
+- Pre-MoU: a 1m SWH increase multiplies expected deaths by exp(β₁)  
+- Post-MoU: a 1m SWH increase multiplies expected deaths by exp(β₁ + β₃)  
+- The ratio is exp(β₃) — how much the weather effect itself changed  
+
+The central idea is that we cannot perfectly or directly observe the things that make crossings dangerous: boat quality, SAR availability at the moment of distress, smuggler decisions, overcrowding, since these are latent or unobserved/undocumented. What we can observe is how the system responds to exogenous weather shocks. Weather works like a stress test: a fragile system (bad boats, no rescue) produces many more deaths when waves are high, while a more resilient system (sturdy boats, active SAR) absorbs the same weather shock with fewer deaths. The gradient is the sensitivity of the system to environmental stress. The change in the gradient (β₃) reveals whether that sensitivity shifted after the MoU.  
+
+## 1.3 Identification Strategy
+
+The primary design is an adaptation of Deiana, Maheshri, and Mastrobuoni (2024): specifically, their use of within-week weather variation with week-by-year fixed effects to identify how policy shocks change the relationship between sea conditions and migration outcomes. Differences are:  
+
+1) I model daily deaths rather than daily crossing attempts;  
+2) I test a weather x post-MoU interaction rather than their triple interaction with boat composition;  
+3) my policy shock is the EU-Libya MoU rather than Mare Nostrum or the Minniti Code; and  
+4) I use NegBin rather than Poisson QMLE given extreme overdispersion in the death count.  
+
+Six identification assumptions are required (see estimands.qmd Section 2.3): weather exogeneity conditional on FE, MoU exogeneity, gradient stability (the critical one), exclusion restriction, SUTVA, and no anticipation.  
+  
+The naive approach of comparing average deaths before and after the MoU is hopeless as (1) migration volumes collapsed post-MoU, (2) routes shifted, (3) the Libyan civil war evolved, (4) NGO SAR expanded and contracted, (5) the Minniti Code has been enacted (increasingly reducing NGO SAR capacity), (6) COVID erupted, (7) other policies between Libya and Italy have been enacted. The level of deaths is confounded by all of this, and the week-year FE absorb it because it's unidentifiable. The main theoretical assumption is that the MoU substantially changed a paradigm, and that we can identify this change via weather-mortality gradient variation. The gradient gives something conditional to all this: keeping constant slow-moving factors within a given week, does a rough day produce more deaths relative to a calm day? Did this within-week pattern change after the MoU?  
+
+The logic is that the MoU withdrew SAR and degraded boat quality/increased crossings on smaller boats: did the system become more fragile?  
+
+- If β₃ > 0: yes, the same weather shock produces proportionally more deaths post-MoU  
+- If β₃ = 0: the system's weather-sensitivity didn't change, even though the system itself changed in other ways  
+
+Deiana et al. apply this to study if SAR increased crossing on unsafe boats (moral hazard). This project tests the reverse: did withdrawing the safety net (MoU → SAR reduction) change the system's fragility?  
+
+## 1.4 The DAG
+
+The causal structure (see dag_identification.qmd) has eight nodes:
+
+| Node | Status |
+|------|--------|
+| MoU | Exposure (parentless) |
+| Deaths | Outcome |
+| Vulnerability | Latent (unobserved) |
+| Weather | Observed, exogenous |
+| FE | Adjusted (in model) |
+| SAR | Unobserved with my data (unadjusted)|
+| Boats | Unobserved with my data (unadjusted)|
+| Crossings | Observed, endogenous |
+
+```{r dag-define, include=FALSE}
+library(dagitty)
+
+dag <- dagitty('
+dag {
+  MoU       [exposure, pos="4,-0.5"]
+  Deaths    [outcome,  pos="6.5,2"]
+  Vulnerability      [latent,   pos="4,2"]
+  Weather   [pos="0,2"]
+  FE        [adjusted, pos="1.5,3.5"]
+  SAR       [pos="3,0.5"]
+  Boats     [pos="5,0.5"]
+  Crossings [pos="1.5,1.1"]
+
+  MoU -> SAR
+  MoU -> Boats
+  MoU -> Crossings
+  SAR -> Crossings
+  SAR -> Vulnerability
+  Boats -> Crossings
+  Boats -> Vulnerability
+  Weather -> Crossings
+  Weather -> Vulnerability
+  Vulnerability -> Deaths
+  Crossings -> Deaths
+  FE -> Weather
+  FE -> Crossings
+  FE -> Vulnerability
+  FE -> Deaths
+}
+')
+```
+
+```{r dag-plot, fig.height=5}
+library(ggdag)
+library(ggplot2)
+
+ggdag_status(dag, text = FALSE) +
+  geom_label(aes(label = name),
+             fill = "grey93", colour = "black",
+             size = 3, fontface = "bold",
+             label.padding = unit(0.2, "lines"),
+             label.size = 0, na.rm = TRUE) +
+  theme_dag() +
+  guides(color = guide_legend(title = "Node status")) +
+  ggtitle("DAG: MoU -> Deaths (Vulnerability unobserved)")
+```
+
+The MoU affects Deaths through two channels, both flowing through latent Vulnerability:  
+
+- MoU -> reduced SAR -> Vulnerability -> Deaths  
+- MoU -> degraded Boats -> Vulnerability -> Deaths  
+
+The beta_3 interaction captures the total change across both channels. The DAG analysis also establishes that conditioning on Crossings (i.e., using mortality rates) introduces collider bias through SAR and Boats (the Kronmal problem -- see dag_identification.qmd Section 5).  
+
+## 1.5 Primary Model: Daily Panel
+
+n_dead_missing_t ~ NegBin(mu_t), log(mu_t) = lambda_FE + beta_1 * SWH_{t-1} + beta_3 * (SWH_{t-1} x Post_t)  
+
+where lambda_FE are fixed effects (week-by-year or month-by-year), SWH is spatial-mean significant wave height over the core corridor [10.5, 15.5] x [32.3, 36.2] measured at lag-1 (yesterday's conditions), Post is an indicator for dates >= 2017-02-01, and n_dead_missing counts deaths from drowning and suspected drowning incidents only. Standard errors are heteroskedasticity-robust (clustered SEs reported as robustness).  
+
+Key specification choices:  
+
+- **Lag-1 timing:** IOM MMP `incident_date` is the reporting/documentation date, not the crossing date. Lag-1 captures weather during departure and transit, which precedes documentation by approximately one day. Lag-2 serves as robustness; lag-3 and lag-7 are timing falsification tests (no plausible mechanism at 3+ days for a 1-2 day crossing).  
+- **Outcome filtering:** Following Zambiasi and Albarosa (2025), the primary outcome counts only drowning and suspected drowning incidents (IOM cause categories "Drowning" and "Mixed or unknown"). SWH does not plausibly cause deaths from sickness, violence, or other non-maritime hazards. "Mixed or unknown" are overwhelmingly bodies found at sea or on boats -- sea crossing deaths where the exact cause was not determined.  
+- **Two FE structures:** Week-by-year (~628 cells, most demanding) and month-by-year (~144 cells, less aggressive). Both identify from day-to-day weather variation within the FE cell. Week-year FE are the primary specification; month-year FE retain substantially more observations because fewer FE groups contain only zero-outcome days.  
+
+The choice of FE structure affects both what is absorbed and what identifies β₃:  
+
+- **Week-year FE** absorb everything that does not vary within a single week: seasonality, trends, policy shifts, NGO SAR vessel rotations, smuggler network changes. Identification comes only from comparing rough vs. calm days within the same 7-day window. Within a week, almost nothing changes except weather -- this makes the identifying variation very clean, but the estimator is noisy because most weeks contain zero drowning deaths and are dropped.  
+- **Month-year FE** absorb everything that does not vary within a single month. This still removes seasonality and year trends, but within-month variation now includes slower-moving weather patterns (e.g., a stormy week vs. a calm week in the same month). More observations survive singleton removal (4,143 vs. 2,681), giving more statistical power, but the identifying variation is less pure: factors that change week-to-week within a month (e.g., a SAR vessel arriving mid-month, a smuggler network reorganization) are no longer absorbed and could confound the estimate.  
+
+In practice, month-year FE produce stronger and more significant results. This could mean the additional variation is informative (more data, same signal), or that the less demanding FE allow confounders to inflate the estimate. The placebo tests in Section 5.1 help adjudicate: if month-year FE produce many significant placebo dates while week-year FE do not, the month-year results may be too permissive.  
+
+## 1.6 Complementary Models: Event-Level
+
+Two complementary models use the incident as the unit of observation. Source: 03d_event_model_revised.R.  
+  
+**A. Event-level NegBin:**  
+
+dead_missing_i ~ NegBin(mu_i), log(mu_i) = alpha_g + lambda_year + lambda_month + beta_1 * SWH_{i,t-1} + beta_3 * (SWH_{i,t-1} x Post_i)  
+
+where alpha_g is a 1-degree grid FE and SWH is measured at the incident's nearest ERA5 grid cell at lag-1. This model uses coarser FE because there are too few incidents per week-year cell. Identification comes from cross-sectional and temporal variation within grid x year x month cells.  
+
+
+## 1.7 Why No Control Routes
+
+The Eastern Mediterranean Route is contaminated by the 2016 EU-Turkey deal. The Western Mediterranean and West African Atlantic routes have fundamentally different climate, sea conditions, and smuggler networks. Cross-route parallel gradient trends are not credible.  
+
+
+# 2. Data
+
+## 2.1 Sources
+
+- IOM Missing Migrants Project (MMP): Incident-level records of deaths and disappearances on the CMR, geocoded, 2014-2025. ~1,381 CMR incidents after cleaning (all causes); reduced to the core corridor and drowning causes for the primary analysis.  
+- ERA5 reanalysis: Daily gridded weather from Copernicus: significant wave height (SWH, 0.5 deg), wind speed (u10/v10, 0.25 deg), wind gust, mean wave period (2014-2025).  
+
+![Core CMR corridor with incident locations (2014-2025). Blue box = weather measurement area [10.5, 15.5] x [32.3, 36.2]. Point size proportional to dead + missing; colour distinguishes pre- and post-MoU periods.](../output/figures/core_corridor_map.png){width=6in}
+
+## 2.2 Daily Panel Construction
+
+The daily panel (02b_daily_weather_panel.R) computes spatial-mean weather over the core CMR corridor [10.5E-15.5E, 32.3N-36.2N], where the majority of incidents occur. Temporal lags (lag-1 through lag-7, plus 3-day and 7-day moving averages) are computed for each weather variable. IOM incident counts are aggregated to daily totals and merged to create a balanced panel of all days, including zero-death days.  
+
+The outcome variable `n_dead_missing` counts daily deaths from drowning and suspected drowning incidents within the core corridor. An `all_n_dead_missing` variable (all causes, unfiltered) is computed for robustness comparisons.  
+
+Panel dimensions: 4,383 days (2014-01-01 to 2025-12-31).  
+
+## 2.3 Event-Level Construction
+
+The event dataset (01b_core_corridor_dataset.R) loads all IOM MMP incident records, restricts to the Central Mediterranean route and core corridor [10.5, 15.5] x [32.3, 36.2], preserves all IOM MMP fields, and merges ERA5 weather at each incident's nearest grid cell (0.5 deg for waves, 0.25 deg for atmospheric) at lags 0, 1, 2, 3, and 7 days. Derived variables include wind speed, fatality rate, and cause-of-death categorization.  
+
+The analysis script (03d) further filters to drowning and suspected drowning incidents (cause categories "Drowning" and "Mixed or unknown").  
+
+## 2.4 Outcome Variable
+
+The primary outcome is `n_dead_missing`: the daily count of dead + missing persons from drowning and suspected drowning incidents within the core CMR corridor. This excludes deaths from vehicle accidents, sickness, violence, and other clearly non-maritime causes (following Zambiasi and Albarosa 2025).  
+
+The overdispersion ratio (variance/mean) remains extreme, supporting the choice of negative binomial over Poisson.  
+
+## 2.5 Estimation Samples
+
+**Daily panel:**
+
+| FE structure | N (after singleton removal) | theta |
+|-------------|----------------------------|-------|
+| Week-by-year | 2,681 days | 0.133 |
+| Month-by-year | 4,143 days | 0.065 |
+
+The week-year FE structure drops more observations because many week-year cells contain only zero-outcome days when using the drowning-only outcome. The unfiltered outcome (all causes) yields N = 2,751 under week-year FE.  
+
+**Event-level:**
+
+| Specification | N |
+|--------------|---|
+| Dead/missing, lag-1, grid+yr+mo FE | 923 incidents |
+| Dead/missing, lag-1, yr+mo FE (no grid) | 927 incidents |
+
+
+# 3. Weather Overlap Diagnostic
+
+A prerequisite for the interaction design: do incidents occur under comparable weather conditions in both periods?
+
+| Variable | n pre | Mean pre | Median pre | n post | Mean post | Median post | KS stat | KS p |
+|----------|-------|----------|------------|--------|-----------|-------------|---------|------|
+| SWH (m) | 211 | 0.81 | 0.67 | 1021 | 0.69 | 0.55 | 0.169 | <0.001 |
+| Wind (m/s) | 239 | 4.84 | 4.64 | 1142 | 4.69 | 4.42 | 0.062 | 0.427 |
+| Gust (m/s) | 239 | 7.31 | 6.85 | 1142 | 7.61 | 7.22 | 0.071 | 0.278 |
+| Wave period (s) | 211 | 4.66 | 4.40 | 1021 | 4.29 | 4.11 | 0.178 | <0.001 |
+| SST (C) | 188 | 22.2 | 23.0 | 634 | 21.8 | 21.6 | 0.097 | 0.130 |
+
+Common support holds. Wind speed and gust show no distributional shift. SWH and wave period shift modestly toward calmer seas post-MoU.
+
+![Figure 1: Weather conditions at incident locations, pre vs post MoU.](../output/figures/weather_overlap_densities.pdf){width=6in}
+
+
+# 4. Primary Specification and Results
+
+All models use NegBin with heteroskedasticity-robust SEs unless noted. Source: 03c_daily_panel_model.R.  
+
+## 4.1 Primary Results
+
+| Specification | beta_3 | SE | p-value | IRR | N |
+|---------------|--------|----|---------|-----|---|
+| **SWH lag-1 \| week-year FE** | **+1.355** | **0.530** | **0.011 **** | **3.875** | **2,681** |
+| SWH lag-1 \| month-year FE | +1.394 | 0.359 | <0.001 *** | 4.032 | 4,143 |
+| SWH lag-1 \| week-year (clustered SE) | +1.355 | 0.837 | 0.105 | 3.875 | 2,681 |
+| SWH lag-1 \| week-year [2014-2021] | +0.974 | 0.589 | 0.098 * | 2.647 | 1,521 |
+| All incidents (unfiltered) | +1.101 | 0.504 | 0.029 ** | 3.009 | 2,751 |
+
+The primary beta_3 = +1.36 (p = 0.011) implies a 1m SWH increase raises expected daily deaths 3.9 times more post-MoU than pre-MoU. The result is even stronger with month-year FE (+1.39, p < 0.001), which retains more observations. Clustering SEs by week-year raises p to 0.105 -- marginal, consistent with the FE already absorbing within-cluster correlation. The result attenuates but remains positive when restricting to 2014-2021 or using the unfiltered outcome.  
+
+## 4.2 Timing Robustness
+
+The timing structure provides an important specification test. If SWH lag-1 captures actual transit conditions, nearby lags should show similar effects, while distant lags should not.  
+
+| Lag | FE | beta_3 | SE | p-value | IRR |
+|-----|-----|--------|----|---------|-----|
+| Lag-1 (primary) | week-year | +1.355 | 0.530 | 0.011 ** | 3.875 |
+| Lag-2 | week-year | +1.380 | 0.552 | 0.012 ** | 3.974 |
+| Lag-3 | week-year | -0.588 | 0.476 | 0.217 | 0.556 |
+| Lag-7 | week-year | -0.897 | 0.595 | 0.132 | 0.408 |
+| Lag-1 | month-year | +1.394 | 0.359 | <0.001 *** | 4.032 |
+| Lag-2 | month-year | +1.182 | 0.402 | 0.003 *** | 3.262 |
+| Lag-3 | month-year | +0.964 | 0.310 | 0.002 *** | 2.622 |
+| Lag-7 | month-year | -0.491 | 0.313 | 0.117 | 0.612 |
+
+With week-year FE: lag-1 and lag-2 are both significant and similar in magnitude (+1.36 and +1.38). Lag-3 switches sign and is not significant; lag-7 is null. This is consistent with a 1-2 day crossing: weather during transit matters, weather a week before does not.  
+
+With month-year FE: the pattern is more persistent (lag-3 still significant), consistent with within-month weather autocorrelation. The less aggressive FE structure does not absorb as much slow-moving weather variation. Lag-7 is null under both FE structures.  
+
+## 4.3 Interpretation of the Primary Result
+
+The primary result is internally consistent across timing variants (lag-1 and lag-2), FE structures (week-year and month-year), and outcome definitions (drowning-only and all causes). The estimated IRR of ~3.9 means that, after the MoU, a 1m increase in SWH multiplies expected daily drowning deaths by nearly four times more than it did before the MoU.  
+
+However, three caveats require attention before drawing causal conclusions:  
+
+1. Clustered SEs (p = 0.105) are at the margin of conventional significance.  
+2. The restricted 2014-2021 sample attenuates the result (p = 0.098), suggesting later years contribute.  
+3. The diagnostics in Section 5 raise concerns about gradient stability and MoU specificity.  
+
+
+# 5. Diagnostics: Does the MoU Date Stand Out?
+
+## 5.1 Placebo Treatment Dates (Lag-1 Specification)
+
+Re-estimating beta_3 at 19 quarterly placebo dates (2015-Q1 to 2021-Q1). All 19 estimates converged under both FE structures. Source: 03b3_placebo_lag1.R.
+
+**Week-year FE:**
+
+| Placebo date | beta_3 | SE | p-value | IRR |
+|--------------|--------|----|---------|-----|
+| 2015-01 | +0.548 | 1.033 | 0.596 | 1.730 |
+| 2015-04 | +2.399 | 1.015 | 0.018 ** | 11.007 |
+| 2015-07 | +0.765 | 0.901 | 0.396 | 2.148 |
+| 2015-10 | +0.759 | 0.883 | 0.390 | 2.136 |
+| 2016-01 | +0.501 | 0.913 | 0.583 | 1.650 |
+| 2016-04 | +0.441 | 0.809 | 0.586 | 1.554 |
+| 2016-07 | +1.229 | 0.725 | 0.090 * | 3.419 |
+| 2016-10 | +1.045 | 0.659 | 0.113 | 2.845 |
+| **2017-02 (MoU)** | **+1.355** | **0.530** | **0.011 **** | **3.875** |
+| 2017-07 | +0.600 | 0.600 | 0.318 | 1.822 |
+| 2017-10 | +0.874 | 0.502 | 0.082 * | 2.397 |
+| 2018-01 | +0.444 | 0.462 | 0.337 | 1.559 |
+| 2018-04 | +0.552 | 0.441 | 0.211 | 1.736 |
+| 2018-07 | +0.468 | 0.420 | 0.265 | 1.597 |
+| 2019-01 | +0.520 | 0.427 | 0.223 | 1.682 |
+| 2019-07 | +0.699 | 0.417 | 0.094 * | 2.012 |
+| 2020-01 | +0.500 | 0.402 | 0.213 | 1.649 |
+| 2020-07 | +0.734 | 0.390 | 0.060 * | 2.083 |
+| 2021-01 | +1.008 | 0.387 | 0.009 *** | 2.740 |
+
+With week-year FE, the MoU date (beta = +1.36, p = 0.011) is among the most significant dates. However, it is not uniquely special: 2015-04 gives a larger coefficient (+2.40, p = 0.018), and 2021-01 is also significant (+1.01, p = 0.009). The coefficient path does not show a monotonic decline from early dates, but rather an irregular pattern with the MoU among the strongest points.  
+
+**Month-year FE:** With the less aggressive FE structure, multiple dates before the MoU produce larger, more significant coefficients: 2015-04 (+2.83, p < 0.001), 2016-07 (+1.56, p = 0.001), 2016-10 (+1.43, p = 0.001), 2015-10 (+1.64, p = 0.005), 2016-04 (+1.31, p = 0.008). The MoU date (+1.39, p < 0.001) sits within this sequence, not above it. Dates after 2017-07 are all near zero and insignificant, suggesting the entire pre-to-post gradient shift is driving the result, not a discrete break at the MoU.  
+
+![Figure 2: Placebo treatment dates (SWH lag-1, daily panel). Both FE structures shown. Diamond = true MoU (Feb 2017).](../output/figures/placebo_lag1.png){width=6in}
+
+## 5.2 Day-0 Placebo Comparison
+
+As a contrast, the original day-0 SWH specification (weather on the reporting day) was also tested at 15 placebo dates. 
+
+The day-0 specification gives beta_3 = +0.15 (p = 0.823) at the MoU date -- essentially null. All other placebo dates are also null except 2015-01 (+4.95, p = 0.027). This confirms that the timing matters: weather on the documentation day does not predict deaths, but weather during transit (lag-1) does. The sensitivity to timing is itself informative -- it suggests a real mechanism (exposure during crossing) rather than a spurious correlation.  
+
+![Figure 3: Placebo treatment dates (SWH day-0, daily panel). NegBin, week-year FE.](../output/figures/placebo_beta3.png){width=5.5in}
+
+## 5.3 Gradient Evolution Over Time (Lag-1)
+
+Two diagnostics examine the gradient stability assumption. They answer different questions:  
+
+- **Gradient level** (rolling 2-year windows): estimates `deaths ~ SWH | FE` within each window. This shows the trajectory of the weather-mortality relationship over time. A gradient that goes from negative to positive around the MoU is *consistent* with a positive beta_3.  
+- **Gradient change** (expanding windows around the MoU): estimates `deaths ~ SWH + SWH x Post | FE` in windows that expand symmetrically from the MoU date. This directly estimates beta_3 and shows whether it is stable as more data is included.  
+
+### Gradient level over time
+
+Rolling 2-year windows (NegBin, stepping by 6 months) show the SWH lag-1 coefficient is **negative throughout the entire period** under both FE structures. Higher SWH is always associated with fewer daily deaths -- the net effect of weather is deterrence: rough seas reduce the number of people at sea and thus the number of deaths.  
+
+The magnitude of this deterrence varies substantially:  
+
+| Period | Week-year FE | Month-year FE |
+|--------|-------------|---------------|
+| 2015-2016 (pre-MoU) | -1.8 to -2.5 | -2.3 to -3.4 |
+| 2017-2018 (MoU period) | -0.9 to -1.3 | -0.5 to -0.9 |
+| 2019-2021 | -1.3 to -2.1 | -1.1 to -1.7 |
+| 2022-2024 | -0.1 to -0.5 | -0.7 to -1.2 |
+
+The deterrence is strongest in the early period (2015-2016) and weakest around the MoU (2017-2018) and in recent years (2022-2024). This pattern is consistent with a positive beta_3: the gradient becomes less negative after the MoU, meaning weather's deterrent effect weakened. The week-year FE produces noisier estimates (fewer observations survive singleton removal per window). The month-year FE is smoother but less demanding.  
+
+![Figure 4: SWH lag-1 mortality gradient over time. Blue = week-year FE, orange = month-year FE. Rolling 2-year windows.](../output/figures/gradient_evolution_lag1.png){width=5.5in}
+
+### Gradient change (beta_3) by sample width
+
+Expanding windows centered on the MoU estimate beta_3 from progressively larger samples: from +/-6 months (only the data nearest the MoU) to +/-5 years (nearly the full panel). This diagnostic reveals whether the estimated change depends on which data is included.  
+
+| Window | beta_3 (week-year) | p | beta_3 (month-year) | p |
+|--------|-------------------|---|--------------------|----|
+| +/-0.5 yr | +1.68 | 0.084 | +1.29 | 0.022 |
+| +/-1.0 yr | +2.30 | 0.002 | +2.20 | <0.001 |
+| +/-1.5 yr | +1.88 | 0.010 | +2.15 | <0.001 |
+| +/-2.0 yr | +1.23 | 0.087 | +1.34 | 0.004 |
+| +/-2.5 yr | +1.99 | 0.002 | +2.14 | <0.001 |
+| +/-3.0 yr | +1.36 | 0.035 | +1.81 | <0.001 |
+| +/-4.0 yr | +0.94 | 0.139 | +1.56 | <0.001 |
+| +/-5.0 yr | +0.98 | 0.096 | +1.55 | <0.001 |
+
+Beta_3 is **consistently positive** across all window widths, never crossing zero. The estimate peaks at +/-1 year (beta_3 ~ +2.3, the data closest to the MoU break) and attenuates as more distant data is added. With week-year FE, it falls from ~+2.3 to ~+1.0 and loses significance at the widest windows. With month-year FE, it is more stable (~+1.3 to +2.2, always significant).  
+
+The attenuation with wider windows is consistent with the rolling level plot: the deterrence effect partially recovers by 2019-2021 (gradient becomes more negative again), diluting the pre/post contrast when those years are included. The full-sample primary estimate (+1.36 from 03c with week-year FE) is consistent with the expanding-window estimate at +/-3 years (+1.36).  
+
+Beyond +/-3 years, the expansion becomes asymmetric: the pre-MoU period is exhausted (fixed at 2014-01-01, 100 event-days) while the post-period continues to expand.  
+
+![Figure 5: Expanding-window beta_3 (SWH lag-1 x Post). Both FE structures.](../output/figures/expanding_window_beta3.png){width=5.5in}
+
+
+# 6. Event-Level Model
+
+## 6.1 Event-Level NegBin Results
+
+| Specification | beta_3 | SE | p-value | IRR | N |
+|---------------|--------|----|---------|-----|---|
+| Dead/missing lag-1 \| grid+yr+mo | +0.559 | 0.414 | 0.177 | 1.749 | 923 |
+| Dead/missing lag-1 \| yr+mo (no grid) | +0.553 | 0.431 | 0.200 | 1.739 | 927 |
+| Dead/missing lag-2 \| grid+yr+mo | +0.879 | 0.349 | 0.012 ** | 2.409 | 923 |
+| Dead/missing day-0 \| grid+yr+mo | -0.072 | 0.263 | 0.784 | 0.930 | 923 |
+
+The event-level lag-1 beta_3 is positive (+0.56) but not significant (p = 0.177). The sign aligns with the daily panel, unlike the previous day-0 specification which gave negative signs. The lag-2 specification is significant (+0.88, p = 0.012, IRR = 2.41), consistent with a 1-2 day transit-to-documentation delay. The day-0 specification gives a near-zero coefficient, confirming the timing sensitivity seen in the daily panel.  
+
+## 6.2 Timing Sensitivity and Model Reconciliation
+
+The timing of weather measurement matters enormously across both models:  
+
+| Model | Day-0 | Lag-1 | Lag-2 |
+|-------|-------|-------|-------|
+| Daily panel (beta_3) | ~0 (old spec) | +1.36 ** | +1.38 ** |
+| Event-level (beta_3) | -0.07 | +0.56 | +0.88 ** |
+
+Day-0 SWH (weather on the IOM documentation day) gives null or opposite-signed results. Lag-1 and lag-2 (weather during transit) give positive, directionally consistent results. This pattern makes mechanistic sense: weather during the actual crossing determines danger, not weather when the incident is reported.  
+
+The daily panel and event model now point in the same direction. The daily panel is more powerful (larger beta, significant at lag-1) because it captures both the intensive margin (per-incident severity) and the extensive margin (number of incidents). The event model, which conditions on an incident occurring, shows a weaker but directionally consistent effect.  
+
+# 7. Decomposition: What the Daily Outcome Captures
+
+The daily-level n_dead_missing can be decomposed as:
+
+    deaths_t = sum_i d_i = sum_i p_i * r_i
+
+where n_t is the number of incidents on day t, d_i is dead + missing in incident i, p_i is total people on board, and r_i = d_i / p_i is the fatality rate. Any change in the weather-deaths gradient could come from changes in:  
+
+1. Number of incidents (n_t): did bad weather cause more incidents post-MoU? Not tested directly in the current specification (the old volume diagnostic with day-0 SWH gave beta_3 = +0.23, p = 0.37).  
+
+2. People per boat (p_i): did boat sizes change post-MoU? Yes -- dramatically (see Section 8.3).  
+
+3. Fatality rate (r_i): did the fraction who die per incident change with weather post-MoU? This requires survivor data.  
+
+The daily panel's beta_3 captures a mixture of all three margins. The event model captures margins (2) and (3) jointly.  
+
+# 8. Unresolved Issues
+
+1. Gradient oscillation drivers: The rolling-window analysis shows the gradient oscillating over the full period. Possible drivers include: NGO SAR vessel presence/absence, Libyan Coast Guard activity changes, smuggler network reorganizations, seasonal route shifts. These factors operate at multi-month scales that week-year FE cannot absorb but that may confound the interaction term.  
+
+2. Possible problems with FE structure?:
+
+3. Volume channel: How much of the daily panel result reflects changes in who departs on bad-weather days (selection into crossing) versus what happens to those at sea? 
+
+# 9.  Technical Notes
+
+- Primary estimation: fixest::fenegbin (R). High-dimensional FE via demeaning, automatic singleton drops, hetero-robust and cluster-robust SEs.
+- Daily panel: 4,383 days. Week-year FE (~628 cells): 2,681 days after singleton removal (theta = 0.133). Month-year FE (~144 cells): 4,143 days after singleton removal (theta = 0.065).
+- Event-level: Core corridor [10.5, 15.5] x [32.3, 36.2]. Drowning + suspected drowning causes. Grid FE at 1-degree resolution. Maybe non-sense.
+- Weather: Daily panel uses spatial means over core corridor (ocean cells at 0.5 deg for waves, 0.25 deg for atm). Event model uses nearest-neighbor lookup at each incident location.
+- Timing: Lag-1 is primary. IOM MMP incident_date is the reporting/documentation date (incidents are recorded to happen midnight of the indicated day). Lag-1 captures weather during the day before the recording. Lag-2 provides robustness; lag-3/lag-7 are timing falsification tests.
+- Outcome filtering: Drowning + "Mixed or unknown" causes (Zambiasi & Albarosa 2025 precedent). "Mixed or unknown" on the CMR are overwhelmingly sea crossing deaths where exact cause was not determined.
+- Placebos: NegBin with week-year and month-year FE at 19 quarterly dates (03b3, lag-1 spec) and 15 dates (03b, day-0 spec). All lag-1 estimates converged.
+- Gradient evolution: Rolling 2-year window (03b2, lag-1 spec) with both FE structures, stepping in 6-month increments from 2015-01 to 2024-07.
+
+# 10. References
+
+1. Deiana, C., Maheshri, V., & Mastrobuoni, G. (2024). Migrants at sea: Unintended consequences of search and rescue operations. American Economic Journal: Economic Policy.
+
+2. Hoffmann Pham, K., & Komiyama, Y. (2024). Strategic choices of migrants and smugglers in the Central Mediterranean Sea. Working Paper.
+
+3. Lundberg, I., Johnson, R., & Stewart, B. M. (2021). What is your estimand? Defining the target quantity connects statistical evidence to theory. American Sociological Review, 86(3), 532-565.
+
+4. Zambiasi, D., & Albarosa, E. (2025). Externalizing rescue operations at sea: The migration deal between Italy and Libya. Journal of Economic Geography, 25(1), 41-58.
