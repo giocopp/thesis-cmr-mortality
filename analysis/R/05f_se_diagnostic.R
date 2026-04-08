@@ -20,7 +20,7 @@ MOU_DATE <- as.Date("2017-07-01")
 YEAR_START <- 2014
 YEAR_END <- 2024
 SEA_CAUSES <- c("Drowning", "Mixed or unknown")
-CORE <- list(lon_min = 10.0, lon_max = 15.1, lat_min = 32.4, lat_max = 37.8)
+CMR_INCIDENT_COUNTRIES <- c("Algeria", "Italy", "Libya", "Malta", "Tunisia")
 
 cat("============================================================\n")
 cat("SE DIAGNOSTIC: autocorrelation + SE comparison\n")
@@ -34,8 +34,7 @@ iom <- readRDS(file.path(BASE_DIR, "data", "processed",
   filter(Route == "Central Mediterranean",
          tolower(`Incident Type`) == "incident",
          `Cause of death (category)` %in% SEA_CAUSES,
-         Longitude >= CORE$lon_min, Longitude <= CORE$lon_max,
-         Latitude  >= CORE$lat_min, Latitude  <= CORE$lat_max) %>%
+         `Country of Incident` %in% CMR_INCIDENT_COUNTRIES) %>%
   mutate(date = as.Date(incident_date_clean),
          dead_missing = pmax(as.numeric(`No. dead/missing`), 0, na.rm = TRUE)) %>%
   filter(!is.na(date))

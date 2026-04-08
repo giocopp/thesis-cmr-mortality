@@ -17,7 +17,7 @@ library(lubridate)
 library(patchwork)
 
 BASE_DIR <- here::here()
-CORE <- list(lon_min = 10.0, lon_max = 15.1, lat_min = 32.4, lat_max = 37.8)
+CMR_INCIDENT_COUNTRIES <- c("Algeria", "Italy", "Libya", "Malta", "Tunisia")
 SEA_CAUSES <- c("Drowning", "Mixed or unknown")
 
 cat("============================================================\n")
@@ -60,8 +60,7 @@ iom_cmr <- iom_raw %>%
          `Cause of death (category)` %in% SEA_CAUSES) %>%
   mutate(date = as.Date(incident_date_clean),
          dead_missing = pmax(as.numeric(`No. dead/missing`), 0, na.rm = TRUE),
-         in_core = Longitude >= CORE$lon_min & Longitude <= CORE$lon_max &
-                   Latitude >= CORE$lat_min & Latitude <= CORE$lat_max) %>%
+         in_cmr_countries = `Country of Incident` %in% CMR_INCIDENT_COUNTRIES) %>%
   filter(!is.na(date))
 
 iom_daily <- iom_cmr %>%
@@ -69,7 +68,7 @@ iom_daily <- iom_cmr %>%
   summarise(
     iom_incidents    = n(),
     iom_dead_missing = sum(dead_missing),
-    iom_core_deaths  = sum(dead_missing * in_core),
+    iom_core_deaths  = sum(dead_missing * in_cmr_countries),
     .groups = "drop"
   )
 
@@ -513,21 +512,21 @@ crossing_components <- monthly %>%
   select(ym, frontex_persons, unhcr_extra, lcg_persons, tcg_persons, deaths_missing) %>%
   tidyr::pivot_longer(-ym, names_to = "component", values_to = "persons")
 
-comp_order <- c("deaths_missing", "frontex_persons", "unhcr_extra",
-                "lcg_persons", "tcg_persons")
+comp_order <- c("frontex_persons", "unhcr_extra",
+                "lcg_persons", "tcg_persons", "deaths_missing")
 comp_labels <- c(
-  "deaths_missing"  = "Deaths and missing (IOM)",
-  "frontex_persons" = "Persons detected by Frontex",
-  "unhcr_extra"     = "Arrivals not detected by Frontex (UNHCR - Frontex)",
-  "lcg_persons"     = "LCG interceptions",
-  "tcg_persons"     = "TCG interceptions"
+  "frontex_persons" = "Persons detected during operations (Frontex)",
+  "unhcr_extra"     = "Arrivals not detected during operations (UNHCR - Frontex)",
+  "lcg_persons"     = "LCG interceptions (IOM)",
+  "tcg_persons"     = "TCG interceptions (IOM)",
+  "deaths_missing"  = "Deaths and missing persons (IOM)"
 )
 comp_colours <- c(
-  "deaths_missing"  = "#D32F2F",
   "frontex_persons" = "#1F78B4",
   "unhcr_extra"     = "#A6CEE3",
   "lcg_persons"     = "#333333",
-  "tcg_persons"     = "#AAAAAA"
+  "tcg_persons"     = "#AAAAAA",
+  "deaths_missing"  = "#D32F2F"
 )
 
 crossing_components <- crossing_components %>%
@@ -540,13 +539,75 @@ p5 <- ggplot(crossing_components, aes(x = ym, y = persons, fill = component)) +
   coord_cartesian(xlim = PLOT_XLIM) +
   labs(title = "Estimated total crossing attempts by component (monthly)",
        y = "Number of persons", x = NULL) +
+  guides(fill = guide_legend(nrow = 3, byrow = TRUE)) +
   theme_minimal(base_size = 11) +
-  theme(legend.position = "right",
+  theme(legend.position = "bottom",
         legend.text = element_text(size = 9))
 
 ggsave(file.path(BASE_DIR, "output", "figures", "crossing_attempts_components.png"),
        p5, width = 12, height = 6, dpi = 200)
 cat("Saved: output/figures/crossing_attempts_components.png\n")
+
+# Figure 6: Detection method composition (bar plot)
+frx_det <- frx_cmr %>%
+  filter(!is.na(detected_by)) %>%
+  mutate(
+    ym = floor_date(date, "month"),
+    det_method = case_when(
+      grepl("NGO vessel", detected_by, ignore.case = TRUE) ~ "NGO vessel",
+      grepl("FWA|RPAS|HELO", detected_by, ignore.case = TRUE) ~ "Aerial surveillance",
+      grepl("CPV|CPB|Land Patrol|OPV", detected_by, ignore.case = TRUE) ~ "Patrol vessel",
+      grepl("Marina|MAS|Mare Sicuro|Mare Nostrum|EUNAVFOR",
+            detected_by, ignore.case = TRUE) ~ "Navy (Italian/EU)",
+      grepl("Call-Migrant|Call-Civilian|Call-Pleasure", detected_by, ignore.case = TRUE) ~ "Distress call",
+      grepl("Commercial|fishing|Merchant", detected_by, ignore.case = TRUE) ~ "Commercial vessel",
+      TRUE ~ "Other"
+    )
+  )
+
+# Order: most common at bottom
+det_levels <- c("Patrol vessel", "Navy (Italian/EU)", "Aerial surveillance",
+                "NGO vessel", "Commercial vessel", "Distress call", "Other")
+frx_det$det_method <- factor(frx_det$det_method, levels = rev(det_levels))
+
+det_monthly <- frx_det %>% count(ym, det_method)
+
+det_colours <- c(
+  "Patrol vessel"       = "#2166AC",
+  "Navy (Italian/EU)"   = "#4393C3",
+  "Aerial surveillance" = "#E69F00",
+  "NGO vessel"          = "#4DAF4A",
+  "Commercial vessel"   = "#A6761D",
+  "Distress call"       = "#D32F2F",
+  "Other"               = "#BDBDBD"
+)
+
+p6 <- ggplot(det_monthly, aes(x = ym, y = n, fill = det_method)) +
+  geom_col(width = 25) +
+  scale_fill_manual(values = det_colours, name = "Detection method") +
+  geom_vline(xintercept = as.Date("2017-07-01"), linetype = "dashed",
+             colour = "red", linewidth = 0.5) +
+  annotate("text", x = as.Date("2017-07-01"), y = Inf, label = "MoU",
+           vjust = 2, hjust = -0.2, colour = "red", size = 3) +
+  labs(
+    title = "Detection Method Composition — Central Mediterranean",
+    subtitle = "Monthly Frontex detections by method (CMR departures)",
+    x = NULL, y = "Detections"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    legend.position = "right",
+    panel.grid.major = element_line(colour = "grey90", linewidth = 0.2),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size = 13, face = "bold"),
+    plot.subtitle = element_text(size = 9, colour = "grey50"),
+    axis.text = element_text(size = 8, colour = "grey50"),
+    axis.title = element_text(size = 9, colour = "grey50")
+  )
+
+ggsave(file.path(BASE_DIR, "output", "figures", "frx_detection_composition_time.png"),
+       p6, width = 12, height = 6, dpi = 300)
+cat("Saved: output/figures/frx_detection_composition_time.png\n")
 
 # ── 8. Save text summary ──────────────────────────────────
 cat("\n--- 8. Saving summary ---\n")

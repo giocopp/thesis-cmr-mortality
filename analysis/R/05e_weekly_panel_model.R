@@ -29,7 +29,7 @@ MOU_DATE <- as.Date("2017-07-01")
 YEAR_START <- 2011
 PERIODS <- c(2021, 2024)
 SEA_CAUSES <- c("Drowning", "Mixed or unknown")
-CORE <- list(lon_min = 10.0, lon_max = 15.1, lat_min = 32.4, lat_max = 37.8)
+CMR_INCIDENT_COUNTRIES <- c("Algeria", "Italy", "Libya", "Malta", "Tunisia")
 
 cat("============================================================\n")
 cat("WEEKLY PANEL: REDUCED-FORM MODEL\n")
@@ -38,34 +38,19 @@ cat("============================================================\n\n")
 # ── 1. Build outcome (daily, then aggregate to weekly) ───────
 cat("--- 1. Data preparation ---\n")
 
-# Core corridor deaths: IOM (2014+)
+# CMR sea deaths: IOM (2014+)
 iom <- readRDS(file.path(BASE_DIR, "data", "processed",
                            "iom_mmp_incidents.RDS")) %>%
   filter(Route == "Central Mediterranean",
          tolower(`Incident Type`) == "incident",
          `Cause of death (category)` %in% SEA_CAUSES,
-         as.numeric(Longitude) >= CORE$lon_min, as.numeric(Longitude) <= CORE$lon_max,
-         as.numeric(Latitude) >= CORE$lat_min, as.numeric(Latitude) <= CORE$lat_max) %>%
+         `Country of Incident` %in% CMR_INCIDENT_COUNTRIES) %>%
   mutate(date = as.Date(incident_date_clean),
          dead_missing = pmax(as.numeric(`No. dead/missing`), 0, na.rm = TRUE)) %>%
   filter(!is.na(date))
 iom_daily <- iom %>%
   group_by(date) %>%
   summarise(n_dead_missing = sum(dead_missing), .groups = "drop")
-
-# Core corridor deaths: Migrant Files (pre-IOM)
-mf_path <- file.path(BASE_DIR, "data", "processed", "archive", "migrant_files_cmr_pre_iom.RDS")
-mf_daily <- tibble(date = as.Date(character()), n_dead_missing = numeric())
-if (file.exists(mf_path)) {
-  mf <- readRDS(mf_path) %>%
-    filter(lon >= CORE$lon_min, lon <= CORE$lon_max,
-           lat >= CORE$lat_min, lat <= CORE$lat_max)
-  mf_daily <- mf %>%
-    group_by(date) %>%
-    summarise(n_dead_missing = sum(dead_missing), .groups = "drop") %>%
-    filter(date < as.Date("2014-02-17"))
-  cat(sprintf("  MF pre-IOM: %d days with deaths\n", nrow(mf_daily)))
-}
 
 # All CMR deaths (no corridor restriction) for robustness
 iom_allcmr <- readRDS(file.path(BASE_DIR, "data", "processed",
@@ -80,17 +65,9 @@ iom_allcmr_daily <- iom_allcmr %>%
   group_by(date) %>%
   summarise(n_dead_missing_allcmr = sum(dead_missing), .groups = "drop")
 
-mf_allcmr_daily <- tibble(date = as.Date(character()), n_dead_missing_allcmr = numeric())
-if (file.exists(mf_path)) {
-  mf_all <- readRDS(mf_path) %>% filter(date < as.Date("2014-02-17"))
-  mf_allcmr_daily <- mf_all %>%
-    group_by(date) %>%
-    summarise(n_dead_missing_allcmr = sum(dead_missing), .groups = "drop")
-}
-
-# Combine daily deaths
-daily_deaths <- bind_rows(mf_daily, iom_daily)
-daily_deaths_allcmr <- bind_rows(mf_allcmr_daily, iom_allcmr_daily)
+# Daily deaths (IOM only, no Migrant Files pre-IOM period)
+daily_deaths <- iom_daily
+daily_deaths_allcmr <- iom_allcmr_daily
 
 # Build daily panel then aggregate to weekly
 daily <- readRDS(file.path(BASE_DIR, "analysis", "data", "daily_panel.RDS")) %>%

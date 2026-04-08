@@ -17,13 +17,7 @@ renv/python/
 _targets/
 
 # Raw data (large, not tracked — obtain from original sources)
-data/raw/era5/
-data/raw/iom/
-data/raw/acled/
-data/raw/frontex/
-data/raw/unhcr/
-data/raw/united/
-data/raw/migrant files/
+data/raw/
 
 # OS
 .DS_Store

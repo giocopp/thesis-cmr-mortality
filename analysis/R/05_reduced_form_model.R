@@ -29,7 +29,7 @@ MOU_DATE <- as.Date("2017-07-01")
 YEAR_START <- 2014
 PERIODS <- c(2021, 2024)
 SEA_CAUSES <- c("Drowning", "Mixed or unknown")
-CORE <- list(lon_min = 10.0, lon_max = 15.1, lat_min = 32.4, lat_max = 37.8)
+CMR_INCIDENT_COUNTRIES <- c("Algeria", "Italy", "Libya", "Malta", "Tunisia")
 
 cat("============================================================\n")
 cat("REDUCED-FORM: SWH x POST-MOU -> DEATHS\n")
@@ -39,14 +39,13 @@ cat("============================================================\n\n")
 # ── 1. Data (build once, filter per period) ──────────────────
 cat("--- 1. Data preparation ---\n")
 
-# Core corridor deaths
+# CMR sea deaths (drowning + mixed/unknown, filtered by country of incident)
 iom <- readRDS(file.path(BASE_DIR, "data", "processed",
                            "iom_mmp_incidents.RDS")) %>%
   filter(Route == "Central Mediterranean",
          tolower(`Incident Type`) == "incident",
          `Cause of death (category)` %in% SEA_CAUSES,
-         Longitude >= CORE$lon_min, Longitude <= CORE$lon_max,
-         Latitude  >= CORE$lat_min, Latitude  <= CORE$lat_max) %>%
+         `Country of Incident` %in% CMR_INCIDENT_COUNTRIES) %>%
   mutate(date = as.Date(incident_date_clean),
          dead_missing = pmax(as.numeric(`No. dead/missing`), 0, na.rm = TRUE)) %>%
   filter(!is.na(date))
@@ -67,35 +66,7 @@ daily_deaths_allcmr <- iom_allcmr %>%
   group_by(date) %>%
   summarise(n_dead_missing_allcmr = sum(dead_missing), .groups = "drop")
 
-# 1c. Migrant Files deaths for 2008-2013 (pre-IOM period)
-mf_path <- file.path(BASE_DIR, "data", "processed", "archive", "migrant_files_cmr_pre_iom.RDS")
-if (file.exists(mf_path)) {
-  mf <- readRDS(mf_path)
-  # Core corridor filter (same as IOM)
-  mf_core <- mf %>%
-    filter(lon >= CORE$lon_min, lon <= CORE$lon_max,
-           lat >= CORE$lat_min, lat <= CORE$lat_max)
-  mf_daily_core <- mf_core %>%
-    group_by(date) %>%
-    summarise(n_dead_missing = sum(dead_missing), .groups = "drop")
-  mf_daily_allcmr <- mf %>%
-    group_by(date) %>%
-    summarise(n_dead_missing_allcmr = sum(dead_missing), .groups = "drop")
-  cat(sprintf("  Migrant Files 2008-2013: %d core, %d all CMR\n",
-      nrow(mf_core), nrow(mf)))
-
-  # Combine: MF for pre-2014, IOM for 2014+
-  daily_deaths <- bind_rows(
-    mf_daily_core %>% filter(date < as.Date("2014-01-01")),
-    daily_deaths
-  )
-  daily_deaths_allcmr <- bind_rows(
-    mf_daily_allcmr %>% filter(date < as.Date("2014-01-01")),
-    daily_deaths_allcmr
-  )
-}
-
-cat(sprintf("  Core corridor: %d days with deaths\n", nrow(daily_deaths)))
+cat(sprintf("  CMR deaths: %d days with deaths\n", nrow(daily_deaths)))
 cat(sprintf("  All CMR:       %d days with deaths\n", nrow(daily_deaths_allcmr)))
 
 # 1d. Merge with daily weather panel

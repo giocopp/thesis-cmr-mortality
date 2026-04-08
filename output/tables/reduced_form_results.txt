@@ -3,16 +3,16 @@ NegBin | Newey-West(28) SEs | Standardized SWH (per 1-SD)
 Outcome: drowning + mixed/unknown, Incident type only
 
 === 2014-2021 ===
-  Prev-week (primary)           b3 = +1.241 (SE=0.540)  IRR = 3.458  p = 0.0215
-  Prev-3d (robustness)          b3 = +0.465 (SE=0.359)  IRR = 1.592  p = 0.1956
+  Prev-week (primary)           b3 = +1.092 (SE=0.404)  IRR = 2.980  p = 0.0069
+  Prev-3d (robustness)          b3 = +0.727 (SE=0.311)  IRR = 2.069  p = 0.0193
   All CMR (robustness)          b3 = +1.027 (SE=0.402)  IRR = 2.792  p = 0.0106
-  No outliers (robustness)      b3 = +1.028 (SE=0.457)  IRR = 2.795  p = 0.0244
-  Next-7d (falsification)       b3 = -0.234 (SE=0.456)  IRR = 0.791  p = 0.6074
+  No outliers (robustness)      b3 = +0.989 (SE=0.356)  IRR = 2.689  p = 0.0054
+  Next-7d (falsification)       b3 = -0.495 (SE=0.346)  IRR = 0.610  p = 0.1524
 
 === 2014-2024 ===
-  Prev-week (primary)           b3 = +0.996 (SE=0.446)  IRR = 2.707  p = 0.0255
-  Prev-3d (robustness)          b3 = +0.342 (SE=0.262)  IRR = 1.407  p = 0.1920
+  Prev-week (primary)           b3 = +0.834 (SE=0.329)  IRR = 2.302  p = 0.0113
+  Prev-3d (robustness)          b3 = +0.577 (SE=0.246)  IRR = 1.781  p = 0.0190
   All CMR (robustness)          b3 = +0.755 (SE=0.332)  IRR = 2.128  p = 0.0230
-  No outliers (robustness)      b3 = +0.806 (SE=0.348)  IRR = 2.239  p = 0.0205
-  Next-7d (falsification)       b3 = +0.049 (SE=0.357)  IRR = 1.051  p = 0.8901
+  No outliers (robustness)      b3 = +0.752 (SE=0.272)  IRR = 2.120  p = 0.0058
+  Next-7d (falsification)       b3 = -0.185 (SE=0.287)  IRR = 0.831  p = 0.5201
 
