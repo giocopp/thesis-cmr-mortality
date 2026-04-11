@@ -1,0 +1,37 @@
+055  EXTENSIVE vs INTENSIVE MARGIN
+===================================
+Target: swh_prevweek_z:post_mou coefficient
+
+Extensive: logit via feglm on full panel, P(deaths > 0). FE: month_year.
+           SE: NW(28).
+Intensive: glmmTMB truncated_nbinom2 on days with deaths > 0.
+           FE: factor(year) only (month_year caused non-pos-def Hessian
+           in the small subset). SE: clustered by iso_week when possible,
+           model-based Wald SE as fallback.
+
+
+=== 2014-2020 ===
+  [A] daily-agg N = 2557 | days with deaths = 399
+  [A] extensive (logit, NW28)              b3 = +0.189 (SE = 0.218)  p = 0.3871  (N = 2405) 
+  [A] intensive (trunc NegBin) (Wald SE)   b3 = +0.163 (SE = 0.256)  p = 0.5234  (N = 399) 
+
+  [B] 2-bloc N = 5114 | rows with deaths = 314
+  [B] extensive (logit, NW28)              b3 = +0.402 (SE = 0.222)  p = 0.0696  (N = 4692) 
+  [B] intensive (trunc NegBin) (Wald SE)   b3 = +0.327 (SE = 0.289)  p = 0.2588  (N = 314) 
+
+  [C] 4-country N = 10228 | rows with deaths = 334
+  [C] extensive (logit, NW28)              b3 = +0.335 (SE = 0.212)  p = 0.1136  (N = 9384) 
+  [C] intensive (trunc NegBin) (Wald SE)   b3 = +0.402 (SE = 0.282)  p = 0.1540  (N = 334) 
+
+=== 2014-2023 ===
+  [A] daily-agg N = 3438 | days with deaths = 667
+  [A] extensive (logit, NW28)              b3 = +0.133 (SE = 0.172)  p = 0.4386  (N = 3286) 
+  [A] intensive (trunc NegBin) (Wald SE)   b3 = +0.299 (SE = 0.228)  p = 0.1894  (N = 667) 
+
+  [B] 2-bloc N = 6876 | rows with deaths = 508
+  [B] extensive (logit, NW28)              b3 = +0.325 (SE = 0.192)  p = 0.0905  (N = 6454) 
+  [B] intensive (trunc NegBin) (Wald SE)   b3 = +0.410 (SE = 0.229)  p = 0.0737  (N = 508) 
+
+  [C] 4-country N = 13752 | rows with deaths = 559
+  [C] extensive (logit, NW28)              b3 = +0.282 (SE = 0.182)  p = 0.1222  (N = 12908) 
+  [C] intensive (trunc NegBin) (Wald SE)   b3 = +0.484 (SE = 0.222)  p = 0.0291  (N = 559) 

@@ -13,12 +13,17 @@ Sys.setlocale("LC_TIME", "en_US.UTF-8")
 
 library(tidyverse)
 library(sf)
+library(lwgeom)
 library(xml2)
 library(rnaturalearth)
 library(lubridate)
 
 BASE_DIR <- here::here()
 MOU_DATE <- as.Date("2017-07-01")
+# Sample cutoff for the zone panel visualization: matches the end date of
+# the Frontex-based daily_panel_complete.RDS, which is the canonical base
+# for the zone analysis.
+FRONTEX_END_DATE <- as.Date("2023-06-09")
 GML_DIR  <- file.path(BASE_DIR, "data", "raw", "IMO-SAR-boundaries")
 
 cat("============================================================\n")
@@ -42,8 +47,10 @@ cat("--- Loading IOM incidents ---\n")
 
 df_cmr <- readRDS(file.path(BASE_DIR, "data", "processed",
                              "iom_mmp_incidents.RDS")) %>%
+  # Canonical filter — incident + split incident, no cause restriction.
+  # See header comment in 02_build_daily_panel.R for the rationale.
   filter(Route == "Central Mediterranean",
-         tolower(`Incident Type`) != "sub-incident") %>%
+         tolower(`Incident Type`) %in% c("incident", "split incident")) %>%
   mutate(
     lat = as.numeric(Latitude),
     lon = as.numeric(Longitude),
@@ -62,21 +69,22 @@ cat(sprintf("  Total dead + missing: %.0f\n", sum(df_cmr$dead_missing)))
 # ============================================================
 cat("\n--- 1. Core Corridor zone ---\n")
 
+# Core corridor polygon. Eastern edge is the Calabria-Benghazi diagonal
 coords_core <- matrix(c(
-  15.2, 30.0,
-  15.2, 36.7,
+  20.5, 32.0,   # Benghazi
+  15.9, 38.2,   # Calabria
+  15.2, 38.1,
+  15.2, 37.8,
   12.4, 37.8,
   11.0, 37.1,
    9.0, 34.0,
    9.0, 31.0,
-  15.2, 30.0
+    20, 30.0,
+  20.5, 32.0
 ), ncol = 2, byrow = TRUE)
 
 core_poly <- st_sfc(st_polygon(list(coords_core)), crs = 4326)
-core_sea  <- st_difference(core_poly, land)
-core_proj <- st_transform(core_sea, 3857)
-core_buf  <- st_buffer(core_proj, dist = 5000)
-core_vis  <- st_transform(core_buf, 4326) %>% st_intersection(core_poly)
+core_sea  <- st_difference(core_poly, land) %>% st_make_valid()
 
 cat("  Core Corridor polygon built\n")
 
@@ -159,6 +167,36 @@ zones_sea$zone_label <- c(
 
 cat(sprintf("\n  Total SAR zones: %d\n", nrow(zones_sea)))
 print(zones_sea %>% st_drop_geometry())
+
+# ── 2b. INTERSECT SAR zones with the core corridor ─────────
+# The analysis only cares about CMR-relevant waters. Most of Italy's SRR
+# (Tyrrhenian, Adriatic, northern Med) is outside the CMR corridor. We
+# therefore compute SAR ∩ core_sea polygons and use those for the zone
+# panel death assignment.
+cat("\n--- 2b. Intersecting SAR zones with core corridor ---\n")
+
+zones_in_corridor <- zones_sea
+for (i in seq_len(nrow(zones_sea))) {
+  zg <- zones_sea$geometry[i]
+  xg <- tryCatch(
+    st_intersection(zg, core_sea) %>% st_make_valid(),
+    error = function(e) st_sfc(st_geometrycollection(), crs = 4326)
+  )
+  if (length(xg) == 0 || st_is_empty(xg)[1]) {
+    zones_in_corridor$geometry[i] <- st_sfc(st_geometrycollection(), crs = 4326)
+  } else {
+    zones_in_corridor$geometry[i] <- xg
+  }
+}
+
+zones_in_corridor$full_sar_area_km2 <- as.numeric(st_area(zones_sea)) / 1e6
+zones_in_corridor$zone_area_km2 <- as.numeric(st_area(zones_in_corridor)) / 1e6
+zones_in_corridor$pct_of_full_sar <- round(
+  100 * zones_in_corridor$zone_area_km2 / zones_in_corridor$full_sar_area_km2, 1)
+
+cat("  Intersected zone areas:\n")
+print(st_drop_geometry(zones_in_corridor)[,
+      c("country", "full_sar_area_km2", "zone_area_km2", "pct_of_full_sar")])
 
 # SAR zone incident assignment
 cat("\n--- SAR zone incident assignment ---\n")
@@ -256,44 +294,64 @@ map_theme <- theme_minimal(base_size = 10) +
     plot.margin = margin(5, 5, 5, 5)
   )
 
-# IOM incident point aesthetics (shared across both maps)
-colour_vals <- c("Pre-MoU" = "#D4820E", "Post-MoU" = "#D32F2F")
+# IOM incident point aesthetics: colour by inside/outside the core corridor
+# polygon (the analytical sample for the zone-level model).
+colour_vals <- c("Included" = "#D32F2F",
+                 "Excluded" = "grey65")
 
 country_labels <- data.frame(
-  label = c("Sicily", "Tunisia", "Libya", "Malta", "Lampedusa"),
-  lon   = c(14.2, 9.5, 15.0, 14.4, 12.6),
-  lat   = c(37.5, 35.0, 30.8, 35.7, 35.6)
+  label = c("Sicily", "Tunisia", "Libya", "Malta", "Lampedusa", "Algeria", "Sardinia"),
+  lon   = c(14.2,     9.5,       15.0,    14.4,    12.6,        6.0,       9.1),
+  lat   = c(37.5,     35.0,      30.8,    35.7,    35.6,        35.5,      40.1)
 )
 
-# ── 4a. ERA5 sea weather area ────────────────────────────
+# Restrict map to incidents until Frontex cutoff and flag inside/outside
+# the core corridor polygon. Mirrors the zone panel sample.
+df_cmr_map <- df_cmr %>% filter(date <= FRONTEX_END_DATE)
+iom_sf_map <- st_as_sf(df_cmr_map, coords = c("lon", "lat"), crs = 4326)
+inside_flag <- st_within(iom_sf_map, core_poly, sparse = FALSE)[, 1]
+df_cmr_map$in_corridor <- factor(
+  ifelse(inside_flag, "Included", "Excluded"),
+  levels = c("Included", "Excluded")
+)
 
-# Count incidents inside the SWH polygon
-iom_sf <- st_as_sf(df_cmr, coords = c("lon", "lat"), crs = 4326)
-n_in_zone <- sum(st_within(iom_sf, core_poly, sparse = FALSE)[, 1])
-n_total   <- nrow(df_cmr)
+n_in_zone <- sum(df_cmr_map$in_corridor == "Included")
+n_total   <- nrow(df_cmr_map)
+pct_in    <- 100 * n_in_zone / n_total
+
+# Plot "Outside" points first (underneath), "Inside" on top so they are
+# visually prominent.
+df_cmr_plot_order <- df_cmr_map %>%
+  arrange(in_corridor == "Included")
+
+# ── 4a. ERA5 sea weather area ──
 
 p_core <- ggplot() +
   geom_sf(data = world, fill = "grey90", colour = "grey60", linewidth = 0.2) +
-  geom_sf(data = core_vis, fill = "#2166AC", alpha = 0.15,
-          colour = "#2166AC", linewidth = 0.4) +
-  geom_point(data = df_cmr, aes(x = lon, y = lat, size = dead_missing,
-                                 colour = post_mou), alpha = 0.4, shape = 16) +
-  scale_colour_manual(values = colour_vals, name = "Period") +
-  scale_size_continuous(range = c(0.3, 4), name = "Dead + missing",
+  geom_sf(data = core_sea, fill = "#F08232", colour = "#F08232",
+          alpha = 0.18, linewidth = 0.3) +
+  geom_point(data = df_cmr_plot_order,
+             aes(x = lon, y = lat, size = dead_missing,
+                 colour = in_corridor),
+             alpha = 0.5, shape = 16) +
+  scale_colour_manual(values = colour_vals, name = "Deadly Incidents") +
+  scale_size_continuous(range = c(0.3, 4), name = "Incident Size",
                         breaks = c(1, 10, 50, 200)) +
   guides(colour = guide_legend(order = 1,
-           override.aes = list(size = 2.5, alpha = 0.7)),
-         size = guide_legend(order = 2)) +
+           override.aes = list(size = 2.5, alpha = 0.8)),
+         size   = guide_legend(order = 2)) +
   geom_text(data = country_labels, aes(x = lon, y = lat, label = label),
             colour = "grey40", size = 2.5, fontface = "italic") +
   coord_sf(xlim = MAP_XLIM, ylim = MAP_YLIM, expand = FALSE) +
-  labs(title = "ERA5 sea weather area",
-       subtitle = sprintf("Polygon used for spatial averaging of SWH. IOM MMP incidents: %s in SWH zone / %s total.",
+  labs(title = "Central Mediterranean Route: Considered Area",
+       subtitle = sprintf("IOM incidents: %s inside corridor / %s total (%.1f%%).",
                            formatC(n_in_zone, big.mark = ","),
-                           formatC(n_total, big.mark = ","))) +
+                           formatC(n_total, big.mark = ","),
+                           pct_in),
+       x = NULL, y = NULL) +
   map_theme
 
-# ── 4b. SAR zones ────────────────────────────────────────
+# ── 4b. SAR zones (untouched: original style) ─────────────
 
 zone_colours <- c(
   "EU: Italy" = "#2166AC",
@@ -306,16 +364,15 @@ p_sar <- ggplot() +
   geom_sf(data = world, fill = "grey92", colour = "grey70", linewidth = 0.2) +
   geom_sf(data = zones_sea, aes(fill = zone_label), alpha = 0.15,
           colour = "#2166AC", linewidth = 0.3) +
-  geom_point(data = df_cmr, aes(x = lon, y = lat, size = dead_missing),
+  geom_point(data = df_cmr_map, aes(x = lon, y = lat, size = dead_missing),
              colour = "grey30", alpha = 0.3, shape = 16) +
   scale_fill_manual(values = zone_colours, name = "SAR zone") +
   scale_size_continuous(range = c(0.3, 4), guide = "none") +
   geom_text(data = country_labels, aes(x = lon, y = lat, label = label),
             colour = "#B22222", size = 2.5, fontface = "bold.italic") +
   coord_sf(xlim = MAP_XLIM, ylim = MAP_YLIM, expand = FALSE) +
-  labs(title = "IMO search and rescue zones",
-       subtitle = sprintf("Zone boundaries from IMO GISIS Global SAR Plan.",
-                           formatC(nrow(df_cmr), big.mark = ",")),
+  labs(title = "IMO Search and Rescue Zones",
+       subtitle = "Zone boundaries from IMO GISIS Global SAR Plan.",
        x = NULL, y = NULL) +
   map_theme
 
@@ -331,11 +388,19 @@ cat("Saved: output/figures/desc_panel_maps.png\n")
 # ============================================================
 cat("\n--- 5. Saving ---\n")
 
+saveRDS(core_poly, file.path(BASE_DIR, "data", "processed", "core_corridor.RDS"))
+cat("Saved: data/processed/core_corridor.RDS\n")
+
 saveRDS(zones_sea, file.path(BASE_DIR, "data", "processed", "sar_zones.RDS"))
 cat("Saved: data/processed/sar_zones.RDS\n")
 
+saveRDS(zones_in_corridor, file.path(BASE_DIR, "data", "processed",
+                                      "sar_zones_in_corridor.RDS"))
+cat("Saved: data/processed/sar_zones_in_corridor.RDS\n")
+
 saveRDS(frontex_op, file.path(BASE_DIR, "data", "processed", "frontex_op_areas.RDS"))
 cat("Saved: data/processed/frontex_op_areas.RDS\n")
+
 
 cat("\n============================================================\n")
 cat("DONE\n")

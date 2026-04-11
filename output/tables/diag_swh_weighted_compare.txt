@@ -1,0 +1,33 @@
+POLYGON-MEAN vs DEATH-WEIGHTED SWH — head-to-head
+==================================================
+
+Compared variables:
+  swh_prevweek     (polygon-mean, current primary)
+  swh_w_prevweek   (death-weighted, static weights from historical incidents)
+
+Cor(swh, swh_w) in the panel: 0.9547
+Cor(swh_prevweek, swh_w_prevweek): 0.9774
+
+All specs use NegBin (fenegbin), NW(28) SEs.
+b1 = pre-MoU slope; b3 = interaction; b_post = b1 + b3 = post-MoU slope.
+
+  Primary 2014..full   | mean               b1=-0.798 (0.401)  b3=+1.091 (0.456, p=0.0166)  post=+0.293
+  Primary 2014..full   | weighted           b1=-0.819 (0.376)  b3=+1.007 (0.422, p=0.0169)  post=+0.188
+  Primary 2014-2020    | mean               b1=-0.804 (0.402)  b3=+1.502 (0.669, p=0.0247)  post=+0.697
+  Primary 2014-2020    | weighted           b1=-0.819 (0.374)  b3=+1.253 (0.618, p=0.0427)  post=+0.434
+  Zone 4-country 2014-2023 | mean           b1=-1.723 (0.291)  b3=+1.866 (0.329, p=0.0000)  post=+0.143
+  Zone 4-country 2014-2023 | weighted       b1=-1.677 (0.287)  b3=+1.806 (0.319, p=0.0000)  post=+0.128
+  Zone 2-bloc 2014-2023    | mean           b1=-1.727 (0.364)  b3=+1.907 (0.415, p=0.0000)  post=+0.180
+  Zone 2-bloc 2014-2023    | weighted       b1=-1.723 (0.371)  b3=+1.842 (0.412, p=0.0000)  post=+0.119
+  Zone 4-country 2014-2020 | mean           b1=-1.637 (0.283)  b3=+1.903 (0.415, p=0.0000)  post=+0.266
+  Zone 4-country 2014-2020 | weighted       b1=-1.545 (0.273)  b3=+1.643 (0.386, p=0.0000)  post=+0.098
+  Zone 2-bloc 2014-2020    | mean           b1=-1.663 (0.367)  b3=+2.143 (0.555, p=0.0001)  post=+0.481
+  Zone 2-bloc 2014-2020    | weighted       b1=-1.660 (0.368)  b3=+1.931 (0.530, p=0.0003)  post=+0.271
+
+--- PAIRED DIFFS (weighted minus mean) ---
+  Primary 2014..full              Δb3 = -0.084   Δse = -0.034
+  Primary 2014-2020               Δb3 = -0.249   Δse = -0.051
+  Zone 4-country 2014-2023        Δb3 = -0.060   Δse = -0.010
+  Zone 2-bloc 2014-2023           Δb3 = -0.065   Δse = -0.002
+  Zone 4-country 2014-2020        Δb3 = -0.260   Δse = -0.029
+  Zone 2-bloc 2014-2020           Δb3 = -0.213   Δse = -0.025

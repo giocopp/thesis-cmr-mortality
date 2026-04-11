@@ -1,0 +1,36 @@
+052  SPLINE SWH (natural cubic spline, df=3)
+============================================
+Functional form: ns(swh_prevweek, df=3), interacted with post_mou.
+Joint Wald test: H0 = all 3 spline-by-post interactions are 0
+                 (i.e., the SWH->deaths curve shape did NOT change post-MoU).
+
+(A) daily-agg:  FE=month_year,           NW(28)
+(B) 2-bloc:     FE=month_year+sar_bloc,  NW(28), panel=sar_bloc+date
+(C) 4-country:  FE=month_year+country,   NW(28), panel=country+date
+
+
+=== 2014-2020 ===
+  [A] daily-agg  N = 2557
+  [B] 2-bloc     N = 5114
+  [C] 4-country  N = 10228
+
+  Joint Wald test H0: all spline-by-post interactions = 0
+    [A] daily-agg:
+    stat = 5.537, p = 0.0009
+    [B] 2-bloc:
+    stat = 9.697, p = 0.0000
+    [C] 4-country:
+    stat = 12.173, p = 0.0000
+
+=== 2014-2023 ===
+  [A] daily-agg  N = 3438
+  [B] 2-bloc     N = 6876
+  [C] 4-country  N = 13752
+
+  Joint Wald test H0: all spline-by-post interactions = 0
+    [A] daily-agg:
+    stat = 3.816, p = 0.0096
+    [B] 2-bloc:
+    stat = 10.514, p = 0.0000
+    [C] 4-country:
+    stat = 16.996, p = 0.0000

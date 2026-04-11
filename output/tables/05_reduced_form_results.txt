@@ -1,0 +1,21 @@
+REDUCED-FORM PRIMARY: n_dead_missing ~ SWH x post_mou | month-year FE
+NegBin (fenegbin) | Newey-West(28) SEs | Standardised SWH (per 1-SD)
+Primary outcome: incident-only, core corridor polygon,
+                 cause = Drowning or Mixed/unknown (cases most directly
+                 tied to the act of crossing the sea).
+Sample window: 2014-01-01 to 2023-05-31
+
+=== 2014..2020-12-31 ===
+  Primary (drowning + mixed)        b3 = +1.502 (SE=0.669)  IRR = 4.490  p = 0.0247
+  No outliers >100 (robust.)        b3 = +0.837 (SE=0.573)  IRR = 2.309  p = 0.1439
+  All causes (robust.)              b3 = +1.279 (SE=0.638)  IRR = 3.594  p = 0.0451
+  All CMR countries (robust.)       b3 = +1.209 (SE=0.539)  IRR = 3.351  p = 0.0250
+  Next-7d (falsification)           b3 = -0.611 (SE=0.412)  IRR = 0.543  p = 0.1379
+
+=== 2014..2023-05-31 ===
+  Primary (drowning + mixed)        b3 = +1.091 (SE=0.456)  IRR = 2.978  p = 0.0166
+  No outliers >100 (robust.)        b3 = +0.637 (SE=0.320)  IRR = 1.891  p = 0.0463
+  All causes (robust.)              b3 = +0.890 (SE=0.415)  IRR = 2.436  p = 0.0318
+  All CMR countries (robust.)       b3 = +0.831 (SE=0.374)  IRR = 2.296  p = 0.0261
+  Next-7d (falsification)           b3 = -0.379 (SE=0.383)  IRR = 0.685  p = 0.3222
+

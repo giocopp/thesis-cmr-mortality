@@ -1,5 +1,5 @@
-# 07b_temporal_disaggregation.R
-# =============================
+# 01_temporal_disaggregation.R
+# ============================
 # Temporal disaggregation of monthly LCG/TCG interceptions to daily frequency.
 #
 # Method: Proportional Denton disaggregation (Denton, 1971).
@@ -154,7 +154,7 @@ disagg <- spine %>%
     n_days = n(),
 
     # LCG disaggregation
-    lcg_daily = case_when(
+    lcg_pushbacks = case_when(
       lcg_monthly == 0              ~ 0,
       S_lcg > 0                     ~ lcg_monthly * (indicator_lcg / S_lcg),
       TRUE                          ~ lcg_monthly / n_days  # uniform fallback
@@ -166,7 +166,7 @@ disagg <- spine %>%
     ),
 
     # TCG disaggregation
-    tcg_daily = case_when(
+    tcg_pushbacks = case_when(
       tcg_monthly == 0              ~ 0,
       S_tcg > 0                     ~ tcg_monthly * (indicator_tcg / S_tcg),
       TRUE                          ~ tcg_monthly / n_days  # uniform fallback
@@ -179,9 +179,33 @@ disagg <- spine %>%
   ) %>%
   ungroup()
 
-# Combine interceptions
+# Largest-remainder rounding to non-negative integers, per month.
+# Why: downstream negative-binomial models require integer counts. Largest
+# remainder preserves monthly totals exactly so the validation tests below
+# still pass with zero tolerance.
+lr_round_month <- function(x, target_total) {
+  target_total <- as.integer(round(target_total))
+  if (target_total == 0L || length(x) == 0L) return(rep(0L, length(x)))
+  floor_x <- floor(x)
+  residual <- target_total - sum(floor_x)
+  if (residual > 0) {
+    idx <- order(x - floor_x, decreasing = TRUE)[seq_len(residual)]
+    floor_x[idx] <- floor_x[idx] + 1
+  } else if (residual < 0) {
+    idx <- order(x - floor_x)[seq_len(-residual)]
+    floor_x[idx] <- pmax(floor_x[idx] - 1, 0)
+  }
+  as.integer(floor_x)
+}
+
 disagg <- disagg %>%
-  mutate(interceptions_daily = lcg_daily + tcg_daily)
+  group_by(ym) %>%
+  mutate(
+    lcg_pushbacks = lr_round_month(lcg_pushbacks, first(lcg_monthly)),
+    tcg_pushbacks = lr_round_month(tcg_pushbacks, first(tcg_monthly))
+  ) %>%
+  ungroup() %>%
+  mutate(lcg_tcg_pushbacks = lcg_pushbacks + tcg_pushbacks)
 
 # Report method usage
 cat("\n  LCG disaggregation method by month:\n")
@@ -204,15 +228,15 @@ cat("\n  Test 1: Temporal consistency (daily sums == monthly totals)\n")
 monthly_check <- disagg %>%
   group_by(ym) %>%
   summarise(
-    lcg_daily_sum   = sum(lcg_daily),
+    lcg_pushbacks_sum   = sum(lcg_pushbacks),
     lcg_monthly_val = first(lcg_monthly),
-    tcg_daily_sum   = sum(tcg_daily),
+    tcg_pushbacks_sum   = sum(tcg_pushbacks),
     tcg_monthly_val = first(tcg_monthly),
     .groups = "drop"
   ) %>%
   mutate(
-    lcg_diff = abs(lcg_daily_sum - lcg_monthly_val),
-    tcg_diff = abs(tcg_daily_sum - tcg_monthly_val)
+    lcg_diff = abs(lcg_pushbacks_sum - lcg_monthly_val),
+    tcg_diff = abs(tcg_pushbacks_sum - tcg_monthly_val)
   )
 
 stopifnot(
@@ -226,17 +250,17 @@ cat("    PASS: All monthly sums match within tolerance (0.01)\n")
 # Test 2: Non-negativity
 cat("  Test 2: Non-negativity\n")
 stopifnot(
-  "Negative LCG daily values found" = all(disagg$lcg_daily >= 0),
-  "Negative TCG daily values found" = all(disagg$tcg_daily >= 0)
+  "Negative LCG daily values found" = all(disagg$lcg_pushbacks >= 0),
+  "Negative TCG daily values found" = all(disagg$tcg_pushbacks >= 0)
 )
 cat("    PASS: All daily values >= 0\n")
 
 # Test 3: No NAs in output
 cat("  Test 3: No NAs in daily estimates\n")
 stopifnot(
-  "NA values in lcg_daily" = !any(is.na(disagg$lcg_daily)),
-  "NA values in tcg_daily" = !any(is.na(disagg$tcg_daily)),
-  "NA values in interceptions_daily" = !any(is.na(disagg$interceptions_daily))
+  "NA values in lcg_pushbacks" = !any(is.na(disagg$lcg_pushbacks)),
+  "NA values in tcg_pushbacks" = !any(is.na(disagg$tcg_pushbacks)),
+  "NA values in lcg_tcg_pushbacks" = !any(is.na(disagg$lcg_tcg_pushbacks))
 )
 cat("    PASS: No NAs in daily interception estimates\n")
 
@@ -251,15 +275,15 @@ cat(sprintf("    PASS: %d rows, no duplicates\n", nrow(disagg)))
 
 # Test 5: Correlation diagnostic (informational)
 cat("  Test 5: Correlation diagnostic\n")
-lcg_nonzero <- disagg %>% filter(lcg_daily > 0 & indicator_lcg > 0)
-tcg_nonzero <- disagg %>% filter(tcg_daily > 0 & indicator_tcg > 0)
+lcg_nonzero <- disagg %>% filter(lcg_pushbacks > 0 & indicator_lcg > 0)
+tcg_nonzero <- disagg %>% filter(tcg_pushbacks > 0 & indicator_tcg > 0)
 if (nrow(lcg_nonzero) > 10) {
   cat(sprintf("    LCG cor(daily, indicator) = %.3f (N=%d non-zero days)\n",
-      cor(lcg_nonzero$lcg_daily, lcg_nonzero$indicator_lcg), nrow(lcg_nonzero)))
+      cor(lcg_nonzero$lcg_pushbacks, lcg_nonzero$indicator_lcg), nrow(lcg_nonzero)))
 }
 if (nrow(tcg_nonzero) > 10) {
   cat(sprintf("    TCG cor(daily, indicator) = %.3f (N=%d non-zero days)\n",
-      cor(tcg_nonzero$tcg_daily, tcg_nonzero$indicator_tcg), nrow(tcg_nonzero)))
+      cor(tcg_nonzero$tcg_pushbacks, tcg_nonzero$indicator_tcg), nrow(tcg_nonzero)))
 }
 
 # Test 6: Uniform fallback count
@@ -278,10 +302,10 @@ annual <- disagg %>%
   mutate(year = year(date)) %>%
   group_by(year) %>%
   summarise(
-    lcg_daily_total = sum(lcg_daily),
-    tcg_daily_total = sum(tcg_daily),
-    total_interceptions = sum(interceptions_daily),
-    days_with_interceptions = sum(interceptions_daily > 0),
+    lcg_pushbacks_total = sum(lcg_pushbacks),
+    tcg_pushbacks_total = sum(tcg_pushbacks),
+    total_interceptions = sum(lcg_tcg_pushbacks),
+    days_with_interceptions = sum(lcg_tcg_pushbacks > 0),
     .groups = "drop"
   )
 cat("\n  Annual totals (disaggregated daily):\n")
@@ -291,7 +315,7 @@ print(annual, n = 15)
 cat("\n--- 7. Saving ---\n")
 
 output <- disagg %>%
-  select(date, lcg_daily, tcg_daily, interceptions_daily,
+  select(date, lcg_pushbacks, tcg_pushbacks, lcg_tcg_pushbacks,
          disagg_method_lcg, disagg_method_tcg)
 
 out_dir <- file.path(BASE_DIR, "analysis", "data")

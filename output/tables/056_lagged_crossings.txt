@@ -1,0 +1,97 @@
+056  LAGGED DEPARTURE PROXY as control
+======================================
+Control: log1p(crossing_attempts_lag7) — pre-determined (lag 7 days)
+Sample: 2014 to 2023-06-09 (Frontex data end date)
+
+Each cell compares (i) baseline model without the control to
+(ii) model with the lagged crossings control added.
+
+daily-agg  N = 3431
+2-bloc     N = 6862
+4-country  N = 13724
+
+=== (A) daily-agg ===
+                                 m_da_base        m_da_ctrl
+                                  baseline + crossings_lag7
+Dependent Var.:             n_dead_missing   n_dead_missing
+                                                           
+swh_prevweek_z                    -0.7982*         -0.8453*
+                                  (0.4011)         (0.3965)
+swh_prevweek_z x post_mou          1.092*           1.067* 
+                                  (0.4559)         (0.4539)
+log1p_crossings_lag7                               -0.0530 
+                                                   (0.0407)
+Fixed-Effects:              --------------   --------------
+month_year                             Yes              Yes
+_________________________   ______________   ______________
+S.E. type                 New.-West (L=28) New.-West (L=28)
+Observations                         3,286            3,286
+Squared Cor.                       0.05125          0.05239
+Pseudo R2                          0.03146          0.03168
+BIC                                8,966.3          8,972.6
+Over-dispersion                    0.06108          0.06119
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+  baseline      : b3 = +1.092 (SE = 0.456)  p = 0.0166
+  + control     : b3 = +1.067 (SE = 0.454)  p = 0.0188
+  control itself: log1p_crossings_lag7 = -0.053 (SE = 0.041)  p = 0.1933
+
+=== (B) 2-bloc ===
+                                 m_bl_base        m_bl_ctrl
+                                  baseline + crossings_lag7
+Dependent Var.:             n_dead_missing   n_dead_missing
+                                                           
+swh_prevweek_z                   -1.728***        -1.945***
+                                 (0.3642)         (0.3865) 
+swh_prevweek_z x post_mou         1.908***         1.994***
+                                 (0.4149)         (0.4278) 
+log1p_crossings_lag7                              -0.1433**
+                                                  (0.0479) 
+Fixed-Effects:              --------------   --------------
+month_year                             Yes              Yes
+sar_bloc                               Yes              Yes
+_________________________   ______________   ______________
+S.E. type                 New.-West (L=28) New.-West (L=28)
+Observations                         6,454            6,454
+Squared Cor.                       0.00165          0.00097
+Pseudo R2                          0.04043          0.04142
+BIC                                8,264.8          8,266.1
+Over-dispersion                    0.02380          0.02396
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+  baseline      : b3 = +1.908 (SE = 0.415)  p = 0.0000
+  + control     : b3 = +1.994 (SE = 0.428)  p = 0.0000
+  control itself: log1p_crossings_lag7 = -0.143 (SE = 0.048)  p = 0.0028
+
+=== (C) 4-country ===
+                                 m_zp_base        m_zp_ctrl
+                                  baseline + crossings_lag7
+Dependent Var.:             n_dead_missing   n_dead_missing
+                                                           
+swh_prevweek_z                   -1.724***       -1.966*** 
+                                 (0.2912)        (0.3016)  
+swh_prevweek_z x post_mou         1.867***        1.926*** 
+                                 (0.3291)        (0.3332)  
+log1p_crossings_lag7                             -0.1647***
+                                                 (0.0382)  
+Fixed-Effects:              --------------   --------------
+month_year                             Yes              Yes
+country                                Yes              Yes
+_________________________   ______________   ______________
+S.E. type                 New.-West (L=28) New.-West (L=28)
+Observations                        12,908           12,908
+Squared Cor.                       0.00232          0.00105
+Pseudo R2                          0.04563          0.04689
+BIC                                9,584.3          9,582.5
+Over-dispersion                    0.01406          0.01418
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+  baseline      : b3 = +1.867 (SE = 0.329)  p = 0.0000
+  + control     : b3 = +1.926 (SE = 0.333)  p = 0.0000
+  control itself: log1p_crossings_lag7 = -0.165 (SE = 0.038)  p = 0.0000
+
+Limitation: both zone flavors use NATIONAL crossings_lag7 common
+across zones on the same date (zone-level crossings don't exist).
