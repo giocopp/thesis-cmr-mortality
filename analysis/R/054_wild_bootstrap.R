@@ -3,7 +3,7 @@
 # Enhancement #5: WILD CLUSTER BOOTSTRAP at the ISO-week level.
 #
 # Robustness check for the SE of the primary interaction coefficient
-# (swh_prevweek_z x post_mou), complementing NW(28) and cluster(iso_week).
+# (swh_prevweek x post_mou), complementing NW(14) and cluster(iso_week).
 #
 # fwildclusterboot::boottest() ONLY supports OLS via feols(). It does not
 # support fenegbin or fepois. Two parallel bootstrap approaches:
@@ -91,7 +91,7 @@ pairs_cluster_boot_fepois <- function(formula, data, panel_id_formula,
   n_clust <- length(clusters)
 
   # Original fit
-  m0 <- fepois(formula, data = data, vcov = NW(28),
+  m0 <- fepois(formula, data = data, vcov = NW(14),
                 panel.id = panel_id_formula)
   beta_hat <- coef(m0)[[focal_coef]]
 
@@ -149,7 +149,7 @@ sink(sink_file)
 
 cat("054  WILD / PAIRS CLUSTER BOOTSTRAP AT iso_week\n")
 cat("================================================\n")
-cat("Target: swh_prevweek_z:post_mou\n\n")
+cat("Target: swh_prevweek:post_mou\n\n")
 cat("Approaches:\n")
 cat("  (1) fepois pairs cluster bootstrap on iso_week (B =",
     B_BOOT, "reps)\n")
@@ -174,7 +174,6 @@ for (ye in PERIODS) {
     filter(year(date) >= YEAR_START, year(date) <= ye,
            !is.na(swh_prevweek)) %>%
     mutate(
-      swh_prevweek_z = as.numeric(scale(swh_prevweek)),
       unit = 1L,
       log1p_deaths = log1p(n_dead_missing)
     ) %>%
@@ -182,18 +181,12 @@ for (ye in PERIODS) {
 
   d_bl <- bloc %>%
     filter(year >= YEAR_START, year <= ye, !is.na(swh_prevweek)) %>%
-    mutate(
-      swh_prevweek_z = as.numeric(scale(swh_prevweek)),
-      log1p_deaths = log1p(n_dead_missing)
-    ) %>%
+    mutate(log1p_deaths = log1p(n_dead_missing)) %>%
     as.data.frame()
 
   d_zp <- zp %>%
     filter(year >= YEAR_START, year <= ye, !is.na(swh_prevweek)) %>%
-    mutate(
-      swh_prevweek_z = as.numeric(scale(swh_prevweek)),
-      log1p_deaths = log1p(n_dead_missing)
-    ) %>%
+    mutate(log1p_deaths = log1p(n_dead_missing)) %>%
     as.data.frame()
 
   cat(sprintf("  daily-agg  N = %d | iso_weeks = %d\n",
@@ -208,12 +201,12 @@ for (ye in PERIODS) {
 
   t0 <- Sys.time()
   res_da_pairs <- pairs_cluster_boot_fepois(
-    formula = n_dead_missing ~ swh_prevweek_z + swh_prevweek_z:post_mou |
+    formula = n_dead_missing ~ swh_prevweek + swh_prevweek:post_mou |
       month_year,
     data = d_da,
     panel_id_formula = ~unit + date,
     cluster_col = "iso_week",
-    focal_coef = "swh_prevweek_z:post_mou"
+    focal_coef = "swh_prevweek:post_mou"
   )
   cat(sprintf("    pairs cluster boot: %d valid reps in %.1f s\n",
       res_da_pairs$n_boot,
@@ -223,12 +216,12 @@ for (ye in PERIODS) {
       res_da_pairs$ci_lo, res_da_pairs$ci_hi))
 
   # feols wild cluster bootstrap (log1p)
-  m_ols_da <- feols(log1p_deaths ~ swh_prevweek_z + swh_prevweek_z:post_mou |
+  m_ols_da <- feols(log1p_deaths ~ swh_prevweek + swh_prevweek:post_mou |
                       month_year, data = d_da)
   bt_da <- tryCatch(
     boottest(m_ols_da,
               clustid = "iso_week",
-              param = "swh_prevweek_z:post_mou",
+              param = "swh_prevweek:post_mou",
               B = 1999, type = "rademacher"),
     error = function(e) { cat("    boottest err:", conditionMessage(e), "\n"); NULL }
   )
@@ -243,12 +236,12 @@ for (ye in PERIODS) {
 
   t0 <- Sys.time()
   res_bl_pairs <- pairs_cluster_boot_fepois(
-    formula = n_dead_missing ~ swh_prevweek_z + swh_prevweek_z:post_mou |
+    formula = n_dead_missing ~ swh_prevweek + swh_prevweek:post_mou |
       month_year + sar_bloc,
     data = d_bl,
     panel_id_formula = ~sar_bloc + date,
     cluster_col = "iso_week",
-    focal_coef = "swh_prevweek_z:post_mou"
+    focal_coef = "swh_prevweek:post_mou"
   )
   cat(sprintf("    pairs cluster boot: %d valid reps in %.1f s\n",
       res_bl_pairs$n_boot,
@@ -257,12 +250,12 @@ for (ye in PERIODS) {
       res_bl_pairs$beta_hat, res_bl_pairs$boot_se, res_bl_pairs$p_pairs,
       res_bl_pairs$ci_lo, res_bl_pairs$ci_hi))
 
-  m_ols_bl <- feols(log1p_deaths ~ swh_prevweek_z + swh_prevweek_z:post_mou |
+  m_ols_bl <- feols(log1p_deaths ~ swh_prevweek + swh_prevweek:post_mou |
                       month_year + sar_bloc, data = d_bl)
   bt_bl <- tryCatch(
     boottest(m_ols_bl,
               clustid = "iso_week",
-              param = "swh_prevweek_z:post_mou",
+              param = "swh_prevweek:post_mou",
               B = 1999, type = "rademacher"),
     error = function(e) { cat("    boottest err:", conditionMessage(e), "\n"); NULL }
   )
@@ -277,12 +270,12 @@ for (ye in PERIODS) {
 
   t0 <- Sys.time()
   res_zp_pairs <- pairs_cluster_boot_fepois(
-    formula = n_dead_missing ~ swh_prevweek_z + swh_prevweek_z:post_mou |
+    formula = n_dead_missing ~ swh_prevweek + swh_prevweek:post_mou |
       month_year + country,
     data = d_zp,
     panel_id_formula = ~country + date,
     cluster_col = "iso_week",
-    focal_coef = "swh_prevweek_z:post_mou"
+    focal_coef = "swh_prevweek:post_mou"
   )
   cat(sprintf("    pairs cluster boot: %d valid reps in %.1f s\n",
       res_zp_pairs$n_boot,
@@ -291,12 +284,12 @@ for (ye in PERIODS) {
       res_zp_pairs$beta_hat, res_zp_pairs$boot_se, res_zp_pairs$p_pairs,
       res_zp_pairs$ci_lo, res_zp_pairs$ci_hi))
 
-  m_ols_zp <- feols(log1p_deaths ~ swh_prevweek_z + swh_prevweek_z:post_mou |
+  m_ols_zp <- feols(log1p_deaths ~ swh_prevweek + swh_prevweek:post_mou |
                       month_year + country, data = d_zp)
   bt_zp <- tryCatch(
     boottest(m_ols_zp,
               clustid = "iso_week",
-              param = "swh_prevweek_z:post_mou",
+              param = "swh_prevweek:post_mou",
               B = 1999, type = "rademacher"),
     error = function(e) { cat("    boottest err:", conditionMessage(e), "\n"); NULL }
   )

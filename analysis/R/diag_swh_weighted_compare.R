@@ -85,11 +85,11 @@ cat("\n--- 3. Running primary + 051 with both SWH variables ---\n")
 fit_period_primary <- function(swh_var, end_date) {
   d <- panel %>%
     filter(between(date, START_DATE, end_date)) %>%
-    mutate(swh_z       = as.numeric(scale(.data[[swh_var]])),
-           month_year  = factor(format(date, "%Y-%m")))
+    mutate(swh_m      = .data[[swh_var]],
+           month_year = factor(format(date, "%Y-%m")))
 
-  fenegbin(n_dead_missing ~ swh_z + swh_z:post_mou | month_year,
-           data = d, vcov = NW(28), panel.id = ~unit + date)
+  fenegbin(n_dead_missing ~ swh_m + swh_m:post_mou | month_year,
+           data = d, vcov = NW(14), panel.id = ~unit + date)
 }
 
 fit_period_zone <- function(swh_var, end_year, fe_spec) {
@@ -97,30 +97,30 @@ fit_period_zone <- function(swh_var, end_year, fe_spec) {
   d <- source_tbl %>%
     filter(year >= 2014, year <= end_year,
            !is.na(.data[[swh_var]])) %>%
-    mutate(swh_z = as.numeric(scale(.data[[swh_var]]))) %>%
+    mutate(swh_m = .data[[swh_var]]) %>%
     as.data.frame()
   dim(d$date) <- NULL
 
   if (fe_spec == "2bloc") {
-    f <- as.formula("n_dead_missing ~ swh_z + swh_z:post_mou | month_year + sar_bloc")
+    f <- as.formula("n_dead_missing ~ swh_m + swh_m:post_mou | month_year + sar_bloc")
     p_id <- ~sar_bloc + date
   } else {
-    f <- as.formula("n_dead_missing ~ swh_z + swh_z:post_mou | month_year + country")
+    f <- as.formula("n_dead_missing ~ swh_m + swh_m:post_mou | month_year + country")
     p_id <- ~country + date
   }
-  fenegbin(f, data = d, vcov = NW(28), panel.id = p_id)
+  fenegbin(f, data = d, vcov = NW(14), panel.id = p_id)
 }
 
-extract_row <- function(m, label, vcov_type = NW(28)) {
+extract_row <- function(m, label, vcov_type = NW(14)) {
   ct <- coeftable(m, vcov = vcov_type)
-  b1_row <- which(rownames(ct) == "swh_z")
+  b1_row <- which(rownames(ct) == "swh_m")
   b3_row <- grep(":post_mou$", rownames(ct))
   b1 <- ct[b1_row, 1]; se1 <- ct[b1_row, 2]
   b3 <- ct[b3_row, 1]; se3 <- ct[b3_row, 2]
   V <- vcov(m, vcov = vcov_type)
-  var_post <- V["swh_z", "swh_z"] +
+  var_post <- V["swh_m", "swh_m"] +
               V[rownames(ct)[b3_row], rownames(ct)[b3_row]] +
-              2 * V["swh_z", rownames(ct)[b3_row]]
+              2 * V["swh_m", rownames(ct)[b3_row]]
   b_post <- b1 + b3
   se_post <- sqrt(var_post)
 
@@ -180,7 +180,7 @@ cat(sprintf("Cor(swh_prevweek, swh_w_prevweek): %.4f\n\n",
     cor(panel$swh_prevweek, panel$swh_w_prevweek,
         use = "pairwise.complete.obs")))
 
-cat("All specs use NegBin (fenegbin), NW(28) SEs.\n")
+cat("All specs use NegBin (fenegbin), NW(14) SEs.\n")
 cat("b1 = pre-MoU slope; b3 = interaction; b_post = b1 + b3 = post-MoU slope.\n\n")
 
 print_row <- function(r) {

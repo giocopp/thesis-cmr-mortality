@@ -1,7 +1,7 @@
 # 05_reduced_form_primary.R
 # =========================
 # Primary reduced-form: n_dead_missing ~ SWH + SWH × post_mou | month_year FE
-# NegBin, Newey-West(28) SEs. Dual window (full panel and 2014–2020 symmetric).
+# NegBin, Newey-West(14) SEs. Dual window (full panel and 2014–2020 symmetric).
 #
 # Death series are built via build_iom_daily() (analysis/R/_helpers.R) — not
 # taken from the panel column, which is built from the same helper. The
@@ -107,7 +107,7 @@ cat(sprintf("  all CMR  (drop spatial filter, sea):      %.0f deaths\n",
 cat("\n--- 3. Estimation ---\n")
 
 extract_b3 <- function(model, spec, period) {
-  ct <- coeftable(model, vcov = NW(28))
+  ct <- coeftable(model, vcov = NW(14))
   r  <- grep(":post_mou$", rownames(ct))
   tibble(spec   = spec,
          period = period,
@@ -119,23 +119,21 @@ extract_b3 <- function(model, spec, period) {
 fit_period <- function(end_date, period_label) {
   d <- panel %>%
     filter(between(date, START_DATE, end_date)) %>%
-    mutate(swh_prevweek_z = as.numeric(scale(swh_prevweek)),
-           swh_next7avg_z = as.numeric(scale(swh_next7avg)),
-           month_year     = factor(format(date, "%Y-%m")))
+    mutate(month_year = factor(format(date, "%Y-%m")))
 
   cat(sprintf("\n=== %s | N = %d | pre = %d | post = %d ===\n",
               period_label, nrow(d),
               sum(d$post_mou == 0), sum(d$post_mou == 1)))
 
   fe <- function(formula, data = d)
-    fenegbin(formula, data = data, vcov = NW(28), panel.id = ~unit + date)
+    fenegbin(formula, data = data, vcov = NW(14), panel.id = ~unit + date)
 
-  m_primary   <- fe(n_dead_missing          ~ swh_prevweek_z + swh_prevweek_z:post_mou | month_year)
-  m_nooutlier <- fe(n_dead_missing          ~ swh_prevweek_z + swh_prevweek_z:post_mou | month_year,
+  m_primary   <- fe(n_dead_missing          ~ swh_prevweek + swh_prevweek:post_mou | month_year)
+  m_nooutlier <- fe(n_dead_missing          ~ swh_prevweek + swh_prevweek:post_mou | month_year,
                     data = d %>% filter(n_dead_missing <= 100))
-  m_allcause  <- fe(n_dead_missing_allcause ~ swh_prevweek_z + swh_prevweek_z:post_mou | month_year)
-  m_allcmr    <- fe(n_dead_missing_allcmr   ~ swh_prevweek_z + swh_prevweek_z:post_mou | month_year)
-  m_next7d    <- fe(n_dead_missing          ~ swh_next7avg_z + swh_next7avg_z:post_mou | month_year)
+  m_allcause  <- fe(n_dead_missing_allcause ~ swh_prevweek + swh_prevweek:post_mou | month_year)
+  m_allcmr    <- fe(n_dead_missing_allcmr   ~ swh_prevweek + swh_prevweek:post_mou | month_year)
+  m_next7d    <- fe(n_dead_missing          ~ swh_next7avg + swh_next7avg:post_mou | month_year)
 
   models <- list("Primary (drowning + mixed)"  = m_primary,
                  "No outliers >100 (robust.)"  = m_nooutlier,
@@ -144,7 +142,7 @@ fit_period <- function(end_date, period_label) {
                  "Next-7d (falsification)"     = m_next7d)
 
   print(etable(m_primary, m_nooutlier, m_allcause, m_allcmr, m_next7d,
-               headers = names(models), se.below = TRUE, vcov = NW(28)))
+               headers = names(models), se.below = TRUE, vcov = NW(14)))
 
   imap_dfr(models, \(m, nm) extract_b3(m, nm, period_label))
 }
@@ -180,8 +178,8 @@ p_coef <- plot_df %>%
   scale_colour_manual(values = period_colours) +
   labs(title    = expression(paste("Reduced-form: SWH x post-MoU interaction (",
                                     beta[3], ")")),
-       subtitle = "NegBin, Newey-West(28) SEs, 95% CI",
-       x = "Coefficient (per 1-SD SWH)", y = NULL, colour = "Sample") +
+       subtitle = "NegBin, Newey-West(14) SEs, 95% CI",
+       x = "Coefficient (per 1 meter SWH)", y = NULL, colour = "Sample") +
   theme_minimal(base_size = 12) +
   theme(panel.grid.minor = element_blank(), legend.position = "top")
 
@@ -195,15 +193,14 @@ cat("\n--- 5. Year-by-year gradient ---\n")
 yearly_plot <- function(end_date, period_label) {
   d <- panel %>%
     filter(between(date, START_DATE, end_date), !is.na(swh_prevweek)) %>%
-    mutate(swh_prevweek_z = as.numeric(scale(swh_prevweek)),
-           year_fac       = factor(year),
-           month_year     = factor(format(date, "%Y-%m")))
+    mutate(year_fac   = factor(year),
+           month_year = factor(format(date, "%Y-%m")))
 
-  m_yr <- fenegbin(n_dead_missing ~ swh_prevweek_z:year_fac | month_year,
-                   data = d, vcov = NW(28), panel.id = ~unit + date)
+  m_yr <- fenegbin(n_dead_missing ~ swh_prevweek:year_fac | month_year,
+                   data = d, vcov = NW(14), panel.id = ~unit + date)
 
   co <- coef(m_yr)
-  V  <- vcov(m_yr, vcov = NW(28))[seq_along(co), seq_along(co)]
+  V  <- vcov(m_yr, vcov = NW(14))[seq_along(co), seq_along(co)]
   yr <- tibble(year = parse_number(names(co)),
                beta = co,
                se   = sqrt(diag(V)),
@@ -228,7 +225,7 @@ yearly_plot <- function(end_date, period_label) {
              label = "MoU", colour = "#D32F2F", size = 3.5, hjust = 0) +
     scale_x_continuous(breaks = seq(2014, year(end_date))) +
     labs(title    = sprintf("SWH-mortality gradient by year (%s)", period_label),
-         subtitle = "NegBin on standardised prev-week SWH | Month-year FE | NW(28) SEs | 95% CI",
+         subtitle = "NegBin on raw prev-week SWH (metres) | Month-year FE | NW(14) SEs | 95% CI",
          x = NULL, y = expression(beta[SWH])) +
     theme_minimal(base_size = 12) +
     theme(panel.grid.minor = element_blank())
@@ -241,12 +238,159 @@ ggsave(file.path(BASE_DIR, "output", "figures", "05_reduced_form_yearly_gradient
        p_full / p_sym, width = 10, height = 8, dpi = 200)
 cat("Saved: output/figures/05_reduced_form_yearly_gradient.png\n")
 
+# ── 5b. Time-trend tests for β(SWH) ────────────────────────
+# Two formal tests of whether the SWH coefficient trends over time.
+#
+# (1) Continuous linear trend:
+#       n_dead_missing ~ swh_prevweek + swh_prevweek:year_index | month_year
+#     year_index = year - 2014 so that `swh_prevweek` is the 2014 slope.
+#     The interaction tests H0: slope is constant over time. A positive
+#     coefficient means weather becomes a stronger predictor each year.
+#
+# (2) Yearly heterogeneity (joint Wald):
+#       n_dead_missing ~ swh_prevweek + swh_prevweek:year_fac | month_year
+#     with year_fac relevelled to 2014 as reference, so each interaction
+#     coefficient is (slope_year - slope_2014). A joint Wald test that all
+#     interactions = 0 is the non-parametric version of (1); it detects any
+#     time-varying pattern, not just a linear trend.
+cat("\n--- 5b. Trend tests for β(SWH) ---\n")
+
+trend_test <- function(data, sample_label) {
+  d <- data %>%
+    filter(between(date, START_DATE, PANEL_END), !is.na(swh_prevweek)) %>%
+    mutate(year_index = year - 2014,
+           year_fac   = relevel(factor(year), ref = "2014"),
+           month_year = factor(format(date, "%Y-%m")))
+
+  cat(sprintf("\n  %s (N=%d, deaths=%.0f)\n",
+              sample_label, nrow(d), sum(d$n_dead_missing)))
+
+  # (1) Continuous linear trend in β(SWH)
+  m_trend <- fenegbin(
+    n_dead_missing ~ swh_prevweek + swh_prevweek:year_index | month_year,
+    data = d, vcov = NW(14), panel.id = ~ unit + date
+  )
+  ct <- coeftable(m_trend, vcov = NW(14))
+  r  <- grep(":year_index$", rownames(ct))
+  b_trend  <- ct[r, 1]
+  se_trend <- ct[r, 2]
+  p_trend  <- 2 * pnorm(-abs(b_trend / se_trend))
+  cat(sprintf("    (1) continuous trend swh_prevweek:year_index = %+.4f (SE=%.4f, p=%.4f)\n",
+              b_trend, se_trend, p_trend))
+
+  # (2) Joint Wald test on yearly heterogeneity (manual chi-square using NW(14)
+  # variance-covariance to match the SE structure used throughout).
+  m_heter <- fenegbin(
+    n_dead_missing ~ swh_prevweek + swh_prevweek:year_fac | month_year,
+    data = d, vcov = NW(14), panel.id = ~ unit + date
+  )
+  coef_nms <- names(coef(m_heter))
+  idx <- grep("swh_prevweek:year_fac", coef_nms)
+  b   <- coef(m_heter)[idx]
+  V   <- vcov(m_heter, vcov = NW(14))[idx, idx, drop = FALSE]
+  wald_stat <- as.numeric(t(b) %*% solve(V) %*% b)
+  wald_df   <- length(idx)
+  wald_p    <- pchisq(wald_stat, df = wald_df, lower.tail = FALSE)
+  cat(sprintf("    (2) joint Wald H0: slope_year = slope_2014 for all years\n"))
+  cat(sprintf("        chi2(%d) = %.3f  p = %.4f\n", wald_df, wald_stat, wald_p))
+
+  tibble(
+    sample     = sample_label,
+    trend_coef = b_trend, trend_se = se_trend, trend_p = p_trend,
+    wald_chi2  = wald_stat, wald_df = wald_df, wald_p = wald_p
+  )
+}
+
+# AFR-only subset: pool Libya + Tunisia deaths from the zone panel, keep the
+# same corridor-wide SWH. The zone panel uses the same filter as the primary
+# spec (incident + split incident, drowning + mixed, core-corridor-intersected
+# SAR polygons; see 03_build_zone_panel.R).
+zone_panel <- readRDS(file.path(BASE_DIR, "analysis", "data",
+                                 "daily_panel_zone.RDS"))
+afr_panel <- zone_panel %>%
+  filter(sar_bloc == "AFR") %>%
+  group_by(date) %>%
+  summarise(
+    n_dead_missing    = sum(n_dead_missing, na.rm = TRUE),
+    swh_prevweek      = first(swh_prevweek),
+    crossing_attempts = first(crossing_attempts),
+    .groups = "drop"
+  ) %>%
+  mutate(year = year(date), unit = 1L) %>%
+  arrange(date)
+
+trend_results <- bind_rows(
+  trend_test(panel,     "Full CMR corridor"),
+  trend_test(afr_panel, "African SAR zone (Libya+Tunisia)")
+)
+
+# ── 5c. Per-attempt trend test (offset model) ────────────
+# Same tests as 5b but with offset(log(crossing_attempts)), so the
+# coefficient is on the fatality RATE per attempt, not the raw count.
+# Days with zero crossing attempts are dropped (log(0) undefined).
+cat("\n--- 5c. Per-attempt trend tests (offset model) ---\n")
+
+trend_test_rate <- function(data, sample_label) {
+  d <- data %>%
+    filter(between(date, START_DATE, PANEL_END),
+           !is.na(swh_prevweek),
+           crossing_attempts > 0) %>%
+    mutate(year_index  = year - 2014,
+           year_fac    = relevel(factor(year), ref = "2014"),
+           month_year  = factor(format(date, "%Y-%m")),
+           log_attempts = log(crossing_attempts))
+
+  cat(sprintf("\n  %s (N=%d, deaths=%.0f, attempts=%.0f)\n",
+              sample_label, nrow(d),
+              sum(d$n_dead_missing), sum(d$crossing_attempts)))
+
+  # (1) Continuous linear trend in per-attempt β(SWH)
+  m_trend <- fenegbin(
+    n_dead_missing ~ swh_prevweek + swh_prevweek:year_index +
+                     offset(log_attempts) | month_year,
+    data = d, vcov = NW(14), panel.id = ~ unit + date
+  )
+  ct <- coeftable(m_trend, vcov = NW(14))
+  r  <- grep(":year_index$", rownames(ct))
+  b_trend  <- ct[r, 1]
+  se_trend <- ct[r, 2]
+  p_trend  <- 2 * pnorm(-abs(b_trend / se_trend))
+  cat(sprintf("    (1) continuous trend swh:year_index = %+.4f (SE=%.4f, p=%.4f)\n",
+              b_trend, se_trend, p_trend))
+
+  # (2) Joint Wald on yearly heterogeneity
+  m_heter <- fenegbin(
+    n_dead_missing ~ swh_prevweek + swh_prevweek:year_fac +
+                     offset(log_attempts) | month_year,
+    data = d, vcov = NW(14), panel.id = ~ unit + date
+  )
+  idx <- grep("swh_prevweek:year_fac", names(coef(m_heter)))
+  b   <- coef(m_heter)[idx]
+  V   <- vcov(m_heter, vcov = NW(14))[idx, idx, drop = FALSE]
+  wald_stat <- as.numeric(t(b) %*% solve(V) %*% b)
+  wald_df   <- length(idx)
+  wald_p    <- pchisq(wald_stat, df = wald_df, lower.tail = FALSE)
+  cat(sprintf("    (2) joint Wald chi2(%d) = %.3f  p = %.4f\n",
+              wald_df, wald_stat, wald_p))
+
+  tibble(
+    sample     = sample_label,
+    trend_coef = b_trend, trend_se = se_trend, trend_p = p_trend,
+    wald_chi2  = wald_stat, wald_df = wald_df, wald_p = wald_p
+  )
+}
+
+rate_results <- bind_rows(
+  trend_test_rate(panel,     "Full CMR corridor (per-attempt)"),
+  trend_test_rate(afr_panel, "African SAR (per-attempt)")
+)
+
 # ── 6. Results table ────────────────────────────────────────
 cat("\n--- 6. Saving results table ---\n")
 
 sink(file.path(BASE_DIR, "output", "tables", "05_reduced_form_results.txt"))
 cat("REDUCED-FORM PRIMARY: n_dead_missing ~ SWH x post_mou | month-year FE\n")
-cat("NegBin (fenegbin) | Newey-West(28) SEs | Standardised SWH (per 1-SD)\n")
+cat("NegBin (fenegbin) | Newey-West(14) SEs | Raw prev-week SWH (per 1 metre)\n")
 cat("Primary outcome: incident-only, core corridor polygon,\n")
 cat("                 cause = Drowning or Mixed/unknown (cases most directly\n")
 cat("                 tied to the act of crossing the sea).\n")
@@ -263,6 +407,34 @@ all_results %>%
     })
     cat("\n")
   })
+
+cat("TREND TESTS FOR β(SWH)\n")
+cat("----------------------\n")
+cat("(1) Continuous linear trend: slope of swh_prevweek:year_index\n")
+cat("(2) Joint Wald on yearly heterogeneity (all (slope_year - slope_2014) = 0)\n")
+cat("Sample window: 2014-01-01 to ", as.character(PANEL_END), "\n\n", sep = "")
+walk(seq_len(nrow(trend_results)), \(i) {
+  r <- trend_results[i, ]
+  cat(sprintf("=== %s ===\n", r$sample))
+  cat(sprintf("  (1) continuous  : %+.4f (SE=%.4f)  p = %.4f\n",
+              r$trend_coef, r$trend_se, r$trend_p))
+  cat(sprintf("  (2) joint Wald  : chi2(%d) = %.3f  p = %.4f\n\n",
+              r$wald_df, r$wald_chi2, r$wald_p))
+})
+
+cat("TREND TESTS FOR β(SWH) — PER-ATTEMPT (offset model)\n")
+cat("----------------------------------------------------\n")
+cat("Same as above but with offset(log(crossing_attempts)).\n")
+cat("Coefficients are on the fatality RATE per attempt, not raw counts.\n")
+cat("Days with zero crossing attempts dropped.\n\n")
+walk(seq_len(nrow(rate_results)), \(i) {
+  r <- rate_results[i, ]
+  cat(sprintf("=== %s ===\n", r$sample))
+  cat(sprintf("  (1) continuous  : %+.4f (SE=%.4f)  p = %.4f\n",
+              r$trend_coef, r$trend_se, r$trend_p))
+  cat(sprintf("  (2) joint Wald  : chi2(%d) = %.3f  p = %.4f\n\n",
+              r$wald_df, r$wald_chi2, r$wald_p))
+})
 sink()
 cat("Saved: output/tables/05_reduced_form_results.txt\n")
 

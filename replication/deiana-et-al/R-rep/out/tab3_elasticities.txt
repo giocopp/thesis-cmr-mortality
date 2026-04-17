@@ -1,0 +1,22 @@
+Table 3 — Elasticities of Crossing Attempts to Crossing Conditions
+Outcome: totacross  |  Poisson GLM, HAC Newey-West (lag 28)
+------------------------------------------------------------------------------
+                                          (1) Infl.   (2) +Unkn.   (3) +Other
+------------------------------------------------------------------------------
+Wave Height * Post SAR * Fr. Boat            -6.546       -5.450       -4.168
+                                            (1.929)      (1.397)      (1.293)
+Wave Height                                  -0.891       -1.430       -1.458
+                                            (0.366)      (0.605)      (0.612)
+Wave Height * Fr. Boat                        2.135        1.907        1.632
+                                            (1.813)      (1.342)      (1.131)
+Wave Height * Post SAR                        0.209        1.165        1.004
+                                            (0.455)      (0.647)      (0.727)
+------------------------------------------------------------------------------
+Week-Year FE                           yes          yes          yes
+Observations                                   1612         1612         1612
+------------------------------------------------------------------------------
+Pre-SAR means:
+  Mean total attempts : 120
+  Mean wave height    : 0.63
+  Mean frac. unsafe   : 0.07 / 0.27 / 0.29
+

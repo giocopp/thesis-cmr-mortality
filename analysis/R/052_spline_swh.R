@@ -2,7 +2,7 @@
 # ================
 # Enhancement #3: NON-PARAMETRIC functional form via natural cubic spline.
 #
-# Replaces linear swh_prevweek_z with a natural cubic spline (df=3) and
+# Replaces linear swh_prevweek (metres) with a natural cubic spline (df=3) and
 # interacts the spline basis with post_mou. Answers: is the linear
 # assumption hiding a threshold effect? Does the curve shape change post-MoU?
 #
@@ -10,9 +10,9 @@
 #   deaths ~ ns(swh_prevweek, df=3) + ns(swh_prevweek, df=3):post_mou | FE
 #
 # Three flavors:
-#   (A) daily-agg:  FE=month_year,           SE=NW(28)
-#   (B) 2-bloc:     FE=month_year + sar_bloc, SE=NW(28)
-#   (C) 4-country:  FE=month_year + country,  SE=NW(28)
+#   (A) daily-agg:  FE=month_year,           SE=NW(14)
+#   (B) 2-bloc:     FE=month_year + sar_bloc, SE=NW(14)
+#   (C) 4-country:  FE=month_year + country,  SE=NW(14)
 #
 # The individual spline basis coefficients are not directly interpretable;
 # we report the JOINT Wald test that all 3 spline-by-post interactions = 0
@@ -111,9 +111,9 @@ cat("============================================\n")
 cat("Functional form: ns(swh_prevweek, df=3), interacted with post_mou.\n")
 cat("Joint Wald test: H0 = all 3 spline-by-post interactions are 0\n")
 cat("                 (i.e., the SWH->deaths curve shape did NOT change post-MoU).\n\n")
-cat("(A) daily-agg:  FE=month_year,           NW(28)\n")
-cat("(B) 2-bloc:     FE=month_year+sar_bloc,  NW(28), panel=sar_bloc+date\n")
-cat("(C) 4-country:  FE=month_year+country,   NW(28), panel=country+date\n\n")
+cat("(A) daily-agg:  FE=month_year,           NW(14)\n")
+cat("(B) 2-bloc:     FE=month_year+sar_bloc,  NW(14), panel=sar_bloc+date\n")
+cat("(C) 4-country:  FE=month_year+country,   NW(14), panel=country+date\n\n")
 
 all_models <- list()
 
@@ -130,7 +130,7 @@ for (ye in PERIODS) {
 
   f_da <- as.formula(paste("n_dead_missing ~", spl_rhs, "| month_year"))
   m_da <- fenegbin(f_da, data = d_da,
-                    vcov = NW(28), panel.id = ~unit + date)
+                    vcov = NW(14), panel.id = ~unit + date)
 
   # --- (B) 2-bloc ---
   d_bl <- bloc %>%
@@ -140,7 +140,7 @@ for (ye in PERIODS) {
   f_bl <- as.formula(paste("n_dead_missing ~", spl_rhs,
                             "| month_year + sar_bloc"))
   m_bl <- fenegbin(f_bl, data = d_bl,
-                    vcov = NW(28), panel.id = ~sar_bloc + date)
+                    vcov = NW(14), panel.id = ~sar_bloc + date)
 
   # --- (C) 4-country ---
   d_zp <- zp %>%
@@ -150,7 +150,7 @@ for (ye in PERIODS) {
   f_zp <- as.formula(paste("n_dead_missing ~", spl_rhs,
                             "| month_year + country"))
   m_zp <- fenegbin(f_zp, data = d_zp,
-                    vcov = NW(28), panel.id = ~country + date)
+                    vcov = NW(14), panel.id = ~country + date)
 
   cat(sprintf("  [A] daily-agg  N = %d\n", nrow(d_da)))
   cat(sprintf("  [B] 2-bloc     N = %d\n", nrow(d_bl)))
@@ -158,7 +158,7 @@ for (ye in PERIODS) {
 
   # Joint Wald test (null: all 3 spline-by-post interactions = 0)
   cat("\n  Joint Wald test H0: all spline-by-post interactions = 0\n")
-  joint_test <- function(m, vcov_type = NW(28)) {
+  joint_test <- function(m, vcov_type = NW(14)) {
     wt <- tryCatch(
       wald(m, keep = "_post$", vcov = vcov_type, print = FALSE),
       error = function(e) NULL

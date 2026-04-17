@@ -1,6 +1,6 @@
 054  WILD / PAIRS CLUSTER BOOTSTRAP AT iso_week
 ================================================
-Target: swh_prevweek_z:post_mou
+Target: swh_prevweek:post_mou
 
 Approaches:
   (1) fepois pairs cluster bootstrap on iso_week (B = 999 reps)
@@ -23,19 +23,19 @@ Flavors:
   4-country  N = 10228 | iso_weeks = 366
 
   [A] daily-agg
-    pairs cluster boot: 999 valid reps in 7.3 s
-      b3 = +0.895, boot SE = 0.436, p = 0.0460, 95% CI [0.128, 1.850]
-    feols log1p wild cluster boot: b = +0.104, p = 0.0820, 95% CI [-0.012, 0.223]
+    pairs cluster boot: 999 valid reps in 7.2 s
+      b3 = +2.412, boot SE = 1.151, p = 0.0370, 95% CI [0.335, 4.807]
+    feols log1p wild cluster boot: b = +0.237, p = 0.1026, 95% CI [-0.045, 0.521]
 
   [B] 2-bloc
-    pairs cluster boot: 999 valid reps in 12.1 s
-      b3 = +1.153, boot SE = 0.491, p = 0.0210, 95% CI [0.291, 2.210]
-    feols log1p wild cluster boot: b = +0.054, p = 0.0545, 95% CI [-0.002, 0.109]
+    pairs cluster boot: 999 valid reps in 11.9 s
+      b3 = +3.043, boot SE = 1.262, p = 0.0170, 95% CI [0.695, 5.723]
+    feols log1p wild cluster boot: b = +0.125, p = 0.0610, 95% CI [-0.004, 0.258]
 
   [C] 4-country
-    pairs cluster boot: 999 valid reps in 18.3 s
-      b3 = +1.153, boot SE = 0.501, p = 0.0270, 95% CI [0.276, 2.235]
-    feols log1p wild cluster boot: b = +0.026, p = 0.0615, 95% CI [-0.001, 0.055]
+    pairs cluster boot: 999 valid reps in 18.2 s
+      b3 = +3.043, boot SE = 1.305, p = 0.0200, 95% CI [0.606, 5.695]
+    feols log1p wild cluster boot: b = +0.063, p = 0.0505, 95% CI [-0.000, 0.127]
 
 === 2014-2023 ===
   daily-agg  N = 3438 | iso_weeks = 492
@@ -43,16 +43,16 @@ Flavors:
   4-country  N = 13752 | iso_weeks = 492
 
   [A] daily-agg
-    pairs cluster boot: 999 valid reps in 7.6 s
-      b3 = +0.733, boot SE = 0.377, p = 0.0510, 95% CI [0.030, 1.489]
-    feols log1p wild cluster boot: b = +0.075, p = 0.1761, 95% CI [-0.035, 0.183]
+    pairs cluster boot: 999 valid reps in 7.7 s
+      b3 = +2.025, boot SE = 1.027, p = 0.0490, 95% CI [0.009, 4.013]
+    feols log1p wild cluster boot: b = +0.165, p = 0.1866, 95% CI [-0.087, 0.423]
 
   [B] 2-bloc
-    pairs cluster boot: 999 valid reps in 13.1 s
-      b3 = +1.045, boot SE = 0.423, p = 0.0150, 95% CI [0.297, 1.940]
-    feols log1p wild cluster boot: b = +0.047, p = 0.0715, 95% CI [-0.004, 0.097]
+    pairs cluster boot: 999 valid reps in 13.5 s
+      b3 = +2.786, boot SE = 1.121, p = 0.0160, 95% CI [0.663, 5.071]
+    feols log1p wild cluster boot: b = +0.104, p = 0.0765, 95% CI [-0.008, 0.222]
 
   [C] 4-country
-    pairs cluster boot: 999 valid reps in 21.3 s
-      b3 = +1.045, boot SE = 0.423, p = 0.0160, 95% CI [0.230, 1.892]
-    feols log1p wild cluster boot: b = +0.025, p = 0.0645, 95% CI [-0.002, 0.052]
+    pairs cluster boot: 999 valid reps in 21.4 s
+      b3 = +2.786, boot SE = 1.142, p = 0.0160, 95% CI [0.457, 4.858]
+    feols log1p wild cluster boot: b = +0.055, p = 0.0795, 95% CI [-0.005, 0.116]

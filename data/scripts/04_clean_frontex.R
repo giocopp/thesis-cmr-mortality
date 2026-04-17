@@ -43,6 +43,7 @@ cat("\n--- 2. Cleaning ---\n")
 
 frx <- frx_raw %>%
   transmute(
+    incident_id          = IncidentNumber,
     date                 = as.Date(DetectionDate),
     country_of_departure = CountryOfDeparture,
     transport_type       = TransportType,

@@ -12,9 +12,9 @@
 #   - Step:    7 days (weekly)
 #   - Model:   fepois (Poisson QMLE) — faster, more stable in short windows
 #              than fenegbin, and fine asymptotically
-#   - Formula: n_dead_missing ~ swh_prevweek_z | month_year
+#   - Formula: n_dead_missing ~ swh_prevweek | month_year
 #              (main effect only, NO post_mou, NO interaction)
-#   - SE:      NW(28) per window
+#   - SE:      NW(14) per window
 #   - Skip:    windows with <30 death-days or <200 total days
 #
 # Flavors (4 panels in the output figure):
@@ -36,7 +36,6 @@ library(tidyverse)
 library(fixest)
 library(lubridate)
 library(patchwork)
-library(zoo)
 
 BASE_DIR <- here::here()
 MOU_DATE <- as.Date("2017-07-01")
@@ -90,24 +89,23 @@ run_rolling <- function(df, wind = WINDOW_PRIMARY, step = STEP_DAYS) {
     if (nrow(sub) < MIN_ROWS) return(NULL)
     if (sum(sub$n_dead_missing > 0) < MIN_DEATH_DAYS) return(NULL)
 
-    sub$swh_prevweek_z <- as.numeric(scale(sub$swh_prevweek))
     sub$unit <- 1L
 
     if (length(unique(sub$month_year)) < 2) return(NULL)
 
     m <- tryCatch(
-      fepois(n_dead_missing ~ swh_prevweek_z | month_year,
-             data = sub, vcov = NW(28), panel.id = ~unit + date),
+      fepois(n_dead_missing ~ swh_prevweek | month_year,
+             data = sub, vcov = NW(14), panel.id = ~unit + date),
       error = function(e) NULL
     )
-    if (is.null(m) || !"swh_prevweek_z" %in% names(coef(m))) return(NULL)
+    if (is.null(m) || !"swh_prevweek" %in% names(coef(m))) return(NULL)
 
     ct <- tryCatch(
-      coeftable(m, vcov = NW(28)),
+      coeftable(m, vcov = NW(14)),
       error = function(e) NULL
     )
     if (is.null(ct)) return(NULL)
-    row <- which(rownames(ct) == "swh_prevweek_z")
+    row <- which(rownames(ct) == "swh_prevweek")
     tibble(date_mid = mid_date,
            beta     = ct[row, 1],
            se       = ct[row, 2],
@@ -183,31 +181,98 @@ cat("\n--- 3. Save tables ---\n")
 all_res <- bind_rows(res_da_2y, res_da_1y, res_bloc, res_country)
 saveRDS(all_res, file.path(BASE_DIR, "output", "tables", "053_rolling_beta.RDS"))
 
+# Expected (flavor, label, window) template so any series with zero windows
+# (e.g., Italy when its zone has too few death-days for the threshold) shows
+# up explicitly with n_windows = 0 instead of being silently dropped.
+expected_series <- bind_rows(
+  tibble(flavor = "daily-agg", label = "daily-agg (2y)", window = "2-year"),
+  tibble(flavor = "daily-agg", label = "daily-agg (1y)", window = "1-year"),
+  tibble(flavor = "2-bloc",    label = c("AFR", "EU"),   window = "2-year"),
+  tibble(flavor = "4-country",
+         label = c("Libya", "Tunisia", "Italy", "Malta"),
+         window = "2-year")
+)
+
+# Per-series summary with pre-MoU and post-MoU means.
+#   "Fully pre"  = window's RIGHT edge at or before MoU (date_mid <= MoU - W/2)
+#   "Fully post" = window's LEFT  edge at or after  MoU (date_mid >= MoU + W/2)
+# Windows that straddle MoU are excluded from both means. The means are
+# unweighted across windows; adjacent windows overlap heavily (week-stepped
+# 2-year windows share 723 of 730 days), so beta_diff is descriptive only —
+# do NOT compute a naive t-test on it.
+half_days <- function(w) if (w == "2-year") WINDOW_PRIMARY / 2 else WINDOW_ROBUST / 2
+
+per_series <- all_res %>%
+  group_by(flavor, label, window) %>%
+  group_modify(~ {
+    half <- half_days(.y$window)
+    fully_pre  <- .x %>% filter(date_mid <= MOU_DATE - half)
+    fully_post <- .x %>% filter(date_mid >= MOU_DATE + half)
+    tibble(
+      n_windows      = nrow(.x),
+      n_fully_pre    = nrow(fully_pre),
+      n_fully_post   = nrow(fully_post),
+      date_range     = sprintf("%s to %s",
+                                min(.x$date_mid), max(.x$date_mid)),
+      beta_min       = round(min(.x$beta), 3),
+      beta_max       = round(max(.x$beta), 3),
+      beta_pre_mean  = if (nrow(fully_pre)  > 0) round(mean(fully_pre$beta),  3) else NA_real_,
+      beta_post_mean = if (nrow(fully_post) > 0) round(mean(fully_post$beta), 3) else NA_real_
+    )
+  }) %>%
+  ungroup()
+
+window_summary <- expected_series %>%
+  left_join(per_series, by = c("flavor", "label", "window")) %>%
+  mutate(
+    n_windows    = coalesce(n_windows, 0L),
+    n_fully_pre  = coalesce(n_fully_pre, 0L),
+    n_fully_post = coalesce(n_fully_post, 0L),
+    beta_diff    = round(beta_post_mean - beta_pre_mean, 3)
+  )
+
+# Loud warning if any series produced zero windows (Italy is the recurring
+# culprit on the 4-country panel).
+zero_series <- window_summary %>% filter(n_windows == 0)
+if (nrow(zero_series) > 0) {
+  cat("\n  WARNING: the following series produced 0 rolling windows ",
+      "(skip rules: <", MIN_DEATH_DAYS, " death-days OR <", MIN_ROWS, " rows):\n", sep = "")
+  for (i in seq_len(nrow(zero_series))) {
+    z <- zero_series[i, ]
+    cat(sprintf("    %-12s %-16s %-6s\n", z$flavor, z$label, z$window))
+  }
+}
+
 sink_file <- file.path(BASE_DIR, "output", "tables", "053_rolling_beta.txt")
 sink(sink_file)
+old_opts <- options(tibble.width = Inf, tibble.print_max = Inf)
+on.exit(options(old_opts), add = TRUE)
 cat("053  ROLLING-WINDOW BETA(SWH)\n")
 cat("=============================\n")
 cat(sprintf("Primary window: %d days (2y). Robustness window: %d days (1y).\n",
     WINDOW_PRIMARY, WINDOW_ROBUST))
 cat(sprintf("Step: %d days. Anchor: window midpoint.\n", STEP_DAYS))
-cat("Model: fepois(n_dead_missing ~ swh_prevweek_z | month_year), NW(28) SEs.\n\n")
+cat("Model: fepois(n_dead_missing ~ swh_prevweek | month_year), NW(14) SEs.\n")
+cat(sprintf("Skip rules: <%d death-days OR <%d rows OR <2 month_year levels.\n",
+    MIN_DEATH_DAYS, MIN_ROWS))
+cat("\n")
+cat("Pre-MoU mean : avg beta over windows whose RIGHT edge is <= MoU\n")
+cat("               (date_mid <= ", as.character(MOU_DATE), " - W/2).\n", sep = "")
+cat("Post-MoU mean: avg beta over windows whose LEFT edge is >= MoU\n")
+cat("               (date_mid >= ", as.character(MOU_DATE), " + W/2).\n", sep = "")
+cat("Windows that straddle MoU are excluded from both means.\n")
+cat("Means are unweighted across heavily-overlapping windows; beta_diff\n")
+cat("is descriptive only — do NOT compute a naive t-test on it.\n\n")
 
-cat("Summary by flavor / label / window:\n")
-print(all_res %>%
-        group_by(flavor, label, window) %>%
-        summarise(n_windows = n(),
-                  date_range = sprintf("%s to %s",
-                                        min(date_mid), max(date_mid)),
-                  beta_min = round(min(beta), 3),
-                  beta_max = round(max(beta), 3),
-                  beta_at_mou = {
-                    idx <- which.min(abs(date_mid - MOU_DATE))
-                    round(beta[idx], 3)
-                  },
-                  .groups = "drop"),
-      n = 20)
+cat("Per-series summary:\n")
+print(window_summary, n = Inf)
 
-cat("\nFull table is in 053_rolling_beta.RDS\n")
+if (nrow(zero_series) > 0) {
+  cat("\nSeries with 0 windows (failed skip rules):\n")
+  print(zero_series %>% select(flavor, label, window), n = Inf)
+}
+
+cat("\nFull rolling estimates are in 053_rolling_beta.RDS\n")
 sink()
 cat(sprintf("Saved: %s\n", sink_file))
 
@@ -235,22 +300,10 @@ plot_df <- all_res %>%
          ci_hi = beta + 1.96 * se) %>%
   add_segments()
 
-# Light rolling-mean smoothing (k = 5 points = ~5 weeks of weekly-stepped
-# estimates). Applied WITHIN each series_id so the smoothing does not leak
-# across the multi-year gaps in Malta / EU. Short segments (< k points)
-# are left unsmoothed.
-smooth_cols <- function(df, k = 5) {
-  df %>%
-    group_by(series_id) %>%
-    arrange(date_mid) %>%
-    mutate(
-      beta  = if (dplyr::n() >= k) zoo::rollmean(beta,  k = k, fill = NA, align = "center") else beta,
-      ci_lo = if (dplyr::n() >= k) zoo::rollmean(ci_lo, k = k, fill = NA, align = "center") else ci_lo,
-      ci_hi = if (dplyr::n() >= k) zoo::rollmean(ci_hi, k = k, fill = NA, align = "center") else ci_hi
-    ) %>%
-    ungroup()
-}
-plot_df <- plot_df %>% smooth_cols(k = 5)
+# NOTE: post-hoc rolling-mean smoothing was removed (2026-04-13). The 730-day
+# (2y) window already smooths heavily; double-smoothing the rolling estimates
+# obscured the actual noise level and made the CI ribbons visually misleading.
+# Rolling estimates and CIs are now plotted as-is.
 
 # Common x-axis range across all three panels for visual comparability.
 x_min <- min(plot_df$date_mid, na.rm = TRUE)
@@ -273,6 +326,37 @@ if (nrow(gap_summary) > 0) {
   }
 }
 
+# Pre/post mean segments for the daily-agg panel — one per window size.
+# These overlay the rolling line as horizontal dashed segments showing the
+# average rolling beta in the fully-pre-MoU and fully-post-MoU regions.
+# Visually answers "did the average move?" without misleading the reader
+# into reading a discrete jump that isn't there.
+x_min_da <- min(plot_df$date_mid[plot_df$flavor == "daily-agg"], na.rm = TRUE)
+x_max_da <- max(plot_df$date_mid[plot_df$flavor == "daily-agg"], na.rm = TRUE)
+
+da_summary <- window_summary %>%
+  filter(flavor == "daily-agg") %>%
+  mutate(half_d = if_else(window == "2-year", WINDOW_PRIMARY / 2, WINDOW_ROBUST / 2))
+
+mean_segs <- bind_rows(
+  da_summary %>%
+    filter(!is.na(beta_pre_mean)) %>%
+    transmute(window,
+              x    = x_min_da,
+              xend = MOU_DATE - half_d,
+              y    = beta_pre_mean,
+              yend = beta_pre_mean,
+              side = "pre"),
+  da_summary %>%
+    filter(!is.na(beta_post_mean)) %>%
+    transmute(window,
+              x    = MOU_DATE + half_d,
+              xend = x_max_da,
+              y    = beta_post_mean,
+              yend = beta_post_mean,
+              side = "post")
+)
+
 # Panel (1): daily-agg with 2y and 1y windows
 p1 <- plot_df %>%
   filter(flavor == "daily-agg") %>%
@@ -284,13 +368,19 @@ p1 <- plot_df %>%
   geom_ribbon(aes(ymin = ci_lo, ymax = ci_hi),
               alpha = 0.15, colour = NA) +
   geom_line(linewidth = 0.7) +
+  geom_segment(data = mean_segs,
+               aes(x = x, xend = xend, y = y, yend = yend, colour = window),
+               linewidth = 1.1, linetype = "longdash",
+               inherit.aes = FALSE) +
   scale_colour_manual(values = c("2-year" = "#2166AC", "1-year" = "#D6604D")) +
   scale_fill_manual(values   = c("2-year" = "#2166AC", "1-year" = "#D6604D")) +
   scale_x_date(limits = x_lims, date_breaks = "2 years",
                date_labels = "%Y") +
   labs(
     title = "(1) Daily-aggregate rolling beta: window-size robustness",
-    subtitle = "Poisson QMLE, NW(28). Lines are 5-week rolling-mean smoothed. Red dotted = MoU (2017-07-01).",
+    subtitle = paste("Poisson QMLE, NW(14). Raw rolling estimates (no post-hoc smoothing).",
+                     "Long-dashed segments = mean beta over windows fully pre/post MoU.",
+                     "Red dotted = MoU (2017-07-01).", sep = " "),
     x = NULL, y = expression(beta(SWH[prevweek])),
     colour = "Window", fill = "Window"
   ) +
@@ -314,7 +404,7 @@ p2 <- plot_df %>%
                date_labels = "%Y") +
   labs(
     title = "(2) 2-bloc: African SAR vs EU SAR (2y window)",
-    subtitle = "AFR = Libya + Tunisia; EU = Italy + Malta. 5-week rolling-mean smoothed.",
+    subtitle = "AFR = Libya + Tunisia; EU = Italy + Malta. Raw rolling estimates.",
     x = NULL, y = expression(beta(SWH[prevweek])),
     colour = NULL, fill = NULL
   ) +
@@ -345,7 +435,7 @@ p3 <- plot_df %>%
                date_labels = "%Y") +
   labs(
     title = "(3) 4-country: per-SAR rolling beta (2y window)",
-    subtitle = "Libya, Tunisia, Italy, Malta estimated separately. 95% CI ribbons, 5-week rolling-mean smoothed.",
+    subtitle = "Libya, Tunisia, Italy, Malta estimated separately. 95% CI ribbons, raw rolling estimates.",
     x = NULL, y = expression(beta(SWH[prevweek])),
     colour = NULL, fill = NULL
   ) +

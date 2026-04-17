@@ -7,12 +7,12 @@
 # within-day spatial variation.
 #
 # Primary spec (matches 05_reduced_form_primary.R but adds zone dimension):
-#   n_dead_missing ~ swh_prevweek_z + swh_prevweek_z:post_mou |
+#   n_dead_missing ~ swh_prevweek + swh_prevweek:post_mou |
 #                    month_year + sar_bloc
 #
 # Also estimates a 4-country robustness variant (| month_year + country).
 #
-# SE: NW(28), matching 05_reduced_form_primary.R. (Earlier a "dim" attribute
+# SE: NW(14), matching 05_reduced_form_primary.R. (Earlier a "dim" attribute
 # on date from the zone build caused fixest's NW code to fail; that is now
 # stripped in 03_build_zone_panel.R.)
 #
@@ -76,7 +76,7 @@ cat("============================================\n")
 cat("Outcome: n_dead_missing — incident-only, Cause = Drowning or Mixed/unknown\n")
 cat("(matches 05_reduced_form_primary.R primary spec; built in 03_build_zone_panel.R)\n")
 cat("Deaths assigned to SAR zones via spatial join (NOT country-of-incident)\n")
-cat("Panel: 2 blocs x daily. FE: month_year + sar_bloc. NW(28) SEs.\n\n")
+cat("Panel: 2 blocs x daily. FE: month_year + sar_bloc. NW(14) SEs.\n\n")
 
 for (ye in PERIODS) {
   label <- sprintf("%d-%d", YEAR_START, ye)
@@ -84,39 +84,37 @@ for (ye in PERIODS) {
   cat(sprintf("--- sample: %d-%d ---\n", YEAR_START, ye))
 
   d_bloc <- bloc %>%
-    filter(year >= YEAR_START, year <= ye, !is.na(swh_prevweek)) %>%
-    mutate(swh_prevweek_z = as.numeric(scale(swh_prevweek)))
+    filter(year >= YEAR_START, year <= ye, !is.na(swh_prevweek))
 
   d_zone <- p %>%
-    filter(year >= YEAR_START, year <= ye, !is.na(swh_prevweek)) %>%
-    mutate(swh_prevweek_z = as.numeric(scale(swh_prevweek)))
+    filter(year >= YEAR_START, year <= ye, !is.na(swh_prevweek))
 
   cat(sprintf("  2-bloc panel rows: %d\n", nrow(d_bloc)))
   cat(sprintf("  4-zone panel rows: %d\n", nrow(d_zone)))
 
-  # 2-bloc model: AFR vs EU, FE = month_year + sar_bloc, NW(28) SEs
+  # 2-bloc model: AFR vs EU, FE = month_year + sar_bloc, NW(14) SEs
   m_bloc <- fenegbin(
-    n_dead_missing ~ swh_prevweek_z + swh_prevweek_z:post_mou |
+    n_dead_missing ~ swh_prevweek + swh_prevweek:post_mou |
       month_year + sar_bloc,
-    data = d_bloc, vcov = NW(28), panel.id = ~sar_bloc + date
+    data = d_bloc, vcov = NW(14), panel.id = ~sar_bloc + date
   )
 
-  # 4-country model: FE = month_year + country, NW(28) SEs
+  # 4-country model: FE = month_year + country, NW(14) SEs
   m_zone <- fenegbin(
-    n_dead_missing ~ swh_prevweek_z + swh_prevweek_z:post_mou |
+    n_dead_missing ~ swh_prevweek + swh_prevweek:post_mou |
       month_year + country,
-    data = d_zone, vcov = NW(28), panel.id = ~country + date
+    data = d_zone, vcov = NW(14), panel.id = ~country + date
   )
 
   cat("\n  --- 2-bloc (AFR/EU) ---\n")
-  print(etable(m_bloc, vcov = NW(28), se.below = TRUE))
+  print(etable(m_bloc, vcov = NW(14), se.below = TRUE))
 
   cat("\n  --- 4-country ---\n")
-  print(etable(m_zone, vcov = NW(28), se.below = TRUE))
+  print(etable(m_zone, vcov = NW(14), se.below = TRUE))
 
   # Extract the interaction term
-  ct_bloc <- coeftable(m_bloc, vcov = NW(28))
-  ct_zone <- coeftable(m_zone, vcov = NW(28))
+  ct_bloc <- coeftable(m_bloc, vcov = NW(14))
+  ct_zone <- coeftable(m_zone, vcov = NW(14))
 
   row_bloc <- which(grepl(":post_mou", rownames(ct_bloc)))
   row_zone <- which(grepl(":post_mou", rownames(ct_zone)))
@@ -168,7 +166,7 @@ p_coef <- ggplot(combined, aes(x = coef, y = spec, colour = period)) +
   labs(
     title = expression(paste("Zone-level reduced-form: ",
                               beta[3], " (SWH x post-MoU)")),
-    subtitle = "NegBin, NW(28) SEs, 95% CI. Deaths assigned via spatial join to SAR zones.",
+    subtitle = "NegBin, NW(14) SEs, 95% CI. Deaths assigned via spatial join to SAR zones.",
     x = expression(paste(beta[3], " (per 1-SD SWH)")),
     y = NULL,
     colour = "Sample"

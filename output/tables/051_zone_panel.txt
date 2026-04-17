@@ -3,7 +3,7 @@
 Outcome: n_dead_missing — incident-only, Cause = Drowning or Mixed/unknown
 (matches 05_reduced_form_primary.R primary spec; built in 03_build_zone_panel.R)
 Deaths assigned to SAR zones via spatial join (NOT country-of-incident)
-Panel: 2 blocs x daily. FE: month_year + sar_bloc. NW(28) SEs.
+Panel: 2 blocs x daily. FE: month_year + sar_bloc. NW(14) SEs.
 
 === 2014-2020 ===
 --- sample: 2014-2020 ---
@@ -11,50 +11,50 @@ Panel: 2 blocs x daily. FE: month_year + sar_bloc. NW(28) SEs.
   4-zone panel rows: 10228
 
   --- 2-bloc (AFR/EU) ---
-                                    m_bloc
-Dependent Var.:             n_dead_missing
-                                          
-swh_prevweek_z                   -1.663***
-                                 (0.3673) 
-swh_prevweek_z x post_mou         2.143***
-                                 (0.5554) 
-Fixed-Effects:              --------------
-month_year                             Yes
-sar_bloc                               Yes
-_________________________   ______________
-S.E. type                 New.-West (L=28)
-Observations                         4,692
-Squared Cor.                       0.00191
-Pseudo R2                          0.03815
-BIC                                5,405.0
-Over-dispersion                    0.01880
+                                  m_bloc
+Dependent Var.:           n_dead_missing
+                                        
+swh_prevweek                   -3.975***
+                               (0.8414) 
+swh_prevweek x post_mou         5.172***
+                               (1.195)  
+Fixed-Effects:            --------------
+month_year                           Yes
+sar_bloc                             Yes
+_______________________   ______________
+S.E. type               New.-West (L=14)
+Observations                       4,692
+Squared Cor.                     0.00109
+Pseudo R2                        0.03902
+BIC                              5,325.5
+Over-dispersion                  0.01839
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
   --- 4-country ---
-                                    m_zone
-Dependent Var.:             n_dead_missing
-                                          
-swh_prevweek_z                   -1.637***
-                                 (0.2825) 
-swh_prevweek_z x post_mou         1.903***
-                                 (0.4146) 
-Fixed-Effects:              --------------
-month_year                             Yes
-country                                Yes
-_________________________   ______________
-S.E. type                 New.-West (L=28)
-Observations                         9,384
-Squared Cor.                       0.00268
-Pseudo R2                          0.05297
-BIC                                6,074.9
-Over-dispersion                    0.01168
+                                  m_zone
+Dependent Var.:           n_dead_missing
+                                        
+swh_prevweek                   -4.076***
+                               (0.6398) 
+swh_prevweek x post_mou         4.577***
+                               (0.8885) 
+Fixed-Effects:            --------------
+month_year                           Yes
+country                              Yes
+_______________________   ______________
+S.E. type               New.-West (L=14)
+Observations                       9,384
+Squared Cor.                     0.00152
+Pseudo R2                        0.05506
+BIC                              5,972.3
+Over-dispersion                  0.01154
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
   Summary:
-    2-bloc   (AFR/EU):   b3 = +2.143 (SE=0.555)  IRR = 8.528  p = 0.0001
-    4-country:           b3 = +1.903 (SE=0.415)  IRR = 6.706  p = 0.0000
+    2-bloc   (AFR/EU):   b3 = +5.172 (SE=1.195)  IRR = 176.262  p = 0.0000
+    4-country:           b3 = +4.577 (SE=0.888)  IRR = 97.269  p = 0.0000
 
 === 2014-2023 ===
 --- sample: 2014-2023 ---
@@ -62,48 +62,48 @@ Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
   4-zone panel rows: 13752
 
   --- 2-bloc (AFR/EU) ---
-                                    m_bloc
-Dependent Var.:             n_dead_missing
-                                          
-swh_prevweek_z                   -1.727***
-                                 (0.3640) 
-swh_prevweek_z x post_mou         1.907***
-                                 (0.4147) 
-Fixed-Effects:              --------------
-month_year                             Yes
-sar_bloc                               Yes
-_________________________   ______________
-S.E. type                 New.-West (L=28)
-Observations                         6,454
-Squared Cor.                       0.00165
-Pseudo R2                          0.04043
-BIC                                8,264.8
-Over-dispersion                    0.02380
+                                  m_bloc
+Dependent Var.:           n_dead_missing
+                                        
+swh_prevweek                   -4.086***
+                               (0.8308) 
+swh_prevweek x post_mou         4.531***
+                               (0.9353) 
+Fixed-Effects:            --------------
+month_year                           Yes
+sar_bloc                             Yes
+_______________________   ______________
+S.E. type               New.-West (L=14)
+Observations                       6,454
+Squared Cor.                     0.00096
+Pseudo R2                        0.04126
+BIC                              8,181.1
+Over-dispersion                  0.02344
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
   --- 4-country ---
-                                    m_zone
-Dependent Var.:             n_dead_missing
-                                          
-swh_prevweek_z                   -1.723***
-                                 (0.2910) 
-swh_prevweek_z x post_mou         1.866***
-                                 (0.3289) 
-Fixed-Effects:              --------------
-month_year                             Yes
-country                                Yes
-_________________________   ______________
-S.E. type                 New.-West (L=28)
-Observations                        12,908
-Squared Cor.                       0.00232
-Pseudo R2                          0.04563
-BIC                                9,584.3
-Over-dispersion                    0.01406
+                                  m_zone
+Dependent Var.:           n_dead_missing
+                                        
+swh_prevweek                   -4.209***
+                               (0.6659) 
+swh_prevweek x post_mou         4.481***
+                               (0.7495) 
+Fixed-Effects:            --------------
+month_year                           Yes
+country                              Yes
+_______________________   ______________
+S.E. type               New.-West (L=14)
+Observations                      12,908
+Squared Cor.                     0.00145
+Pseudo R2                        0.04672
+BIC                              9,481.7
+Over-dispersion                  0.01389
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
   Summary:
-    2-bloc   (AFR/EU):   b3 = +1.907 (SE=0.415)  IRR = 6.731  p = 0.0000
-    4-country:           b3 = +1.866 (SE=0.329)  IRR = 6.462  p = 0.0000
+    2-bloc   (AFR/EU):   b3 = +4.531 (SE=0.935)  IRR = 92.883  p = 0.0000
+    4-country:           b3 = +4.481 (SE=0.749)  IRR = 88.354  p = 0.0000
 

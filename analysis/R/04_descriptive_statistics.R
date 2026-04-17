@@ -8,7 +8,7 @@
 # CMR countries) — see 02_build_daily_panel.R for the rationale.
 #
 # Input:
-#   data/processed/frontex_incidents.RDS
+#   data/processed/frontex_incidents_coords.RDS
 #   data/processed/iom_mmp_incidents.RDS
 #   data/processed/iom_med_crossings_monthly.RDS
 #   analysis/data/daily_panel_complete.RDS
@@ -47,7 +47,7 @@ cat(sprintf("  Daily panel: %d days (%s to %s)\n",
     nrow(panel), min(panel$date), max(panel$date)))
 
 # 1b. Frontex incidents (CMR departures)
-frx <- readRDS(file.path(BASE_DIR, "data", "processed", "frontex_incidents.RDS")) %>%
+frx <- readRDS(file.path(BASE_DIR, "data", "processed", "frontex_incidents_coords.RDS")) %>%
   filter(country_of_departure %in% CMR_DEPARTURES)
 stopifnot(all(c("date", "boat_category", "event_type", "detected_by",
                 "num_persons", "sar_flag") %in% names(frx)))
@@ -83,6 +83,21 @@ iom_monthly <- readRDS(file.path(BASE_DIR, "data", "processed",
   filter(ym <= floor_date(PANEL_END, "month"))
 cat(sprintf("  IOM monthly: %d months\n", nrow(iom_monthly)))
 
+
+# 1e. UNITED deaths — sea deaths only, restricted to the same 5 CMR countries
+#     as IOM plus "Mediterranean" (open-sea), aggregated to daily.
+united_raw <- readRDS(file.path(BASE_DIR, "data", "processed", "united_incidents.RDS"))
+UNITED_CMR_COUNTRIES <- c(CMR_INCIDENT_COUNTRIES, "Mediterranean")
+united_daily <- united_raw %>%
+  filter(country_of_death %in% UNITED_CMR_COUNTRIES,
+         incident_year >= 2014L,
+         incident_date_clean <= PANEL_END,
+         (manner_of_death == "drowned" & !is.na(manner_of_death)) |
+         (transport_means == "boat_ship_ferry" & !is.na(transport_means))) %>%
+  group_by(date = incident_date_clean) %>%
+  summarise(n_dead_united = sum(n_deaths, na.rm = TRUE), .groups = "drop")
+cat(sprintf("  UNITED CMR sea deaths: %d days, %.0f total deaths\n",
+            nrow(united_daily), sum(united_daily$n_dead_united)))
 
 PLOT_XLIM <- c(as.Date("2014-01-01"), PANEL_END)
 
@@ -122,38 +137,36 @@ monthly <- monthly_panel %>%
 
 cat(sprintf("  Monthly tibble: %d months\n", nrow(monthly)))
 
-# ── 3. Panel 1: Crossings + Deaths ───────────────────────
+# UNITED monthly: same structure but with UNITED deaths
+monthly_united_daily <- panel %>%
+  select(date, frx_persons, frx_incidents, lcg_tcg_pushbacks, arrivals) %>%
+  left_join(united_daily, by = "date") %>%
+  replace_na(list(n_dead_united = 0)) %>%
+  mutate(ym = floor_date(date, "month")) %>%
+  group_by(ym) %>%
+  summarise(
+    frx_persons       = sum(frx_persons),
+    frx_incidents     = sum(frx_incidents),
+    n_dead_missing    = sum(n_dead_united),
+    lcg_tcg_pushbacks = sum(lcg_tcg_pushbacks),
+    unhcr_arrivals    = sum(arrivals, na.rm = TRUE),
+    unhcr_days        = sum(!is.na(arrivals)),
+    .groups = "drop"
+  ) %>%
+  mutate(crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing)
+
+monthly_united <- monthly_united_daily %>%
+  left_join(iom_monthly, by = "ym") %>%
+  replace_na(list(lcg = 0, tcg = 0))
+
+cat(sprintf("  UNITED monthly tibble: %d months\n", nrow(monthly_united)))
+
+# ── 3. Panel 1: Crossings + Deaths (IOM vs UNITED) ──────
 cat("\n--- 3. Panel: Crossings + Deaths ---\n")
 
-# 3a. Crossing attempts by persons
-# The daily panel uses crossing_attempts = Frontex + LCG/TCG pushbacks + deaths
-# (a lower bound). For the monthly plot we can add undetected arrivals
-# computed at the monthly level, where UNHCR-Frontex timing mismatches
-# wash out. The daily subtraction inflates the gap 3-27x, but at the
-# monthly level the gap is genuine (~10% of UNHCR arrivals).
-crossing_persons <- monthly %>%
-  filter(ym <= PANEL_END) %>%
-  mutate(
-    frontex_persons    = replace_na(frx_persons, 0),
-    undetected_monthly = ifelse(unhcr_days > 0,
-                                 pmax(unhcr_arrivals - frx_persons, 0), 0),
-    lcg_persons        = replace_na(lcg, 0),
-    tcg_persons        = replace_na(tcg, 0),
-    deaths_missing     = n_dead_missing
-  ) %>%
-  select(ym, frontex_persons, undetected_monthly,
-         lcg_persons, tcg_persons, deaths_missing) %>%
-  pivot_longer(-ym, names_to = "component", values_to = "persons")
-
+# Shared aesthetics
 comp_order <- c("frontex_persons", "undetected_monthly",
                 "lcg_persons", "tcg_persons", "deaths_missing")
-comp_labels <- c(
-  "frontex_persons"    = "Persons intercepted/rescued during operations (Frontex)",
-  "undetected_monthly" = "Undetected arrivals (monthly UNHCR - Frontex)",
-  "lcg_persons"        = "LCG pushbacks (IOM)",
-  "tcg_persons"        = "TCG pushbacks (IOM)",
-  "deaths_missing"     = "Deaths and missing persons (IOM)"
-)
 comp_colours <- c(
   "frontex_persons"    = "#1F78B4",
   "undetected_monthly" = "#A6CEE3",
@@ -162,59 +175,129 @@ comp_colours <- c(
   "deaths_missing"     = "#D32F2F"
 )
 
-crossing_persons <- crossing_persons %>%
-  mutate(component = factor(component, levels = comp_order,
-                            labels = comp_labels[comp_order]))
-
-legend_theme <- theme_minimal(base_size = 11) +
+legend_theme <- theme_minimal(base_size = 10) +
   theme(legend.position = "bottom",
-        legend.text = element_text(size = 8),
-        legend.key.size = unit(0.35, "cm"),
+        legend.text = element_text(size = 7),
+        legend.key.size = unit(0.3, "cm"),
         legend.margin = margin(t = -5))
 
-p_cross_persons <- ggplot(crossing_persons, aes(x = ym, y = persons, fill = component)) +
-  geom_col(position = "stack", width = 25) +
-  scale_fill_manual(values = setNames(comp_colours, comp_labels[names(comp_colours)]),
-                    name = NULL) +
-  geom_vline(xintercept = MOU_DATE, linetype = "dashed", colour = "red", linewidth = 0.5) +
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  coord_cartesian(xlim = PLOT_XLIM) +
-  labs(title = "Number of persons attempting crossing in the Central Mediterranean, by crossing outcome",
-       subtitle = "Monthly totals. Undetected arrivals computed as max(UNHCR daily arrivals in Italy - Frontex interceptions/rescues, 0) at monthly level.",
-       y = "Number of persons", x = NULL) +
-  legend_theme +
-  guides(fill = guide_legend(nrow = 2))
+# Helper: build crossing-persons long data from a monthly tibble
+build_crossing_long <- function(m, death_label) {
+  comp_labels <- c(
+    "frontex_persons"    = "Persons intercepted/rescued (Frontex)",
+    "undetected_monthly" = "Undetected arrivals (UNHCR - Frontex)",
+    "lcg_persons"        = "LCG pushbacks",
+    "tcg_persons"        = "TCG pushbacks",
+    "deaths_missing"     = death_label
+  )
+  m %>%
+    filter(ym <= PANEL_END) %>%
+    mutate(
+      frontex_persons    = replace_na(frx_persons, 0),
+      undetected_monthly = ifelse(unhcr_days > 0,
+                                   pmax(unhcr_arrivals - frx_persons, 0), 0),
+      lcg_persons        = replace_na(lcg, 0),
+      tcg_persons        = replace_na(tcg, 0),
+      deaths_missing     = n_dead_missing
+    ) %>%
+    select(ym, frontex_persons, undetected_monthly,
+           lcg_persons, tcg_persons, deaths_missing) %>%
+    pivot_longer(-ym, names_to = "component", values_to = "persons") %>%
+    mutate(component = factor(component, levels = comp_order,
+                              labels = comp_labels[comp_order]))
+}
 
-# 3b. Deaths + death rate (dual-axis, single plot)
-deaths_rate <- monthly %>%
-  filter(ym <= PANEL_END) %>%
-  mutate(death_rate = ifelse(crossing_attempts > 0,
-                              n_dead_missing / crossing_attempts * 100, NA_real_))
+# Helper: crossing persons plot
+make_cross_plot <- function(cross_long, comp_labels_vec, title_str, subtitle_str = NULL) {
+  ggplot(cross_long, aes(x = ym, y = persons, fill = component)) +
+    geom_col(position = "stack", width = 25) +
+    scale_fill_manual(values = setNames(comp_colours, comp_labels_vec[names(comp_colours)]),
+                      name = NULL) +
+    geom_vline(xintercept = MOU_DATE, linetype = "dashed", colour = "red", linewidth = 0.5) +
+    scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
+    coord_cartesian(xlim = PLOT_XLIM) +
+    labs(title = title_str, subtitle = subtitle_str, y = "Number of persons", x = NULL) +
+    legend_theme +
+    guides(fill = guide_legend(nrow = 2))
+}
 
-scale_factor <- max(deaths_rate$n_dead_missing, na.rm = TRUE) / 15
+# Helper: deaths + fatality rate plot
+# shared_sf: pass a common scale factor so both panels have the same y-axis
+make_deaths_plot <- function(m, death_label, title_str, subtitle_str = NULL, shared_sf = NULL) {
+  dr <- m %>%
+    filter(ym <= PANEL_END) %>%
+    mutate(death_rate = ifelse(crossing_attempts > 0,
+                                n_dead_missing / crossing_attempts * 100, NA_real_))
+  sf <- if (!is.null(shared_sf)) shared_sf else max(dr$n_dead_missing, na.rm = TRUE) / 15
 
-p_deaths <- ggplot(deaths_rate, aes(x = ym)) +
-  geom_col(aes(y = n_dead_missing, fill = "Deaths and missing persons (IOM)"), width = 25) +
-  geom_line(aes(y = death_rate * scale_factor, colour = "Fatality rate (%)"),
-            linewidth = 0.7) +
-  scale_fill_manual(values = c("Deaths and missing persons (IOM)" = "#D32F2F"), name = NULL) +
-  scale_colour_manual(values = c("Fatality rate (%)" = "#333333"), name = NULL) +
-  scale_y_continuous(
-    name = "Number of dead and missing persons",
-    sec.axis = sec_axis(~ . / scale_factor, name = "Fatality rate (%)")
-  ) +
-  geom_vline(xintercept = MOU_DATE, linetype = "dashed", colour = "red", linewidth = 0.5) +
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  coord_cartesian(xlim = PLOT_XLIM) +
-  labs(title = "Number of dead and missing persons and fatality rate",
-       subtitle = "Monthly totals. Fatality rate = deaths + missing / crossing attempts (Frontex events + LCG/TCG pushbacks + deaths + missing).",
-       x = NULL) +
-  guides(fill = guide_legend(order = 1), colour = guide_legend(order = 2)) +
-  legend_theme
+  ggplot(dr, aes(x = ym)) +
+    geom_col(aes(y = n_dead_missing, fill = death_label), width = 25) +
+    geom_line(aes(y = death_rate * sf, colour = "Fatality rate (%)"),
+              linewidth = 0.7) +
+    scale_fill_manual(values = setNames("#D32F2F", death_label), name = NULL) +
+    scale_colour_manual(values = c("Fatality rate (%)" = "#333333"), name = NULL) +
+    scale_y_continuous(
+      name = "Dead and missing",
+      sec.axis = sec_axis(~ . / sf, name = "Fatality rate (%)")
+    ) +
+    geom_vline(xintercept = MOU_DATE, linetype = "dashed", colour = "red", linewidth = 0.5) +
+    scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
+    coord_cartesian(xlim = PLOT_XLIM, ylim = if (!is.null(shared_sf)) c(0, shared_sf * 15) else NULL) +
+    labs(title = title_str, subtitle = subtitle_str, x = NULL) +
+    guides(fill = guide_legend(order = 1), colour = guide_legend(order = 2)) +
+    legend_theme
+}
 
-panel_crossings <- p_cross_persons / p_deaths
+# --- IOM versions ---
+iom_death_label <- "Deaths and missing (IOM)"
+iom_comp_labels <- c(
+  "frontex_persons"    = "Persons intercepted/rescued (Frontex)",
+  "undetected_monthly" = "Undetected arrivals (UNHCR - Frontex)",
+  "lcg_persons"        = "LCG pushbacks",
+  "tcg_persons"        = "TCG pushbacks",
+  "deaths_missing"     = iom_death_label
+)
+CROSS_TITLE  <- "Estimated N of persons attempting crossing in the Central Mediterranean"
+DEATHS_TITLE <- "Estimated N of dead and missing persons and fatality rate"
+
+crossing_iom <- build_crossing_long(monthly, iom_death_label)
+p_cross_iom   <- make_cross_plot(crossing_iom, iom_comp_labels,
+                                  CROSS_TITLE,
+                                  subtitle_str = "Deaths source: IOM Missing Migrants Project.")
+
+# --- UNITED versions ---
+united_death_label <- "Deaths and missing (UNITED)"
+united_comp_labels <- c(
+  "frontex_persons"    = "Persons intercepted/rescued (Frontex)",
+  "undetected_monthly" = "Undetected arrivals (UNHCR - Frontex)",
+  "lcg_persons"        = "LCG pushbacks",
+  "tcg_persons"        = "TCG pushbacks",
+  "deaths_missing"     = united_death_label
+)
+crossing_united <- build_crossing_long(monthly_united, united_death_label)
+p_cross_united  <- make_cross_plot(crossing_united, united_comp_labels,
+                                    CROSS_TITLE,
+                                    subtitle_str = "Deaths source: UNITED List of Refugee Deaths.")
+
+# Shared scale factor for deaths plots so both panels are visually comparable
+deaths_sf <- max(
+  max(monthly$n_dead_missing[monthly$ym <= PANEL_END], na.rm = TRUE),
+  max(monthly_united$n_dead_missing[monthly_united$ym <= PANEL_END], na.rm = TRUE)
+) / 15
+
+p_deaths_iom    <- make_deaths_plot(monthly, iom_death_label,
+                                     DEATHS_TITLE,
+                                     subtitle_str = "Deaths source: IOM Missing Migrants Project.",
+                                     shared_sf = deaths_sf)
+p_deaths_united <- make_deaths_plot(monthly_united, united_death_label,
+                                     DEATHS_TITLE,
+                                     subtitle_str = "Deaths source: UNITED List of Refugee Deaths.",
+                                     shared_sf = deaths_sf)
+
+# --- 2x2 panel: UNITED left, IOM right ---
+panel_crossings <- (p_cross_united | p_cross_iom) / (p_deaths_united | p_deaths_iom)
 ggsave(file.path(BASE_DIR, "output", "figures", "desc_panel_crossings.png"),
-       panel_crossings, width = 12, height = 8, dpi = 300)
+       panel_crossings, width = 14, height = 10, dpi = 300)
 cat("Saved: output/figures/desc_panel_crossings.png\n")
 
 # ── 4. Panel 2: Event type composition (detailed) ──────

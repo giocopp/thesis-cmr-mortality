@@ -5,8 +5,6 @@
 # Replaces the Python script (clean_iom_data.py) with equivalent R logic.
 #
 # Fixes applied:
-#   - 2025 MMP column typo: 'No. dead/ missing' → 'No. dead/missing'
-#   - Junk rows (summary/blank) filtered from MMP data
 #   - Dates standardized (imprecise dates preserved in 'incident_date_raw')
 #   - Known coordinate error corrected: 2022.MMP0765 (Khums, Libya)
 #   - Crossings use hardcoded row boundaries (verified against Excel)
@@ -16,7 +14,7 @@
 #     byte-for-byte identical to 2014 — likely a data entry error
 #
 # Input:
-#   data/raw/iom/IOM_MMP data_2014-2025_12.08.2025.xlsx
+#   data/raw/iom/Missing_Migrants_Global_Figures_allData.xlsx
 #   data/raw/iom/ALL MED DATA 2010-2025_12.08.2025.xlsx
 #
 # Output:
@@ -186,54 +184,54 @@ parse_iom_date <- function(raw_date) {
 cat("--- PART 1: IOM MMP Incidents ---\n\n")
 
 mmp_path <- file.path(BASE_DIR, "data", "raw", "iom",
-                       "IOM_MMP data_2014-2025_12.08.2025.xlsx")
+                       "Missing_Migrants_Global_Figures_allData.xlsx")
 
-sheets <- excel_sheets(mmp_path)
-cat(sprintf("  Sheets: %s\n", paste(sheets, collapse = ", ")))
+cat(sprintf("  Reading: %s\n", basename(mmp_path)))
 
-year_sheets <- sheets[grepl("^\\d{4}$", sheets)]
-cat(sprintf("  Year sheets: %s\n", paste(year_sheets, collapse = ", ")))
+# Single sheet, one row per event. Read as text to avoid ambiguous
+# type coercion; numeric columns are re-cast explicitly below.
+df_raw <- read_excel(mmp_path, sheet = "Worksheet", col_types = "text")
+cat(sprintf("  Raw: %d rows, %d cols\n", nrow(df_raw), ncol(df_raw)))
 
-# ── 1a. Read and clean each year sheet ────────────────────
-all_incidents <- list()
+# ── 1a. Standardise column names and types ──────────────
+df_all <- df_raw %>%
+  transmute(
+    `Main ID`                   = `Main ID`,
+    `Incident ID`               = `Incident ID`,
+    `Incident Type`             = `Incident Type`,
+    `Region of Incident`        = `Region of Incident`,
+    `Incident date`             = `Incident Date`,
+    `Incident year`             = suppressWarnings(as.integer(`Incident Year`)),
+    `Incident month`            = match(Month, month.name),
+    `No. dead`                  = suppressWarnings(as.numeric(`Number of Dead`)),
+    `No. missing`               = suppressWarnings(as.numeric(`Minimum Estimated Number of Missing`)),
+    `No. dead/missing`          = suppressWarnings(as.numeric(`Total Number of Dead and Missing`)),
+    `No. survivors`             = suppressWarnings(as.numeric(`Number of Survivors`)),
+    `No. Female`                = suppressWarnings(as.numeric(`Number of Females`)),
+    `No. Male`                  = suppressWarnings(as.numeric(`Number of Males`)),
+    `No. minors`                = suppressWarnings(as.numeric(`Number of Children`)),
+    `Country of Origin`         = `Country of Origin`,
+    `Region of Origin`          = `Region of Origin`,
+    `Cause of death (category)` = `Cause of Death`,
+    `Cause of death (reported)` = `Cause of Death`,
+    `Route`                     = `Migration Route`,
+    `Country of Incident`       = `Country of Incident`,
+    `Location of death`         = `Location of Incident`,
+    `UNSD region`               = `UNSD Geographical Grouping`,
+    `Source`                    = `Information Source`,
+    `Link`                      = URL,
+    `Source Quality`            = `Source Quality`,
+    Latitude  = suppressWarnings(as.numeric(sub(",.*$",           "", Coordinates))),
+    Longitude = suppressWarnings(as.numeric(sub("^[^,]*,[[:space:]]*", "", Coordinates)))
+  )
 
-for (sheet in sort(year_sheets)) {
-  # Read all columns as text to avoid type mismatches across year sheets
-  # (e.g. "No. survivors" is numeric in some sheets, character in others)
-  df_year <- read_excel(mmp_path, sheet = sheet, col_types = "text")
-  n_before <- nrow(df_year)
-
-  # Normalize column names: fix 2025 typo
-  names(df_year) <- str_replace(names(df_year),
-                                 "^No\\. dead/ missing$",
-                                 "No. dead/missing")
-
-  # Filter junk rows: keep only rows with non-null Main ID
-  df_year <- df_year %>%
-    filter(!is.na(`Main ID`),
-           !str_detect(as.character(`Main ID`), "(?i)total"))
-
-  n_dropped <- n_before - nrow(df_year)
-  suffix <- if (n_dropped > 0) sprintf(" (dropped %d junk rows)", n_dropped) else ""
-  cat(sprintf("  %s: %d rows%s\n", sheet, nrow(df_year), suffix))
-
-  all_incidents[[sheet]] <- df_year
+# Sanity: no Main ID should be NA
+n_null_id <- sum(is.na(df_all$`Main ID`))
+if (n_null_id > 0) {
+  cat(sprintf("  WARNING: %d rows with null Main ID — dropping\n", n_null_id))
+  df_all <- df_all %>% filter(!is.na(`Main ID`))
 }
-
-df_all <- bind_rows(all_incidents)
-cat(sprintf("\n  Combined: %d rows\n", nrow(df_all)))
-
-# Convert numeric columns back from text
-numeric_cols <- c("Incident year", "Incident month",
-                  "No. dead", "No. missing", "No. dead/missing",
-                  "No. survivors", "No. Female", "No. Male", "No. minors")
-for (col in intersect(numeric_cols, names(df_all))) {
-  df_all[[col]] <- suppressWarnings(as.numeric(df_all[[col]]))
-}
-
-# Convert coordinate columns
-df_all$Latitude  <- suppressWarnings(as.numeric(df_all$Latitude))
-df_all$Longitude <- suppressWarnings(as.numeric(df_all$Longitude))
+cat(sprintf("  After renaming: %d rows, %d cols\n", nrow(df_all), ncol(df_all)))
 
 # ── 1b. Standardize dates ────────────────────────────────
 cat("\n  Standardizing dates...\n")

@@ -1,0 +1,34 @@
+058  REGIME DIAGNOSTICS — structural break sweep
+================================================
+Sample: 2014-01-01 to 2023-05-31 (N = 3438 days, 17975 deaths)
+
+Andrews sup-Wald break-point sweep
+----------------------------------
+Model: fenegbin(n_dead_missing ~ swh_prevweek + swh_prevweek:1[date>=tau] | month_year)
+SE: NW(14). Candidate tau grid: weekly, 1-year buffer on each side.
+(Same family + SE as 05_reduced_form_primary.R; only the break date moves.)
+
+tau* (argmax |z|): 2015-04-16   b_int = +4.389   z = +4.68
+
+Top 10 candidate break dates by |z|:
+# A tibble: 10 × 4
+   tau        b_main b_int z_int
+   <date>      <dbl> <dbl> <dbl>
+ 1 2015-04-16  -4.01  4.39  4.68
+ 2 2015-10-22  -5.47  5.92  4.67
+ 3 2016-03-17  -3.11  3.60  4.54
+ 4 2015-10-15  -5.35  5.80  4.38
+ 5 2016-05-19  -4.00  4.67  4.12
+ 6 2015-10-08  -5.22  5.68  4.04
+ 7 2017-01-12  -1.50  1.97  3.9 
+ 8 2016-05-12  -3.70  4.32  3.88
+ 9 2016-03-10  -3.57  4.12  3.77
+10 2015-10-01  -5.10  5.56  3.68
+
+Distance (days) from tau* to institutional dates:
+# A tibble: 3 × 4
+  date       label              col     days_from_tau_star
+  <date>     <chr>              <chr>                <dbl>
+1 2014-11-01 Mare Nostrum ends  #1B7837               -166
+2 2017-07-01 MoU + Minniti code #D6604D                807
+3 2018-06-01 Salvini crackdown  #762A83               1142

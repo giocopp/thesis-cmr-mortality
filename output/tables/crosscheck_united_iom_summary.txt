@@ -1,0 +1,45 @@
+UNITED vs IOM Cross-Check Summary
+==================================
+
+Parameters: date_window=3 days, dist_max=50 km, count_ratio=[0.5, 2.0]
+
+UNITED CMR records (2014-2025): 2256 incidents, 32,888 deaths
+IOM CMR records (2014-2025):    1538 incidents, 23,748 deaths
+
+Matched:      572 UNITED records -> 499 unique IOM records
+UNITED-only:  1684 records (20,934 deaths)
+IOM-only:     1039 records
+
+Match type breakdown:
+
+date_only     fuzzy    strong 
+        1       267       304 
+
+
+Yearly comparison:
+ year united_incidents united_deaths iom_incidents iom_deaths united_matched
+ 2014               67          3636            46       2961              9
+ 2015               80          3555            49       3007             11
+ 2016              186          5187           129       3475             50
+ 2017              176          3559           160       2843             75
+ 2018              164          1716            60       1305             47
+ 2019              105          1624            62       1257             33
+ 2020              226          1662           100        965             42
+ 2021              138          2046           160       1552             45
+ 2022              269          2224           188       1417             66
+ 2023              343          3390           206       1880             91
+ 2024              229          2383           240       1800             64
+ 2025              273          1906           138       1286             39
+ united_matched_deaths united_only_incidents match_rate_pct death_ratio
+                  1114                    58           13.4        1.23
+                   920                    69           13.8        1.18
+                  2027                   136           26.9        1.49
+                  1602                   101           42.6        1.25
+                   716                   117           28.7        1.31
+                   748                    72           31.4        1.29
+                   560                   184           18.6        1.72
+                   831                    93           32.6        1.32
+                   937                   203           24.5        1.57
+                  1281                   252           26.5        1.80
+                   976                   165           27.9        1.32
+                   242                   234           14.3        1.48

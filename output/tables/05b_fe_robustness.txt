@@ -1,0 +1,58 @@
+05b  FE ROBUSTNESS OF PRIMARY REDUCED FORM
+==========================================
+Sample: 2014-01-01 to 2023-05-31 (N = 3438 days, 17975 deaths)
+Model: fenegbin(n_dead_missing ~ swh_prevweek + swh_prevweek:post_mou | <FE>)
+       (matches 05_reduced_form_primary.R; post_mou main effect omitted)
+SEs:   Newey-West(14) unless stated otherwise.
+SWH:   raw prev-week mean in metres (not standardised).
+
+=== 1. SWH variance absorbed by FE ===
+# A tibble: 6 × 3
+  fe_spec              `abs R2`  n_fe
+  <chr>                <chr>    <int>
+1 year                 1.1%        10
+2 month-of-year        48.7%       12
+3 year + month         49.7%       22
+4 quarter-year         45.0%       38
+5 month-year (current) 58.9%      113
+6 month-year + dow     58.9%      120
+
+=== 2. NegBin estimates across FE specs ===
+# A tibble: 6 × 8
+  fe_spec              `abs R2`  n_fe b1                     
+  <chr>                <chr>    <int> <chr>                  
+1 year                 1.1%        10 -0.700 (0.390, p=0.073)
+2 month-of-year        48.7%       12 +0.471 (0.322, p=0.144)
+3 year + month         49.7%       22 -0.144 (0.436, p=0.741)
+4 quarter-year         45.0%       38 -1.071 (0.558, p=0.055)
+5 month-year (current) 58.9%      108 -1.836 (0.885, p=0.038)
+6 month-year + dow     58.9%      115 -1.755 (0.899, p=0.051)
+  b3                          ll   AIC pr2  
+  <chr>                    <dbl> <dbl> <chr>
+1 +0.419 (0.417, p=0.315) -4150. 8325. 0.004
+2 -0.504 (0.183, p=0.006) -4152. 8332. 0.004
+3 +0.402 (0.396, p=0.310) -4144. 8333. 0.006
+4 +1.642 (0.634, p=0.010) -4094. 8269. 0.018
+5 +2.480 (0.994, p=0.013) -4003. 8227. 0.032
+6 +2.413 (1.003, p=0.016) -4003. 8237. 0.032
+
+=== 3. SE variants on month-year FE (same point estimates) ===
+# A tibble: 6 × 3
+  variant             b1                      b3                     
+  <chr>               <chr>                   <chr>                  
+1 NW(7)               -1.836 (0.793, p=0.021) +2.480 (0.894, p=0.006)
+2 NW(14) [current]    -1.836 (0.885, p=0.038) +2.480 (0.994, p=0.013)
+3 NW(21)              -1.836 (0.924, p=0.047) +2.480 (1.042, p=0.017)
+4 cluster: month_year -1.836 (1.134, p=0.106) +2.480 (1.266, p=0.050)
+5 cluster: year       -1.836 (1.025, p=0.073) +2.480 (1.179, p=0.035)
+6 iid                 -1.836 (0.797, p=0.021) +2.480 (0.914, p=0.007)
+
+=== 4. Sample restriction on month-year FE (re-fit) ===
+# A tibble: 4 × 4
+  variant                  N b1                      b3                     
+  <chr>                <int> <chr>                   <chr>                  
+1 full                  3286 -1.836 (0.885, p=0.038) +2.480 (0.994, p=0.013)
+2 drop zero-death days   647 -0.521 (0.951, p=0.584) +0.765 (0.999, p=0.444)
+3 cap deaths at 100     3187 -1.121 (0.544, p=0.039) +1.433 (0.696, p=0.040)
+4 drop FE singletons    3286 -1.836 (0.885, p=0.038) +2.480 (0.994, p=0.013)
+

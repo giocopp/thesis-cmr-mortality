@@ -24,6 +24,8 @@ MOU_DATE <- as.Date("2017-07-01")
 # the Frontex-based daily_panel_complete.RDS, which is the canonical base
 # for the zone analysis.
 FRONTEX_END_DATE <- as.Date("2023-06-09")
+# Map cutoff: align both data sources to the UNITED coverage end (March 2026)
+MAP_END_DATE <- as.Date("2026-03-31")
 GML_DIR  <- file.path(BASE_DIR, "data", "raw", "IMO-SAR-boundaries")
 
 cat("============================================================\n")
@@ -305,9 +307,8 @@ country_labels <- data.frame(
   lat   = c(37.5,     35.0,      30.8,    35.7,    35.6,        35.5,      40.1)
 )
 
-# Restrict map to incidents until Frontex cutoff and flag inside/outside
-# the core corridor polygon. Mirrors the zone panel sample.
-df_cmr_map <- df_cmr %>% filter(date <= FRONTEX_END_DATE)
+# Flag inside/outside the core corridor polygon.
+df_cmr_map <- df_cmr %>% filter(date <= MAP_END_DATE)
 iom_sf_map <- st_as_sf(df_cmr_map, coords = c("lon", "lat"), crs = 4326)
 inside_flag <- st_within(iom_sf_map, core_poly, sparse = FALSE)[, 1]
 df_cmr_map$in_corridor <- factor(
@@ -343,15 +344,71 @@ p_core <- ggplot() +
   geom_text(data = country_labels, aes(x = lon, y = lat, label = label),
             colour = "grey40", size = 2.5, fontface = "italic") +
   coord_sf(xlim = MAP_XLIM, ylim = MAP_YLIM, expand = FALSE) +
-  labs(title = "Central Mediterranean Route: Considered Area",
-       subtitle = sprintf("IOM incidents: %s inside corridor / %s total (%.1f%%).",
-                           formatC(n_in_zone, big.mark = ","),
-                           formatC(n_total, big.mark = ","),
-                           pct_in),
+  labs(title = "IOM Missing Migrants Project",
+       subtitle = sprintf("%s deadly incidents inside corridor (2014–March 2026).",
+                           formatC(n_in_zone, big.mark = ",")),
        x = NULL, y = NULL) +
   map_theme
 
-# ── 4b. SAR zones (untouched: original style) ─────────────
+# ── 4b. UNITED CMR incident map (sea deaths only) ────────
+cat("\n--- 4b. UNITED incident map ---\n")
+
+df_united <- readRDS(file.path(BASE_DIR, "data", "processed",
+                                "united_incidents.RDS")) %>%
+  filter(is_cmr,
+         !is.na(latitude), !is.na(longitude),
+         incident_year >= 2014L,
+         incident_date_clean <= MAP_END_DATE,
+         # Keep only deaths at sea: drowned or boat transport
+         (manner_of_death == "drowned" & !is.na(manner_of_death)) |
+         (transport_means == "boat_ship_ferry" & !is.na(transport_means)))
+
+united_sf <- st_as_sf(df_united, coords = c("longitude", "latitude"), crs = 4326)
+inside_united <- st_within(united_sf, core_poly, sparse = FALSE)[, 1]
+df_united$in_corridor <- factor(
+  ifelse(inside_united, "Included", "Excluded"),
+  levels = c("Included", "Excluded")
+)
+
+n_in_united  <- sum(df_united$in_corridor == "Included")
+n_total_united <- nrow(df_united)
+pct_in_united  <- 100 * n_in_united / n_total_united
+
+df_united_plot <- df_united %>% arrange(in_corridor == "Included")
+
+p_united <- ggplot() +
+  geom_sf(data = world, fill = "grey90", colour = "grey60", linewidth = 0.2) +
+  geom_sf(data = core_sea, fill = "#F08232", colour = "#F08232",
+          alpha = 0.18, linewidth = 0.3) +
+  geom_point(data = df_united_plot,
+             aes(x = longitude, y = latitude, size = n_deaths,
+                 colour = in_corridor),
+             alpha = 0.5, shape = 16) +
+  scale_colour_manual(values = colour_vals, name = "Deadly Incidents") +
+  scale_size_continuous(range = c(0.3, 4), name = "Incident Size",
+                        breaks = c(1, 10, 50, 200)) +
+  guides(colour = guide_legend(order = 1,
+           override.aes = list(size = 2.5, alpha = 0.8)),
+         size   = guide_legend(order = 2)) +
+  geom_text(data = country_labels, aes(x = lon, y = lat, label = label),
+            colour = "grey40", size = 2.5, fontface = "italic") +
+  coord_sf(xlim = MAP_XLIM, ylim = MAP_YLIM, expand = FALSE) +
+  labs(title = "UNITED List of Refugee Deaths",
+       subtitle = sprintf("%s deadly incidents inside corridor (2014–March 2026).",
+                           formatC(n_in_united, big.mark = ",")),
+       x = NULL, y = NULL) +
+  map_theme
+
+cat(sprintf("  UNITED: %d inside corridor / %d total (%.1f%%)\n",
+            n_in_united, n_total_united, pct_in_united))
+
+# ── Combine IOM + UNITED into 1x2 panel ──────────────────
+panel_maps <- p_core | p_united
+ggsave(file.path(BASE_DIR, "output", "figures", "desc_panel_maps.png"),
+       panel_maps, width = 12, height = 6, dpi = 300)
+cat("Saved: output/figures/desc_panel_maps.png\n")
+
+# ── 4c. SAR zones (separate figure, no incidents) ────────
 
 zone_colours <- c(
   "EU: Italy" = "#2166AC",
@@ -364,10 +421,7 @@ p_sar <- ggplot() +
   geom_sf(data = world, fill = "grey92", colour = "grey70", linewidth = 0.2) +
   geom_sf(data = zones_sea, aes(fill = zone_label), alpha = 0.15,
           colour = "#2166AC", linewidth = 0.3) +
-  geom_point(data = df_cmr_map, aes(x = lon, y = lat, size = dead_missing),
-             colour = "grey30", alpha = 0.3, shape = 16) +
   scale_fill_manual(values = zone_colours, name = "SAR zone") +
-  scale_size_continuous(range = c(0.3, 4), guide = "none") +
   geom_text(data = country_labels, aes(x = lon, y = lat, label = label),
             colour = "#B22222", size = 2.5, fontface = "bold.italic") +
   coord_sf(xlim = MAP_XLIM, ylim = MAP_YLIM, expand = FALSE) +
@@ -376,12 +430,9 @@ p_sar <- ggplot() +
        x = NULL, y = NULL) +
   map_theme
 
-# ── Combine into 1x2 panel ──────────────────────────────
-
-panel_maps <- p_core | p_sar
-ggsave(file.path(BASE_DIR, "output", "figures", "desc_panel_maps.png"),
-       panel_maps, width = 12, height = 6, dpi = 300)
-cat("Saved: output/figures/desc_panel_maps.png\n")
+ggsave(file.path(BASE_DIR, "output", "figures", "desc_sar_zones.png"),
+       p_sar, width = 6, height = 6, dpi = 300)
+cat("Saved: output/figures/desc_sar_zones.png\n")
 
 # ============================================================
 # 5. SAVE

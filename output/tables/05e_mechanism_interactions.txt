@@ -1,0 +1,221 @@
+05e  MECHANISM INTERACTIONS: SWH x SAR / BOATS / CROWDING
+=========================================================
+Sample: 2014-01-08 to 2023-05-31 (N = 3239 days)
+
+Moderators are WEEKLY LAGGED (days t-7 to t-1) averages of:
+  SAR share:        frx_n_sar / frx_incidents
+  Inflatable share: frx_n_inflatable / frx_incidents
+  Persons per boat: frx_persons / frx_incidents
+All standardized (mean=0, sd=1). Coefficients are per 1-SD change.
+Weekly sums computed over raw counts before dividing.
+
+=== NegBin, year + month FE, NW(14) ===
+                                            m_ym_base         m_ym_sar
+                                             Baseline              SAR
+Dependent Var.:                            n_dead_iom       n_dead_iom
+                                                                      
+swh_prevweek                                  0.2652          0.2551  
+                                             (0.3233)        (0.3205) 
+sar_share_pw_z                                                0.9782**
+                                                             (0.3242) 
+swh_prevweek x sar_share_pw_z                                -0.4598* 
+                                                             (0.2303) 
+inflatable_share_pw_z                                                 
+                                                                      
+swh_prevweek x inflatable_share_pw_z                                  
+                                                                      
+ppb_pw_z                                                              
+                                                                      
+swh_prevweek x ppb_pw_z                                               
+                                                                      
+Fixed-Effects:                             ----------       ----------
+year_fac                                          Yes              Yes
+month_of_year                                     Yes              Yes
+____________________________________       __________       __________
+S.E. type                            New.-West (L=14) New.-West (L=14)
+Observations                                    3,239            3,239
+Squared Cor.                                  0.00756          0.00840
+Pseudo R2                                     0.00560          0.00687
+BIC                                           8,237.7          8,243.6
+Over-dispersion                               0.04820          0.04870
+
+                                            m_ym_infl         m_ym_ppb
+                                           Inflatable              PPB
+Dependent Var.:                            n_dead_iom       n_dead_iom
+                                                                      
+swh_prevweek                                  0.1632          0.2386  
+                                             (0.3268)        (0.3329) 
+sar_share_pw_z                                                        
+                                                                      
+swh_prevweek x sar_share_pw_z                                         
+                                                                      
+inflatable_share_pw_z                         0.7387*                 
+                                             (0.2906)                 
+swh_prevweek x inflatable_share_pw_z         -0.2108                  
+                                             (0.2021)                 
+ppb_pw_z                                                      1.548***
+                                                             (0.3528) 
+swh_prevweek x ppb_pw_z                                      -1.248***
+                                                             (0.2900) 
+Fixed-Effects:                             ----------       ----------
+year_fac                                          Yes              Yes
+month_of_year                                     Yes              Yes
+____________________________________       __________       __________
+S.E. type                            New.-West (L=14) New.-West (L=14)
+Observations                                    3,239            3,239
+Squared Cor.                                  0.00614          0.00914
+Pseudo R2                                     0.00695          0.00876
+BIC                                           8,243.0          8,228.3
+Over-dispersion                               0.04873          0.04945
+
+                                             m_ym_all
+                                                  All
+Dependent Var.:                            n_dead_iom
+                                                     
+swh_prevweek                                 0.0514  
+                                            (0.3264) 
+sar_share_pw_z                              -0.3907  
+                                            (0.4445) 
+swh_prevweek x sar_share_pw_z                0.4811  
+                                            (0.3157) 
+inflatable_share_pw_z                        0.0365  
+                                            (0.3581) 
+swh_prevweek x inflatable_share_pw_z         0.2554  
+                                            (0.2559) 
+ppb_pw_z                                     2.131***
+                                            (0.4751) 
+swh_prevweek x ppb_pw_z                     -1.734***
+                                            (0.3689) 
+Fixed-Effects:                             ----------
+year_fac                                          Yes
+month_of_year                                     Yes
+____________________________________       __________
+S.E. type                            New.-West (L=14)
+Observations                                    3,239
+Squared Cor.                                  0.00595
+Pseudo R2                                     0.01054
+BIC                                           8,246.2
+Over-dispersion                               0.05017
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== NegBin, month-year FE, NW(14) ===
+                                            m_my_base         m_my_sar
+                                             Baseline              SAR
+Dependent Var.:                            n_dead_iom       n_dead_iom
+                                                                      
+swh_prevweek                                  0.2557           0.2864 
+                                             (0.4073)         (0.4064)
+sar_share_pw_z                                                 1.098* 
+                                                              (0.5099)
+swh_prevweek x sar_share_pw_z                                 -0.6738 
+                                                              (0.4754)
+inflatable_share_pw_z                                                 
+                                                                      
+swh_prevweek x inflatable_share_pw_z                                  
+                                                                      
+ppb_pw_z                                                              
+                                                                      
+swh_prevweek x ppb_pw_z                                               
+                                                                      
+Fixed-Effects:                             ----------       ----------
+month_year_fac                                    Yes              Yes
+____________________________________       __________       __________
+S.E. type                            New.-West (L=14) New.-West (L=14)
+Observations                                    3,061            3,061
+Squared Cor.                                  0.04381          0.05626
+Pseudo R2                                     0.03108          0.03162
+BIC                                           8,633.8          8,645.5
+Over-dispersion                               0.06295          0.06322
+
+                                            m_my_infl         m_my_ppb
+                                           Inflatable              PPB
+Dependent Var.:                            n_dead_iom       n_dead_iom
+                                                                      
+swh_prevweek                                  0.1610          -0.0234 
+                                             (0.4143)         (0.4007)
+sar_share_pw_z                                                        
+                                                                      
+swh_prevweek x sar_share_pw_z                                         
+                                                                      
+inflatable_share_pw_z                         0.6335                  
+                                             (0.4173)                 
+swh_prevweek x inflatable_share_pw_z         -0.3021                  
+                                             (0.3023)                 
+ppb_pw_z                                                       1.440* 
+                                                              (0.5945)
+swh_prevweek x ppb_pw_z                                       -1.500**
+                                                              (0.4682)
+Fixed-Effects:                             ----------       ----------
+month_year_fac                                    Yes              Yes
+____________________________________       __________       __________
+S.E. type                            New.-West (L=14) New.-West (L=14)
+Observations                                    3,061            3,061
+Squared Cor.                                  0.05465          0.04988
+Pseudo R2                                     0.03152          0.03275
+BIC                                           8,646.4          8,636.5
+Over-dispersion                               0.06320          0.06385
+
+                                             m_my_all
+                                                  All
+Dependent Var.:                            n_dead_iom
+                                                     
+swh_prevweek                                 -0.0077 
+                                             (0.3922)
+sar_share_pw_z                                0.3177 
+                                             (0.6120)
+swh_prevweek x sar_share_pw_z                 0.1763 
+                                             (0.4568)
+inflatable_share_pw_z                         0.1324 
+                                             (0.4740)
+swh_prevweek x inflatable_share_pw_z         -0.0447 
+                                             (0.2916)
+ppb_pw_z                                      1.289  
+                                             (0.7463)
+swh_prevweek x ppb_pw_z                      -1.509**
+                                             (0.5754)
+Fixed-Effects:                             ----------
+month_year_fac                                    Yes
+____________________________________       __________
+S.E. type                            New.-West (L=14)
+Observations                                    3,061
+Squared Cor.                                  0.03723
+Pseudo R2                                     0.03321
+BIC                                           8,664.9
+Over-dispersion                               0.06407
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== Poisson, SAR share, NW(14) ===
+                                      p_ym_sar         p_my_sar
+                                    year+month       month-year
+Dependent Var.:                     n_dead_iom       n_dead_iom
+                                                               
+swh_prevweek                         -0.0242          -0.1642  
+                                     (0.4445)         (0.3762) 
+sar_share_pw_z                        0.9905**         1.100** 
+                                     (0.3149)         (0.3644) 
+swh_prevweek x sar_share_pw_z        -0.5724*         -0.8333**
+                                     (0.2668)         (0.3204) 
+Fixed-Effects:                      ----------       ----------
+year_fac                                   Yes               No
+month_of_year                              Yes               No
+month_year_fac                              No              Yes
+_____________________________       __________       __________
+S.E. type                     New.-West (L=14) New.-West (L=14)
+Observations                             3,239            3,061
+Squared Cor.                           0.01577          0.06729
+Pseudo R2                              0.06652          0.21321
+BIC                                   93,310.6         77,787.9
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== SUMMARY ===
+  SAR share, yr+mo FE                       -0.460 (SE=0.230)  p=0.0458 *
+  Inflatable share, yr+mo FE                -0.211 (SE=0.202)  p=0.2969
+  Persons/boat, yr+mo FE                    -1.248 (SE=0.290)  p=0.0000 *
+  SAR share, my FE                          -0.674 (SE=0.475)  p=0.1564
+  Inflatable share, my FE                   -0.302 (SE=0.302)  p=0.3176
+  Persons/boat, my FE                       -1.500 (SE=0.468)  p=0.0014 *
+  SAR share, yr+mo FE (Poisson)             -0.572 (SE=0.267)  p=0.0320 *
+  SAR share, my FE (Poisson)                -0.833 (SE=0.320)  p=0.0093 *

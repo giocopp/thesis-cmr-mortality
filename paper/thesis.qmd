@@ -1,0 +1,101 @@
+---
+format:
+  pdf:
+    documentclass: article
+    papersize: a4
+    fontsize: 11pt
+    linestretch: 1.2
+    geometry:
+      - margin=3cm
+    number-sections: true
+    toc: false
+    title-block-style: none
+    include-in-header:
+      text: |
+        \usepackage{setspace}
+        \usepackage{graphicx}
+bibliography: references.bib
+csl: apa.csl
+filters:
+  - wordcount_filter.lua
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+\begin{titlepage}
+\thispagestyle{empty}
+\centering
+
+\vspace*{1cm}
+
+\includegraphics[width=0.45\textwidth]{assets/hertie-school-logo.png}
+
+\vspace{3.5cm}
+
+{\LARGE\bfseries [Thesis Title] \par}
+
+\vspace{3.5cm}
+
+Master's Thesis submitted
+
+in partial fulfillment of the requirements for the degree of
+
+\textbf{Master of Data Science for Public Policy at the Hertie School}
+
+Class of 2026
+
+\vspace{3.5cm}
+
+\begin{flushleft}
+\textbf{Supervisor:} Prof. Dr. Asya Magazinnik \\[0.4em]
+\textbf{Candidate:} Giorgio Coppola
+\end{flushleft}
+
+\vfill
+
+Word Count: @WORDCOUNT_BODY@
+
+\vspace{1cm}
+\end{titlepage}
+
+\pagenumbering{roman}
+
+\tableofcontents
+
+\newpage
+
+# Abstract {.unnumbered}
+
+About half a page: puzzle, data, methods, findings, and policy implications in brief.
+
+\newpage
+
+\pagenumbering{arabic}
+
+# Introduction
+
+# Literature Review
+
+# Theoretical Framework and Research Question
+
+# Research Design
+
+# Results
+
+# Discussion
+
+# Conclusion
+
+# References {.unnumbered}
+
+::: {#refs}
+:::
+
+\newpage
+
+\appendix
+
+# Appendix {.unnumbered}
+
