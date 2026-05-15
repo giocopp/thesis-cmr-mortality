@@ -1,0 +1,68 @@
+32  LAG GRID x IOM vs UNITED (primary spec)
+Aligned with 20_primary_model.R
+============================================
+
+Spec: n_dead ~ swh_win<k> + swh_win<k>:post_mou | month_year_fac
+NegBin (fenegbin) + Poisson QMLE (fepois), NW(14) SEs.
+Shared sample (!is.na(lc_lag14) & !is.na(swh_win7)):
+  N = 3424 days, 2014-01-15 to 2023-05-31.
+  IOM deaths:    15285
+  UNITED deaths: 20368
+
+UNITED filter: country in {Algeria, Italy, Libya, Malta, Tunisia,
+   Mediterranean}, manner_of_death in {drowned, other_unknown},
+   spatial join to core corridor polygon (same as build_iom_daily).
+
+=== b1 (SWH pre-MoU slope) ===
+  source  family   lag           b1          SE           p
+  IOM     NegBin   1d        -0.888       0.345      0.0100 *
+  IOM     NegBin   2d        -1.528       0.472      0.0012 *
+  IOM     NegBin   3d        -1.646       0.393      0.0000 *
+  IOM     NegBin   4d        -1.896       0.458      0.0000 *
+  IOM     NegBin   5d        -2.036       0.599      0.0007 *
+  IOM     NegBin   7d        -1.672       0.849      0.0489 *
+  IOM     Poisson  1d        -1.892       0.430      0.0000 *
+  IOM     Poisson  2d        -2.233       0.521      0.0000 *
+  IOM     Poisson  3d        -2.201       0.663      0.0009 *
+  IOM     Poisson  4d        -2.161       0.664      0.0011 *
+  IOM     Poisson  5d        -1.989       0.693      0.0041 *
+  IOM     Poisson  7d        -1.670       0.765      0.0290 *
+  UNITED  NegBin   1d        -1.969       0.624      0.0016 *
+  UNITED  NegBin   2d        -2.537       0.481      0.0000 *
+  UNITED  NegBin   3d        -2.671       0.446      0.0000 *
+  UNITED  NegBin   4d        -2.737       0.523      0.0000 *
+  UNITED  NegBin   5d        -2.719       0.627      0.0000 *
+  UNITED  NegBin   7d        -2.290       0.934      0.0142 *
+  UNITED  Poisson  1d        -1.650       0.392      0.0000 *
+  UNITED  Poisson  2d        -1.763       0.483      0.0003 *
+  UNITED  Poisson  3d        -1.779       0.444      0.0001 *
+  UNITED  Poisson  4d        -1.586       0.384      0.0000 *
+  UNITED  Poisson  5d        -1.417       0.432      0.0010 *
+  UNITED  Poisson  7d        -1.105       0.539      0.0403 *
+
+=== b3 (SWH x post_MoU interaction) ===
+  source  family   lag           b3          SE           p
+  IOM     NegBin   1d        +0.205       0.472      0.6638
+  IOM     NegBin   2d        +0.936       0.581      0.1072
+  IOM     NegBin   3d        +1.448       0.521      0.0055 *
+  IOM     NegBin   4d        +2.106       0.588      0.0003 *
+  IOM     NegBin   5d        +2.546       0.711      0.0003 *
+  IOM     NegBin   7d        +2.540       0.980      0.0095 *
+  IOM     Poisson  1d        +1.390       0.476      0.0035 *
+  IOM     Poisson  2d        +1.813       0.561      0.0012 *
+  IOM     Poisson  3d        +1.981       0.699      0.0046 *
+  IOM     Poisson  4d        +2.306       0.716      0.0013 *
+  IOM     Poisson  5d        +2.351       0.753      0.0018 *
+  IOM     Poisson  7d        +2.167       0.830      0.0090 *
+  UNITED  NegBin   1d        +1.082       0.691      0.1177
+  UNITED  NegBin   2d        +1.999       0.586      0.0006 *
+  UNITED  NegBin   3d        +2.728       0.580      0.0000 *
+  UNITED  NegBin   4d        +3.482       0.670      0.0000 *
+  UNITED  NegBin   5d        +3.696       0.749      0.0000 *
+  UNITED  NegBin   7d        +3.665       1.069      0.0006 *
+  UNITED  Poisson  1d        +0.959       0.444      0.0310 *
+  UNITED  Poisson  2d        +1.330       0.523      0.0110 *
+  UNITED  Poisson  3d        +1.695       0.487      0.0005 *
+  UNITED  Poisson  4d        +1.940       0.463      0.0000 *
+  UNITED  Poisson  5d        +1.970       0.515      0.0001 *
+  UNITED  Poisson  7d        +1.874       0.611      0.0022 *

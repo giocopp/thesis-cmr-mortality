@@ -51,15 +51,27 @@ frx <- frx_raw %>%
       grepl("inflatable|rubber|zodiac|dinghy", TransportType, ignore.case = TRUE) ~ "Inflatable",
       grepl("wooden|wood", TransportType, ignore.case = TRUE) ~ "Wooden",
       grepl("metal|makeshift", TransportType, ignore.case = TRUE) ~ "Metal",
+      grepl("fibre glass|fiber glass|fibreglass|fiberglass",
+            TransportType, ignore.case = TRUE) ~ "Fibre glass",
       TRUE ~ "Other"
     ),
     num_persons          = num_total_persons,
     num_deaths           = num_DeathCases,
     num_migrants         = num_total_irreg_migrants,
-    sar_flag             = case_when(SAR == "Yes" ~ TRUE,
+    n_transport_means    = num_TransportMeansNumber,
+    sar_ops             = case_when(SAR == "Yes" ~ TRUE,
                                      SAR == "No" ~ FALSE,
                                      TRUE ~ NA),
     in_op_area           = (ReferenceToOpArea == "in"),
+    detection_by_frx_asset     = case_when(DetectionByFrxAsset == "Yes" ~ TRUE,
+                                           DetectionByFrxAsset == "No"  ~ FALSE,
+                                           TRUE                          ~ NA),
+    interception_by_frx_asset  = case_when(InterceptionByFrxAsset == "Yes" ~ TRUE,
+                                           InterceptionByFrxAsset == "No"  ~ FALSE,
+                                           TRUE                              ~ NA),
+    other_frx_asset_involvement = case_when(OtherFrontexAssetInvolvement == "Yes" ~ TRUE,
+                                            OtherFrontexAssetInvolvement == "No"  ~ FALSE,
+                                            TRUE                                   ~ NA),
     operation_name       = OperationName,
     detected_by          = TypeOfDetectedBy,
     intercepted_by       = TypeOfInterceptedBy,
@@ -67,41 +79,83 @@ frx <- frx_raw %>%
                            grepl("NGO vessel", TypeOfInterceptedBy, ignore.case = TRUE)
   )
 
-# ── 2b. Classify event type ─────────────────────────────
-# Based on SAR flag + primary interceptor (first entry before ";")
+# ── 2b. Classify interceptor and detector (independent of SAR flag) ─────
+# Priority order handles compound "A;B" values by first match wins.
+# Token-level classifiers used for multi-actor flag below.
+classify_int_token <- function(tok) {
+  tok <- trimws(tok)
+  dplyr::case_when(
+    tok == "" | is.na(tok)                                     ~ NA_character_,
+    grepl("NGO vessel", tok)                                   ~ "NGO",
+    grepl("EUNAVFOR", tok)                                     ~ "EU_ops",
+    grepl("Marina|Mare", tok)                                  ~ "Ita_ops",
+    grepl("Commercial|fishing|Merchant", tok,
+          ignore.case = TRUE)                                  ~ "Commercial",
+    grepl("CPV|CPB|OPV", tok)                                  ~ "EU_Coast_Guard",
+    grepl("Land", tok)                                         ~ "Land_patrol",
+    grepl("No interception", tok)                              ~ "No_intercept",
+    TRUE                                                       ~ "Other"
+  )
+}
+classify_det_token <- function(tok) {
+  tok <- trimws(tok)
+  dplyr::case_when(
+    tok == "" | is.na(tok)                                     ~ NA_character_,
+    grepl("FWA|HELO|RPAS|MAS", tok)                            ~ "Aerial",
+    grepl("Call-", tok)                                        ~ "Call_Ext_report",
+    grepl("NGO vessel", tok)                                   ~ "NGO",
+    grepl("Commercial|fishing|Merchant", tok,
+          ignore.case = TRUE)                                  ~ "Commercial",
+    grepl("EUNAVFOR", tok)                                     ~ "EU_ops",
+    grepl("Marina|Mare", tok)                                  ~ "Ita_ops",
+    grepl("CPV|CPB|OPV", tok)                                  ~ "EU_Coast_Guard",
+    grepl("Coastal Surveillance", tok)                         ~ "Coastal_surv",
+    grepl("Land", tok)                                         ~ "Land_patrol",
+    TRUE                                                       ~ "Other"
+  )
+}
+n_distinct_cats <- function(s, classifier) {
+  if (is.na(s) || s == "") return(0L)
+  toks <- strsplit(s, ";")[[1]]
+  cats <- classifier(toks)
+  length(unique(cats[!is.na(cats)]))
+}
+
 frx <- frx %>%
   mutate(
-    primary_intercept = sub(";.*", "", intercepted_by),
-    event_type = case_when(
-      # SAR events (SAR=Yes)
-      sar_flag & grepl("NGO vessel", intercepted_by)        ~ "SAR: NGO",
-      sar_flag & grepl("EUNAVFOR", intercepted_by)           ~ "SAR: EU operations (IRINI)",
-      sar_flag & grepl("Commercial|fishing|Merchant",
-                       intercepted_by, ignore.case = TRUE)   ~ "SAR: Commercial vessels",
-      sar_flag & grepl("CPV|CPB|OPV|Marina Militare|Mare Sicuro|Mare Nostrum",
-                       intercepted_by)                       ~ "SAR: Italian authorities",
-      sar_flag                                               ~ "SAR: Other",
-      # Non-SAR events (SAR=No)
-      !sar_flag & grepl("Land patrol", intercepted_by)       ~ "Not SAR: Land patrol",
-      !sar_flag & grepl("No interception", intercepted_by)   ~ "Not SAR: Self-arrived",
-      !sar_flag & grepl("CPV|CPB|OPV|Marina Militare",
-                        intercepted_by)                      ~ "Not SAR: Coast Guard",
-      !sar_flag                                              ~ "Not SAR: Other",
-      # SAR flag NA — classify by interceptor
-      grepl("Land patrol", intercepted_by)                   ~ "Not SAR: Land patrol",
-      grepl("No interception", intercepted_by)               ~ "Not SAR: Self-arrived",
-      grepl("NGO vessel", intercepted_by)                    ~ "SAR: NGO",
-      grepl("CPV|CPB|OPV|Marina Militare",
-            intercepted_by)                                  ~ "Not SAR: Coast Guard",
-      TRUE                                                   ~ "Not SAR: Other"
+    interceptor_type = case_when(
+      is.na(intercepted_by)                                      ~ "NA",
+      grepl("NGO vessel", intercepted_by)                        ~ "NGO",
+      grepl("EUNAVFOR", intercepted_by)                          ~ "EU_ops",
+      grepl("Marina|Mare", intercepted_by)                       ~ "Ita_ops",
+      grepl("Commercial|fishing|Merchant", intercepted_by,
+            ignore.case = TRUE)                                  ~ "Commercial",
+      grepl("CPV|CPB|OPV", intercepted_by)                       ~ "EU_Coast_Guard",
+      grepl("Land", intercepted_by)                              ~ "Land_patrol",
+      grepl("No interception", intercepted_by)                   ~ "No_intercept",
+      TRUE                                                       ~ "Other"
     ),
-    event_type_agg = case_when(
-      startsWith(event_type, "SAR:")     ~ "SAR",
-      startsWith(event_type, "Not SAR:") ~ "Not SAR",
-      TRUE                               ~ "Unknown"
-    )
-  ) %>%
-  select(-primary_intercept)
+    detector_type = case_when(
+      is.na(detected_by)                                         ~ "NA",
+      grepl("FWA|HELO|RPAS|MAS", detected_by)                    ~ "Aerial",
+      grepl("Call-", detected_by)                                ~ "Call_Ext_report",
+      grepl("NGO vessel", detected_by)                           ~ "NGO",
+      grepl("Commercial|fishing|Merchant", detected_by,
+            ignore.case = TRUE)                                  ~ "Commercial",
+      grepl("EUNAVFOR", detected_by)                             ~ "EU_ops",
+      grepl("Marina|Mare", detected_by)                          ~ "Ita_ops",
+      grepl("CPV|CPB|OPV", detected_by)                          ~ "EU_Coast_Guard",
+      grepl("Coastal Surveillance", detected_by)                 ~ "Coastal_surv",
+      grepl("Land", detected_by)                                 ~ "Land_patrol",
+      TRUE                                                       ~ "Other"
+    ),
+    multi_actors_inv = vapply(intercepted_by,
+                              function(s) n_distinct_cats(s, classify_int_token),
+                              integer(1)) >= 2 |
+                       vapply(detected_by,
+                              function(s) n_distinct_cats(s, classify_det_token),
+                              integer(1)) >= 2
+  )
 
 cat(sprintf("  Date range: %s to %s\n", min(frx$date), max(frx$date)))
 
@@ -122,17 +176,24 @@ for (nm in names(boat_counts)) {
 }
 
 cat(sprintf("\n  SAR incidents: %d (%.1f%%)\n",
-    sum(frx$sar_flag, na.rm = TRUE),
-    100 * mean(frx$sar_flag, na.rm = TRUE)))
+    sum(frx$sar_ops, na.rm = TRUE),
+    100 * mean(frx$sar_ops, na.rm = TRUE)))
 cat(sprintf("  NGO-involved incidents: %d (%.1f%%)\n",
     sum(frx$ngo_involved, na.rm = TRUE),
     100 * mean(frx$ngo_involved, na.rm = TRUE)))
 
-cat("\n  Event type distribution:\n")
-et_counts <- sort(table(frx$event_type), decreasing = TRUE)
-for (nm in names(et_counts)) {
-  cat(sprintf("    %5d (%.1f%%)  %s\n", et_counts[[nm]],
-      100 * et_counts[[nm]] / nrow(frx), nm))
+cat("\n  Interceptor type distribution:\n")
+it_counts <- sort(table(frx$interceptor_type), decreasing = TRUE)
+for (nm in names(it_counts)) {
+  cat(sprintf("    %5d (%.1f%%)  %s\n", it_counts[[nm]],
+      100 * it_counts[[nm]] / nrow(frx), nm))
+}
+
+cat("\n  Detector type distribution:\n")
+dt_counts <- sort(table(frx$detector_type), decreasing = TRUE)
+for (nm in names(dt_counts)) {
+  cat(sprintf("    %5d (%.1f%%)  %s\n", dt_counts[[nm]],
+      100 * dt_counts[[nm]] / nrow(frx), nm))
 }
 
 na_dates <- sum(is.na(frx$date))

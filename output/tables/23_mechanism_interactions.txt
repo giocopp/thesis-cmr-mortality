@@ -1,0 +1,241 @@
+23  MECHANISM: SWH x SAR moderator (share, persons)
+====================================================
+Sample: 2014-01-15 to 2023-05-31 (N = 3232 days, 15092 deaths)
+
+Two moderator variants, both weekly-summed (days t-7 to t-1), z-scored:
+  (i)  share:    sar_events_pw / incidents_pw
+  (ii) persons:  log1p(sar_persons_pw)
+
+Coefficients on the interaction are per 1-SD change in the moderator.
+cor(sar_share,         swh_prev5days)    = +0.092
+cor(log1p_sar_persons, swh_prev5days)    = -0.251
+cor(sar_share,         log1p_sar_persons) = +0.741
+
+PRIMARY spec: no crossing control.
+ROBUSTNESS spec: +log1p(lag-14d crossings). Post-treatment control
+  (crossings are affected by both SWH and SAR); lag 14 (t-14 to t-8)
+  is much more pre-treatment than lag 7: r(control, SWH) drops from
+  -0.50 at lag 7 to -0.25 at lag 14. The interaction at lag 14 matches
+  the no-control spec, confirming it is not a volume-selection artefact.
+
+WHY TWO MODERATORS:
+  The share denominator includes LCG/TCG pullbacks and other Not-SAR
+  events. After 2018 those rise sharply (see desc_panel_event_type.png),
+  so the share can fall mechanically even if absolute SAR is unchanged.
+  The log-persons variant drops the denominator and measures absolute
+  SAR rescue capacity directly. Same-sign interactions across the two
+  moderators rule out the share-mechanics critique.
+
+=== (i) Share moderator -- year + month-of-year FE, NW(14) ===
+                                      m_ym_base       m_ym_sar..
+                                  Baseline (NB)        NB no ctl
+Dependent Var.:                      n_dead_iom       n_dead_iom
+                                                                
+swh_prev5days                          -0.2018         -0.2002  
+                                       (0.3123)        (0.3082) 
+sar_share_pw_z                                          0.9255**
+                                                       (0.3289) 
+swh_prev5days x sar_share_pw_z                         -0.4505  
+                                                       (0.2382) 
+log1p_lc_lag14                                                  
+                                                                
+Fixed-Effects:                       ----------       ----------
+year_fac                                    Yes              Yes
+month_of_year                               Yes              Yes
+______________________________       __________       __________
+Family                                Neg. Bin.        Neg. Bin.
+S.E. type                      New.-West (L=14) New.-West (L=14)
+Observations                              3,232            3,232
+Squared Cor.                            0.00906          0.00976
+Pseudo R2                               0.00775          0.00896
+BIC                                     7,615.2          7,622.2
+Over-dispersion                         0.04642          0.04688
+
+                                   m_ym_sar...1     m_ym_sar...2
+                                    Pois no ctl  NB + log(cross)
+Dependent Var.:                      n_dead_iom       n_dead_iom
+                                                                
+swh_prev5days                         -0.4329          -0.2068  
+                                      (0.4208)         (0.3089) 
+sar_share_pw_z                         0.9858**         0.9103**
+                                      (0.3363)         (0.3281) 
+swh_prev5days x sar_share_pw_z        -0.6269*         -0.4412  
+                                      (0.2895)         (0.2347) 
+log1p_lc_lag14                                          0.0193  
+                                                       (0.0670) 
+Fixed-Effects:                       ----------       ----------
+year_fac                                    Yes              Yes
+month_of_year                               Yes              Yes
+______________________________       __________       __________
+Family                                  Poisson        Neg. Bin.
+S.E. type                      New.-West (L=14) New.-West (L=14)
+Observations                              3,232            3,232
+Squared Cor.                            0.02111          0.00990
+Pseudo R2                               0.08454          0.00898
+BIC                                    82,241.6          7,630.2
+Over-dispersion                              --          0.04688
+
+                                    m_ym_sar...3
+                               Pois + log(cross)
+Dependent Var.:                       n_dead_iom
+                                                
+swh_prev5days                          -0.4313  
+                                       (0.4158) 
+sar_share_pw_z                          0.9756**
+                                       (0.3333) 
+swh_prev5days x sar_share_pw_z         -0.6195* 
+                                       (0.2853) 
+log1p_lc_lag14                          0.0362  
+                                       (0.0730) 
+Fixed-Effects:                        ----------
+year_fac                                     Yes
+month_of_year                                Yes
+______________________________        __________
+Family                                   Poisson
+S.E. type                       New.-West (L=14)
+Observations                               3,232
+Squared Cor.                             0.02152
+Pseudo R2                                0.08496
+BIC                                     82,211.7
+Over-dispersion                               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== (i) Share moderator -- month-year FE, NW(14) ===
+                                      m_my_base       m_my_sar..
+                                  Baseline (NB)        NB no ctl
+Dependent Var.:                      n_dead_iom       n_dead_iom
+                                                                
+swh_prev5days                           0.0535           0.1438 
+                                       (0.3331)         (0.3370)
+sar_share_pw_z                                           1.228* 
+                                                        (0.4828)
+swh_prev5days x sar_share_pw_z                          -0.8619*
+                                                        (0.4017)
+log1p_lc_lag14                                                  
+                                                                
+Fixed-Effects:                       ----------       ----------
+month_year_fac                              Yes              Yes
+______________________________       __________       __________
+Family                                Neg. Bin.        Neg. Bin.
+S.E. type                      New.-West (L=14) New.-West (L=14)
+Observations                              3,038            3,038
+Squared Cor.                            0.04424          0.05718
+Pseudo R2                               0.03637          0.03732
+BIC                                     7,993.8          8,002.9
+Over-dispersion                         0.06238          0.06289
+
+                                   m_my_sar...1     m_my_sar...2
+                                    Pois no ctl  NB + log(cross)
+Dependent Var.:                      n_dead_iom       n_dead_iom
+                                                                
+swh_prev5days                         -0.4018            0.1520 
+                                      (0.3414)          (0.3421)
+sar_share_pw_z                         1.178**           1.259**
+                                      (0.3625)          (0.4841)
+swh_prev5days x sar_share_pw_z        -0.9802**         -0.9057*
+                                      (0.3057)          (0.4124)
+log1p_lc_lag14                                          -0.0787 
+                                                        (0.0722)
+Fixed-Effects:                       ----------       ----------
+month_year_fac                              Yes              Yes
+______________________________       __________       __________
+Family                                  Poisson        Neg. Bin.
+S.E. type                      New.-West (L=14) New.-West (L=14)
+Observations                              3,038            3,038
+Squared Cor.                            0.07953          0.05739
+Pseudo R2                               0.23698          0.03746
+BIC                                    67,825.3          8,009.8
+Over-dispersion                              --          0.06296
+
+                                    m_my_sar...3
+                               Pois + log(cross)
+Dependent Var.:                       n_dead_iom
+                                                
+swh_prev5days                          -0.4219  
+                                       (0.3565) 
+sar_share_pw_z                          1.231***
+                                       (0.3681) 
+swh_prev5days x sar_share_pw_z         -1.040** 
+                                       (0.3230) 
+log1p_lc_lag14                         -0.0959  
+                                       (0.0671) 
+Fixed-Effects:                        ----------
+month_year_fac                               Yes
+______________________________        __________
+Family                                   Poisson
+S.E. type                       New.-West (L=14)
+Observations                               3,038
+Squared Cor.                             0.08297
+Pseudo R2                                0.23928
+BIC                                     67,631.5
+Over-dispersion                               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== (ii) log1p(SAR persons) -- month-year FE, NW(14) ===
+                                             m_my_per..     m_my_per...1
+                                              NB no ctl      Pois no ctl
+Dependent Var.:                              n_dead_iom       n_dead_iom
+                                                                        
+swh_prev5days                                   0.2526          -0.1728 
+                                               (0.3467)         (0.3384)
+log1p_sar_persons_pw_z                          0.9820*          1.411**
+                                               (0.4682)         (0.4454)
+swh_prev5days x log1p_sar_persons_pw_z         -0.8534          -1.019**
+                                               (0.4919)         (0.3202)
+log1p_lc_lag14                                                          
+                                                                        
+Fixed-Effects:                               ----------       ----------
+month_year_fac                                      Yes              Yes
+______________________________________       __________       __________
+Family                                        Neg. Bin.          Poisson
+S.E. type                              New.-West (L=14) New.-West (L=14)
+Observations                                      3,038            3,038
+Squared Cor.                                    0.05739          0.09446
+Pseudo R2                                       0.03720          0.24208
+BIC                                             8,003.7         67,377.9
+Over-dispersion                                 0.06284               --
+
+                                           m_my_per...2      m_my_per...3
+                                        NB + log(cross) Pois + log(cross)
+Dependent Var.:                              n_dead_iom        n_dead_iom
+                                                                         
+swh_prev5days                                   0.2415           -0.2149 
+                                               (0.3497)          (0.3606)
+log1p_sar_persons_pw_z                          0.9826*           1.400**
+                                               (0.4674)          (0.4426)
+swh_prev5days x log1p_sar_persons_pw_z         -0.8857           -1.041**
+                                               (0.4980)          (0.3232)
+log1p_lc_lag14                                 -0.0684           -0.0662 
+                                               (0.0721)          (0.0667)
+Fixed-Effects:                               ----------        ----------
+month_year_fac                                      Yes               Yes
+______________________________________       __________        __________
+Family                                        Neg. Bin.           Poisson
+S.E. type                              New.-West (L=14)  New.-West (L=14)
+Observations                                      3,038             3,038
+Squared Cor.                                    0.05641           0.09477
+Pseudo R2                                       0.03731           0.24316
+BIC                                             8,010.9          67,291.2
+Over-dispersion                                 0.06289                --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== SUMMARY: SWH x SAR moderator coefficient (per 1-SD) ===
+
+  (i)  SAR share
+    yr+mo FE, NegBin  (primary)       -0.451 (SE=0.238)  p=0.0586
+    yr+mo FE, Poisson (primary)       -0.627 (SE=0.289)  p=0.0303 *
+    yr+mo FE, NegBin  + log(cross)    -0.441 (SE=0.235)  p=0.0601
+    yr+mo FE, Poisson + log(cross)    -0.619 (SE=0.285)  p=0.0299 *
+    my FE,    NegBin  (primary)       -0.862 (SE=0.402)  p=0.0319 *
+    my FE,    Poisson (primary)       -0.980 (SE=0.306)  p=0.0013 *
+    my FE,    NegBin  + log(cross)    -0.906 (SE=0.412)  p=0.0281 *
+    my FE,    Poisson + log(cross)    -1.040 (SE=0.323)  p=0.0013 *
+
+  (ii) log1p(SAR persons) -- absolute level
+    my FE,    NegBin  (primary)       -0.853 (SE=0.492)  p=0.0827
+    my FE,    Poisson (primary)       -1.019 (SE=0.320)  p=0.0015 *
+    my FE,    NegBin  + log(cross)    -0.886 (SE=0.498)  p=0.0753
+    my FE,    Poisson + log(cross)    -1.041 (SE=0.323)  p=0.0013 *

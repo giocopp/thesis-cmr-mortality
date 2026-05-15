@@ -1,0 +1,35 @@
+053  ROLLING-WINDOW BETA(SWH)
+Aligned with 20_primary_model.R (Poisson arm)
+=============================================
+Window: 730 days (2y), step 7 days, anchor = window midpoint.
+Model: fepois(n_dead_iom ~ swh_prev5days | month_year_fac), NW(14) SEs.
+Sample: 05d primary (!is.na(lc_lag14) & !is.na(swh_prev5days)).
+Skip rules: <30 death-days OR <200 rows OR <2 month_year levels.
+
+Pre-MoU mean : avg beta over windows whose RIGHT edge is <= MoU
+               (date_mid <= 2017-07-01 - W/2).
+Post-MoU mean: avg beta over windows whose LEFT edge is >= MoU
+               (date_mid >= 2017-07-01 + W/2).
+Windows that straddle MoU are excluded from both means.
+Means are unweighted across heavily-overlapping windows; beta_diff
+is descriptive only — do NOT compute a naive t-test on it.
+
+Per-series summary:
+# A tibble: 3 × 12
+  flavor    label     window n_windows n_fully_pre n_fully_post
+  <chr>     <chr>     <chr>      <int>       <int>        <int>
+1 daily-agg daily-agg 2-year       385          77          204
+2 2-bloc    AFR       2-year       354          46          204
+3 2-bloc    EU        2-year       126          32            4
+  date_range               beta_min beta_max beta_pre_mean beta_post_mean
+  <chr>                       <dbl>    <dbl>         <dbl>          <dbl>
+1 2015-01-15 to 2022-05-26    -3.61    1.29          -2.58          0.533
+2 2015-04-02 to 2022-05-26    -2.58    1.62          -1.00          0.562
+3 2015-01-29 to 2022-05-26   -11.0     0.007         -5.38         -0.111
+  beta_diff
+      <dbl>
+1      3.12
+2      1.56
+3      5.26
+
+Full rolling estimates are in 22_rolling_beta.RDS

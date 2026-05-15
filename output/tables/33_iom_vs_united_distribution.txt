@@ -1,0 +1,22 @@
+33  IOM vs UNITED distribution comparison
+=========================================
+Window: 2014-01-01 to 2023-05-31 (3438 days)
+IOM:    build_iom_daily() defaults (incident only, split EXCLUDED; drown+mixed, central)
+UNITED: country in {Algeria,Italy,Libya,Malta,Tunisia,Mediterranean},
+        manner_of_death in {drowned, other_unknown},
+        spatial join to core corridor polygon.
+
+Summary stats (daily counts):
+# A tibble: 2 × 11
+  source total_deaths death_days zero_days mean_daily median_daily sd_daily
+  <chr>         <dbl>      <int>     <int>      <dbl>        <dbl>    <dbl>
+1 IOM           15285        616      2822       4.45            0     28.5
+2 UNITED        20368        503      2935       5.92            0     32.4
+    p75   p95   p99 max_daily
+  <dbl> <dbl> <dbl>     <dbl>
+1     0  20     100      1022
+2     0  31.1   117      1101
+
+Correlation (daily counts):         r = 0.708
+Correlation (monthly counts):       r = 0.906
+Correlation (log1p monthly counts): r = 0.847
