@@ -165,3 +165,27 @@ build_united_daily <- function(
     dplyr::summarise(n_dead_united = sum(n_deaths, na.rm = TRUE), .groups = "drop") |>
     dplyr::arrange(date)
 }
+
+# add_crossing_exposure()
+# -----------------------
+# Single source of truth for the constructed crossing-exposure denominator
+# (shared by the rate-model scripts; previously inline-duplicated in 20/27/28).
+#
+# Call AFTER the build_*_daily() left-joins and replace_na(): input must
+# already have `frx_persons`, `lcg_tcg_pushbacks`, `n_dead_iom`,
+# `n_dead_united`.
+#
+# Adds:
+#   living_crossings = frx_persons + lcg_tcg_pushbacks
+#   attempts_iom     = living_crossings + n_dead_iom
+#   attempts_united  = living_crossings + n_dead_united   (source-specific)
+add_crossing_exposure <- function(df) {
+  stopifnot(all(c("frx_persons", "lcg_tcg_pushbacks",
+                  "n_dead_iom", "n_dead_united") %in% names(df)))
+  dplyr::mutate(
+    df,
+    living_crossings = frx_persons + lcg_tcg_pushbacks,
+    attempts_iom     = living_crossings + n_dead_iom,
+    attempts_united  = living_crossings + n_dead_united
+  )
+}

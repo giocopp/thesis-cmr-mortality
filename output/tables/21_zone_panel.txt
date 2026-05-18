@@ -15,24 +15,24 @@ Outcome: n_dead_iom (zone-level deaths summed over 2 blocs,
                                    NegBin          Poisson
 Dependent Var.:                n_dead_iom       n_dead_iom
                                                           
-swh_prev5days                   -4.969***         -2.689**
-                                (0.7808)          (0.8804)
-swh_prev5days x post_mou         5.019***          2.958**
-                                (0.8450)          (0.9291)
+swh_prev5days                   -5.309***        -2.717** 
+                                (0.8081)         (0.8917) 
+swh_prev5days x post_mou         5.817***         3.163***
+                                (0.8712)         (0.9470) 
 Fixed-Effects:                 ----------       ----------
 month_year_fac                        Yes              Yes
 sar_bloc                              Yes              Yes
 ________________________       __________       __________
 Family                          Neg. Bin.          Poisson
 S.E. type                New.-West (L=14) New.-West (L=14)
-Observations                        6,454            6,454
-Squared Cor.                      0.00026          0.03214
-Pseudo R2                         0.04367          0.22456
-BIC                               8,162.9         90,994.0
-Over-dispersion                   0.02394               --
+Observations                        6,332            6,332
+Squared Cor.                      8.74e-5          0.03331
+Pseudo R2                         0.04995          0.23678
+BIC                               7,414.8         80,311.5
+Over-dispersion                   0.02358               --
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 === Summary (b3 = swh_prev5days:post_mou) ===
-  2-bloc (AFR/EU) - NegBin        b3 = +5.019 (SE=0.845)  IRR = 151.263  p = 0.0000 *
-  2-bloc (AFR/EU) - Poisson       b3 = +2.958 (SE=0.929)  IRR = 19.250  p = 0.0015 *
+  2-bloc (AFR/EU) - NegBin        b3 = +5.817 (SE=0.871)  IRR = 336.109  p = 0.0000 *
+  2-bloc (AFR/EU) - Poisson       b3 = +3.163 (SE=0.947)  IRR = 23.647  p = 0.0008 *

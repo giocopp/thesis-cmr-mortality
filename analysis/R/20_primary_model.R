@@ -1,52 +1,23 @@
 # 20_primary_model.R
 # ===================
-# Primary reduced-form model and robustness.
+# SWH x post_mou gradient on daily CMR deaths: UNITED primary, IOM comparison.
 #
-# Specification
-# -------------
-# Primary (no crossing control):
-#   deaths ~ swh_prev5days + swh_prev5days:post_mou | month_year
-#
-# Interpretation
-# --------------
-# post_mou is a POLICY-EVENT INDICATOR (1 from 2017-07-01), not a measure
-# of SAR capacity. The interaction swh_prev5days:post_mou is the REDUCED
-# FORM for the guardrail argument: did the rate at which weather translates
-# into deaths shift around the MoU? It does not by itself identify SAR as
-# the channel -- many things changed at this date (Minniti Code, Salvini
-# decrees, NGO targeting, LCG ramp-up, smuggler/boat composition).
-#
-# The MECHANISM check -- does the gradient track SAR capacity directly --
-# lives in 23_mechanism_interactions.R, which uses three continuous SAR
-# moderators (share, log absolute events, log absolute persons) and is
-# the substantive complement to this script.
-#
-# So the division of labor is:
-#   20 -> reduced form: gradient shift around the policy event
-#   23 -> mechanism:    gradient covariation with SAR capacity
-#
-# Estimated on BOTH IOM MMP and UNITED death series (matched filter:
-# country in CMR + Mediterranean; cause = drowning + other/unknown;
-# spatial join to core corridor polygon). UNITED serves as an independent
-# confirmation: same sample window, broader sourcing (press, NGOs,
-# academic archives), typically ~13% more deaths in sample and tighter CIs.
-#
-# Both NegBin and Poisson QMLE, NW(14) SEs.
-# Poisson QMLE is consistent under weaker assumptions (only needs correct
-# conditional mean); NegBin adds a variance assumption that improves
-# efficiency. Agreement between the two (and between IOM and UNITED)
-# validates the result.
-#
-# Robustness:
-#   - Lagged crossing controls (lag 7d, lag 14d) as covariates
-#   - Cluster(month_year) SEs alongside NW(14)
-#   - Boat composition controls for the rate model: 27_rate_with_boat_controls.R
+# Models estimated (all: month_year FE, NW(14) SEs, panel.id ~unit+date):
+#   count : deaths ~ swh_prev5days + swh_prev5days:post_mou      (NegBin, Poisson)
+#   rate  : count spec + offset(log(attempts_src))               (Poisson)
+#   elast : count spec + log(attempts_src) as a free covariate    (Poisson)
+#   + past-window grid, future-window placebos, lagged-crossing controls,
+#     cluster(month_year) SEs.
+# attempts_src = add_crossing_exposure() (_helpers.R), source-specific.
+# slope_summary(): b_pre, b_shift (=SWH:post_mou), b_post=b_pre+b_shift
+# with delta-method SE.
+# elast_test(): Wald test of the free log(attempts) coef against 1.
+# Mechanism (continuous SAR moderator) is 23_mechanism_interactions.R.
 #
 # In:  analysis/data/daily_panel_complete.RDS
-#      data/processed/iom_mmp_incidents.RDS
-#      data/processed/united_incidents.RDS
-#      data/processed/core_corridor.RDS
+#      data/processed/{iom_mmp_incidents,united_incidents,core_corridor}.RDS
 # Out: output/tables/20_primary_model.txt
+#      output/tables/20_exposure_sensitivity.csv
 
 library(tidyverse)
 library(lubridate)
@@ -61,7 +32,7 @@ START_DATE <- as.Date("2014-01-01")
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
 cat("============================================================\n")
-cat("05d  PRIMARY MODEL: SWH x POST-MOU -> DEATHS\n")
+cat("20  SWH x POST-MOU GRADIENT ON DEATHS (UNITED primary + IOM comparison)\n")
 cat("============================================================\n\n")
 
 # ── 1. Load data ─────────────────────────────────────────────
@@ -82,8 +53,15 @@ panel <- panel %>%
   left_join(iom_daily %>% rename(n_dead_iom = n_dead_missing), by = "date") %>%
   left_join(united_daily, by = "date") %>%
   replace_na(list(n_dead_iom = 0, n_dead_united = 0)) %>%
+  add_crossing_exposure() %>%   # living_crossings + source-specific attempts (shared, _helpers.R)
   mutate(
-    living_crossings = frx_persons + lcg_tcg_pushbacks,
+    swh_next1day  = dplyr::lead(swh, 1),
+    swh_next3days = zoo::rollmean(dplyr::lead(swh, 1), k = 3,
+                                  fill = NA, align = "left"),
+    swh_next5days = zoo::rollmean(dplyr::lead(swh, 1), k = 5,
+                                  fill = NA, align = "left"),
+    swh_next7days = zoo::rollmean(dplyr::lead(swh, 1), k = 7,
+                                  fill = NA, align = "left"),
     lc_lag7  = dplyr::lag(
       zoo::rollmeanr(living_crossings, k = 7, fill = NA, align = "right"), 1),
     lc_lag14 = dplyr::lag(
@@ -109,88 +87,112 @@ cat(sprintf("  Deaths UNITED: %.0f over %d death-days (%.1f%% zeros)\n",
             sum(d$n_dead_united), sum(d$n_dead_united > 0),
             100 * mean(d$n_dead_united == 0)))
 
-# ── 1b. Exposure sensitivity: window grid ────────────────────
-# Four SWH exposures corresponding to lagged rolling-mean windows:
-# 1-day, 1-3 day, 1-5 day, 1-7 day. Primary analytical choice is
-# swh_prev5days (1-5d mean); these alternatives probe robustness to the
-# window length.
-# Sample is pinned to the primary sample (non-NA swh_prev5days) so that
-# coefficient differences across rows reflect the exposure variable,
-# not the sample.
-cat("\n--- 1b. Exposure sensitivity (window length) ---\n")
+# ── 1b. Exposure sensitivity: past windows + future placebos ─────
+# Past exposures: 1-day, 1-3 day, 1-5 day, 1-7 day lagged means.
+# Future placebo exposures: next day, next 1-3, next 1-5, next 1-7 days.
+# The primary analytical choice is swh_prev5days (1-5d lagged mean). The
+# future windows should not predict deaths if the result is truly picking up
+# prior sea-state exposure rather than generic seasonal/time patterns.
+cat("\n--- 1b. Exposure sensitivity (past windows + future placebos) ---\n")
 
-exposures <- c("swh_lag1", "swh_prev3days", "swh_prev5days", "swh_prevweek")
+exposures <- c("swh_lag1", "swh_prev3days", "swh_prev5days", "swh_prevweek",
+               "swh_next1day", "swh_next3days", "swh_next5days", "swh_next7days")
+window_lookup <- c(
+  swh_lag1      = "lag 1d",
+  swh_prev3days = "lag 1-3d",
+  swh_prev5days = "lag 1-5d",
+  swh_prevweek  = "lag 1-7d",
+  swh_next1day  = "lead 1d",
+  swh_next3days = "lead 1-3d",
+  swh_next5days = "lead 1-5d",
+  swh_next7days = "lead 1-7d"
+)
+timing_lookup <- c(
+  swh_lag1      = "past",
+  swh_prev3days = "past",
+  swh_prev5days = "past",
+  swh_prevweek  = "past",
+  swh_next1day  = "future_placebo",
+  swh_next3days = "future_placebo",
+  swh_next5days = "future_placebo",
+  swh_next7days = "future_placebo"
+)
+source_lookup <- c(UNITED = "n_dead_united", IOM = "n_dead_iom")
 
-# Verify all exposures exist in the panel
 missing_exp <- setdiff(exposures, names(d))
 if (length(missing_exp) > 0) {
   stop("Missing exposure columns in panel: ",
        paste(missing_exp, collapse = ", "))
 }
 
-fit_sens <- function(x) {
-  f <- as.formula(sprintf(
-    "n_dead_iom ~ %s + %s:post_mou | month_year_fac", x, x))
-  list(
-    nb   = fenegbin(f, data = d, vcov = NW(14), panel.id = ~unit + date),
-    pois = fepois (f, data = d, vcov = NW(14), panel.id = ~unit + date)
+# Pin the sensitivity grid to a common row set across all past and future
+# windows. This drops only the terminal lead-window days and keeps row-count
+# changes from masquerading as window sensitivity.
+d_sens <- d %>% filter(if_all(all_of(exposures), ~ !is.na(.x)))
+
+fit_sens_one <- function(x, outcome, source_label) {
+  f <- as.formula(sprintf("%s ~ %s + %s:post_mou | month_year_fac",
+                          outcome, x, x))
+  models <- list(
+    NegBin  = fenegbin(f, data = d_sens, vcov = NW(14), panel.id = ~unit + date),
+    Poisson = fepois (f, data = d_sens, vcov = NW(14), panel.id = ~unit + date)
   )
-}
-
-sens <- setNames(lapply(exposures, fit_sens), exposures)
-
-extract_sens <- function(x) {
-  get_int <- function(m, fam) {
+  imap_dfr(models, function(m, fam) {
     ct <- coeftable(m, vcov = NW(14))
     r_main <- which(rownames(ct) == x)
     r_int  <- grep(":post_mou$", rownames(ct))
     r_int  <- r_int[grepl(x, rownames(ct)[r_int], fixed = TRUE)]
     tibble(
-      exposure = x,
+      source   = source_label,
+      timing   = timing_lookup[[x]],
+      window   = window_lookup[[x]],
       family   = fam,
+      exposure = x,
+      n_obs    = nobs(m),
       b1       = ct[r_main, 1],
       se1      = ct[r_main, 2],
+      p1       = 2 * pnorm(-abs(ct[r_main, 1] / ct[r_main, 2])),
       b3       = ct[r_int,  1],
       se3      = ct[r_int,  2],
       p3       = 2 * pnorm(-abs(ct[r_int, 1] / ct[r_int, 2]))
     )
-  }
-  bind_rows(
-    get_int(sens[[x]]$nb,   "NegBin"),
-    get_int(sens[[x]]$pois, "Poisson")
-  )
+  })
 }
 
-sens_tbl <- bind_rows(lapply(exposures, extract_sens)) %>%
+sens_tbl <- map_dfr(names(source_lookup), function(src) {
+  map_dfr(exposures, function(x) {
+    fit_sens_one(x, source_lookup[[src]], src)
+  })
+}) %>%
   mutate(
-    window = case_when(
-      grepl("lag1$",     exposure) ~ "1d",
-      grepl("prev3days", exposure) ~ "1-3d",
-      grepl("prev5days", exposure) ~ "1-5d",
-      grepl("prevweek",  exposure) ~ "1-7d"
-    )
+    source = factor(source, levels = c("UNITED", "IOM")),
+    timing = factor(timing, levels = c("past", "future_placebo")),
+    exposure_order = match(exposure, exposures)
   ) %>%
-  select(window, family, exposure, b1, se1, b3, se3, p3)
+  arrange(source, timing, exposure_order, family)
 
+cat(sprintf("  Sensitivity sample: N = %d days (%s to %s)\n",
+            nrow(d_sens), min(d_sens$date), max(d_sens$date)))
 cat("\n  SWH × post_MoU interaction (b3) across windows:\n")
-cat(sprintf("  %-6s %-8s  %+10s  %10s  %10s\n",
-            "window", "family", "b3", "SE", "p"))
+cat(sprintf("  %-7s %-14s %-9s %-8s  %+10s  %10s  %10s\n",
+            "source", "timing", "window", "family", "b3", "SE", "p"))
 for (i in seq_len(nrow(sens_tbl))) {
   r <- sens_tbl[i, ]
   star <- if (r$p3 < 0.05) " *" else ""
-  cat(sprintf("  %-6s %-8s  %+10.3f  %10.3f  %10.4f%s\n",
-              r$window, r$family, r$b3, r$se3, r$p3, star))
+  cat(sprintf("  %-7s %-14s %-9s %-8s  %+10.3f  %10.3f  %10.4f%s\n",
+              as.character(r$source), as.character(r$timing), r$window,
+              r$family, r$b3, r$se3, r$p3, star))
 }
 
-# Save a CSV for downstream figure-making / paper tables
+# CSV for downstream tables/figures
 write.csv(sens_tbl,
           file.path(BASE_DIR, "output", "tables",
                     "20_exposure_sensitivity.csv"),
           row.names = FALSE)
 cat(sprintf("  Saved: output/tables/20_exposure_sensitivity.csv\n"))
 
-# ── 2. Primary model: NegBin and Poisson (count), IOM + UNITED ────
-cat("\n--- 2. Primary model (count) ---\n")
+# ── 2. Count models: NegBin + Poisson, IOM + UNITED ──
+cat("\n--- 2. Count models ---\n")
 
 # IOM
 m_nb   <- fenegbin(n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou | month_year_fac,
@@ -204,43 +206,192 @@ m_nb_u   <- fenegbin(n_dead_united ~ swh_prev5days + swh_prev5days:post_mou | mo
 m_pois_u <- fepois  (n_dead_united ~ swh_prev5days + swh_prev5days:post_mou | month_year_fac,
                      data = d, vcov = NW(14), panel.id = ~unit + date)
 
-# ── 2b. Rate robustness: Poisson with offset(log(crossing_attempts)) ──
-# Outcome reframed as deaths per crossing-attempt. Count model remains
-# primary; this is reported alongside for estimand robustness, since the
-# guardrail argument is fundamentally about fatality RATE.
-# Days with crossing_attempts == 0 are dropped (log(0) undefined).
-d_rate <- d %>%
-  filter(crossing_attempts > 0) %>%
-  mutate(log_attempts = log(crossing_attempts))
+# ── 2b. Rate model: Poisson with source-specific offset ──
+# attempts_src == 0 dropped (log undefined).
+d_rate_iom <- d %>%
+  filter(attempts_iom > 0) %>%
+  mutate(log_attempts_iom = log(attempts_iom))
+
+d_rate_u <- d %>%
+  filter(attempts_united > 0) %>%
+  mutate(log_attempts_united = log(attempts_united))
 
 m_rate   <- fepois(
   n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
-               offset(log_attempts) | month_year_fac,
-  data = d_rate, vcov = NW(14), panel.id = ~unit + date)
+               offset(log_attempts_iom) | month_year_fac,
+  data = d_rate_iom, vcov = NW(14), panel.id = ~unit + date)
 
 m_rate_u <- fepois(
   n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
-                  offset(log_attempts) | month_year_fac,
-  data = d_rate, vcov = NW(14), panel.id = ~unit + date)
+                  offset(log_attempts_united) | month_year_fac,
+  data = d_rate_u, vcov = NW(14), panel.id = ~unit + date)
+
+# ── 2c. log(attempts) as a free covariate (elasticity check) ──
+# elast_test() Wald-tests this coefficient against 1.
+m_elast   <- fepois(
+  n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
+               log_attempts_iom | month_year_fac,
+  data = d_rate_iom, vcov = NW(14), panel.id = ~unit + date)
+
+m_elast_u <- fepois(
+  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
+                  log_attempts_united | month_year_fac,
+  data = d_rate_u, vcov = NW(14), panel.id = ~unit + date)
+
+elast_test <- function(m, xname, label) {
+  ct <- coeftable(m, vcov = NW(14))
+  b  <- ct[xname, 1]
+  se <- ct[xname, 2]
+  z  <- (b - 1) / se
+  tibble(
+    source     = label,
+    b_exposure = b,
+    se         = se,
+    z_vs_1     = z,
+    p_vs_1     = 2 * pnorm(-abs(z))
+  )
+}
+
+elast_tbl <- bind_rows(
+  elast_test(m_elast_u, "log_attempts_united", "UNITED"),
+  elast_test(m_elast,   "log_attempts_iom",    "IOM")
+)
+
+print_elast <- function(tbl) {
+  cat(sprintf("  %-7s %12s %10s %10s %10s\n",
+              "source", "b_exposure", "SE", "z_vs_1", "p_vs_1"))
+  for (i in seq_len(nrow(tbl))) {
+    r <- tbl[i, ]
+    cat(sprintf("  %-7s %+12.3f %10.3f %+10.2f %10.4f\n",
+                r$source, r$b_exposure, r$se, r$z_vs_1, r$p_vs_1))
+  }
+}
 
 cat(sprintf("  Count sample: N = %d days (all)\n", nrow(d)))
-cat(sprintf("  Rate sample:  N = %d days (drops %d zero-attempt days)\n",
-            nrow(d_rate), nrow(d) - nrow(d_rate)))
+cat(sprintf("  Rate sample IOM:    N = %d days (drops %d zero-attempt days)\n",
+            nrow(d_rate_iom), nrow(d) - nrow(d_rate_iom)))
+cat(sprintf("  Rate sample UNITED: N = %d days (drops %d zero-attempt days)\n",
+            nrow(d_rate_u), nrow(d) - nrow(d_rate_u)))
 
-cat("\n  Primary (no crossing control), NW(14) -- IOM vs UNITED side by side:\n")
-print(etable(m_nb, m_pois, m_rate, m_nb_u, m_pois_u, m_rate_u,
+slope_summary <- function(m, label, family, estimand) {
+  ct <- coeftable(m, vcov = NW(14))
+  co <- coef(m)
+  V  <- vcov(m, vcov = NW(14))
+  b_pre <- unname(co["swh_prev5days"])
+  b_shift <- unname(co["swh_prev5days:post_mou"])
+  se_pre <- ct["swh_prev5days", 2]
+  se_shift <- ct["swh_prev5days:post_mou", 2]
+  b_post <- b_pre + b_shift
+  v_post <- V["swh_prev5days", "swh_prev5days"] +
+    V["swh_prev5days:post_mou", "swh_prev5days:post_mou"] +
+    2 * V["swh_prev5days", "swh_prev5days:post_mou"]
+  se_post <- sqrt(v_post)
+  tibble(
+    source = label,
+    family = family,
+    estimand = estimand,
+    n_obs = nobs(m),
+    b_pre = b_pre,
+    se_pre = se_pre,
+    p_pre = 2 * pnorm(-abs(b_pre / se_pre)),
+    irr_pre = exp(b_pre),
+    b_shift = b_shift,
+    se_shift = se_shift,
+    p_shift = 2 * pnorm(-abs(b_shift / se_shift)),
+    irr_shift = exp(b_shift),
+    b_post = b_post,
+    se_post = se_post,
+    p_post = 2 * pnorm(-abs(b_post / se_post)),
+    irr_post = exp(b_post)
+  )
+}
+
+count_slopes <- bind_rows(
+  slope_summary(m_nb_u,   "UNITED", "NegBin",  "count"),
+  slope_summary(m_pois_u, "UNITED", "Poisson", "count"),
+  slope_summary(m_nb,     "IOM",    "NegBin",  "count"),
+  slope_summary(m_pois,   "IOM",    "Poisson", "count")
+)
+
+rate_slopes <- bind_rows(
+  slope_summary(m_rate_u, "UNITED", "Poisson", "rate"),
+  slope_summary(m_rate,   "IOM",    "Poisson", "rate")
+)
+
+# SWH slopes from the free-exposure fit.
+elast_slopes <- bind_rows(
+  slope_summary(m_elast_u, "UNITED", "Poisson", "rate-free-exposure"),
+  slope_summary(m_elast,   "IOM",    "Poisson", "rate-free-exposure")
+)
+
+print_slope_summary <- function(tbl, show_irr = FALSE) {
+  cat(sprintf("  %-7s %-8s %6s  %10s %10s %10s  %10s %10s %10s  %10s %10s %10s",
+              "source", "family", "N", "b_pre", "SE", "p",
+              "b_shift", "SE", "p", "b_post", "SE", "p"))
+  if (show_irr) cat(sprintf("  %10s %10s %10s", "IRR_pre", "IRR_shift", "IRR_post"))
+  cat("\n")
+  for (i in seq_len(nrow(tbl))) {
+    r <- tbl[i, ]
+    cat(sprintf("  %-7s %-8s %6d  %+10.3f %10.3f %10.4f  %+10.3f %10.3f %10.4f  %+10.3f %10.3f %10.4f",
+                r$source, r$family, r$n_obs,
+                r$b_pre, r$se_pre, r$p_pre,
+                r$b_shift, r$se_shift, r$p_shift,
+                r$b_post, r$se_post, r$p_post))
+    if (show_irr) {
+      cat(sprintf("  %10.3f %10.3f %10.3f",
+                  r$irr_pre, r$irr_shift, r$irr_post))
+    }
+    cat("\n")
+  }
+}
+
+cat("\n  Count models, NW(14):\n")
+print(etable(m_nb_u, m_pois_u, m_nb, m_pois,
              vcov = NW(14), se.below = TRUE,
-             headers = c("IOM NB", "IOM Poiss", "IOM rate",
-                         "UNITED NB", "UNITED Poiss", "UNITED rate")))
+             headers = c("UNITED NB", "UNITED Poiss",
+                         "IOM NB", "IOM Poiss")))
 
-cat("\n  Primary, cluster(month_year):\n")
-print(etable(m_nb, m_pois, m_rate, m_nb_u, m_pois_u, m_rate_u,
+cat("\n  Count, slope decomposition, NW(14):\n")
+print_slope_summary(count_slopes, show_irr = FALSE)
+
+cat("\n  Rate model (source-specific offset), NW(14):\n")
+print(etable(m_rate_u, m_rate,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("UNITED rate", "IOM rate")))
+
+cat("\n  Rate, slope decomposition, NW(14):\n")
+print_slope_summary(rate_slopes, show_irr = TRUE)
+
+cat("\n  Elasticity: free log(attempts), Wald test vs 1, NW(14):\n")
+print_elast(elast_tbl)
+cat("\n  SWH slopes, exposure freed, NW(14):\n")
+print_slope_summary(elast_slopes, show_irr = FALSE)
+
+cat("\n  All models, cluster(month_year):\n")
+print(etable(m_nb_u, m_pois_u, m_nb, m_pois, m_rate_u, m_rate,
              vcov = ~month_year_fac, se.below = TRUE,
-             headers = c("IOM NB", "IOM Poiss", "IOM rate",
-                         "UNITED NB", "UNITED Poiss", "UNITED rate")))
+             headers = c("UNITED NB", "UNITED Poiss",
+                         "IOM NB", "IOM Poiss",
+                         "UNITED rate", "IOM rate")))
 
 # ── 3. Robustness: lagged crossing controls ──────────────────
 cat("\n--- 3. Robustness: lagged crossing controls ---\n")
+
+m_nb_u_lag7  <- fenegbin(
+  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou + log1p_lc_lag7 |
+    month_year_fac, data = d, vcov = NW(14), panel.id = ~unit + date)
+
+m_nb_u_lag14 <- fenegbin(
+  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou + log1p_lc_lag14 |
+    month_year_fac, data = d, vcov = NW(14), panel.id = ~unit + date)
+
+m_pois_u_lag7  <- fepois(
+  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou + log1p_lc_lag7 |
+    month_year_fac, data = d, vcov = NW(14), panel.id = ~unit + date)
+
+m_pois_u_lag14 <- fepois(
+  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou + log1p_lc_lag14 |
+    month_year_fac, data = d, vcov = NW(14), panel.id = ~unit + date)
 
 m_nb_lag7  <- fenegbin(
   n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou + log1p_lc_lag7 |
@@ -258,93 +409,138 @@ m_pois_lag14 <- fepois(
   n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou + log1p_lc_lag14 |
     month_year_fac, data = d, vcov = NW(14), panel.id = ~unit + date)
 
-cat("\n  NegBin with crossing controls, NW(14):\n")
+cat("\n  UNITED NegBin with crossing controls, NW(14):\n")
+print(etable(m_nb_u, m_nb_u_lag7, m_nb_u_lag14, vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 7d", "Lag 14d")))
+
+cat("\n  UNITED Poisson with crossing controls, NW(14):\n")
+print(etable(m_pois_u, m_pois_u_lag7, m_pois_u_lag14,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 7d", "Lag 14d")))
+
+cat("\n  IOM NegBin with crossing controls, NW(14):\n")
 print(etable(m_nb, m_nb_lag7, m_nb_lag14, vcov = NW(14), se.below = TRUE,
              headers = c("No control", "Lag 7d", "Lag 14d")))
 
-cat("\n  Poisson with crossing controls, NW(14):\n")
+cat("\n  IOM Poisson with crossing controls, NW(14):\n")
 print(etable(m_pois, m_pois_lag7, m_pois_lag14, vcov = NW(14), se.below = TRUE,
              headers = c("No control", "Lag 7d", "Lag 14d")))
 
 # ── 4. Save text output ──────────────────────────────────────
-# Year-by-year SWH gradients were estimated and reported in earlier versions
-# of this script. They were dropped because calendar year is not a unit of
-# policy or operational variation (MoU 2017-07-01 cuts through 2017, Salvini
-# decrees through 2018, Meloni through 2022). The yearly design fragments
-# the identifying variation into ~365-day windows that don't map to any
-# regime change, producing noisy estimates with no substantive interpretation.
-# The pre/post-MoU interaction here, and the 4-period gradient in
-# 31_united_periods.R, are the appropriate units of inference.
+# No year-by-year gradients here; regime cuts are in 31_united_periods.R.
 cat("\n--- 4. Saving results ---\n")
 
 sink_file <- file.path(BASE_DIR, "output", "tables", "20_primary_model.txt")
 sink(sink_file)
 
-cat("20  PRIMARY MODEL: SWH x POST-MOU -> DEATHS (IOM + UNITED)\n")
-cat("==========================================================\n")
+cat("20  SWH x POST-MOU GRADIENT ON DEATHS (UNITED primary + IOM comparison)\n")
+cat("=======================================================================\n")
 cat(sprintf("Sample: %s to %s (N = %d days)\n",
             min(d$date), max(d$date), nrow(d)))
-cat(sprintf("Deaths IOM    (corridor, drowning + mixed):       %.0f\n",
-            sum(d$n_dead_iom)))
 cat(sprintf("Deaths UNITED (corridor, drowned + other/unknown): %.0f\n",
             sum(d$n_dead_united)))
-cat("\nPrimary specification:\n")
-cat("  deaths ~ swh_prev5days + swh_prev5days:post_mou | month_year\n")
-cat("  No crossing control. Month-year FE absorbs monthly confounders.\n")
-cat("  NW(14) SEs for serial correlation.\n")
-cat("  Estimated separately on IOM MMP and UNITED death series, same\n")
-cat("  spatial+cause filter, same sample, same spec.\n\n")
+cat(sprintf("Deaths IOM    (corridor, drowning + mixed):       %.0f\n",
+            sum(d$n_dead_iom)))
+cat("\nModels (month_year FE; NW(14) SEs; UNITED primary, IOM comparison):\n")
+cat("  count : deaths ~ swh_prev5days + swh_prev5days:post_mou   (NegBin, Poisson)\n")
+cat("  rate  : count spec + offset(log(attempts_src))            (Poisson)\n")
+cat("  elast : count spec + log(attempts_src) free               (Poisson)\n")
+cat("  attempts_src = frx_persons + lcg_tcg_pushbacks + deaths_src\n")
+cat("Slope decomposition: b_pre, b_shift (=SWH:post_mou),\n")
+cat("  b_post = b_pre + b_shift (delta-method SE).\n")
+cat("N = estimation N after fixest drops all-zero FE cells.\n\n")
 
-cat("=== PRIMARY MODEL (count + rate): IOM vs UNITED side by side ===\n")
-cat("Count models: deaths per day (NegBin, Poisson).\n")
-cat(sprintf(
-  "Rate model:   deaths per crossing-attempt (Poisson + offset(log_attempts); N=%d days, drops %d zero-attempt days).\n",
-  nrow(d_rate), nrow(d) - nrow(d_rate)))
-cat("The count specification is primary; the rate spec is estimand robustness.\n\n")
+cat("=== COUNT MODELS: UNITED PRIMARY, IOM COMPARISON ===\n")
+cat(sprintf("Count sample: N = %d days.\n\n", nrow(d)))
 
 cat("--- NW(14) SEs ---\n")
-print(etable(m_nb, m_pois, m_rate, m_nb_u, m_pois_u, m_rate_u,
+print(etable(m_nb_u, m_pois_u, m_nb, m_pois,
              vcov = NW(14), se.below = TRUE,
-             headers = c("IOM NB", "IOM Poiss", "IOM rate",
-                         "UNITED NB", "UNITED Poiss", "UNITED rate")))
+             headers = c("UNITED NB", "UNITED Poiss",
+                         "IOM NB", "IOM Poiss")))
+
+cat("\n--- Slope decomposition, NW(14) ---\n")
+print_slope_summary(count_slopes, show_irr = FALSE)
 
 cat("\n--- Cluster(month_year) SEs ---\n")
-print(etable(m_nb, m_pois, m_rate, m_nb_u, m_pois_u, m_rate_u,
+print(etable(m_nb_u, m_pois_u, m_nb, m_pois,
              vcov = ~month_year_fac, se.below = TRUE,
-             headers = c("IOM NB", "IOM Poiss", "IOM rate",
-                         "UNITED NB", "UNITED Poiss", "UNITED rate")))
+             headers = c("UNITED NB", "UNITED Poiss",
+                         "IOM NB", "IOM Poiss")))
 
-cat("\n\n=== EXPOSURE SENSITIVITY (WINDOW LENGTH) ===\n")
-cat("Four SWH exposures: 1-day, 1-3d, 1-5d, 1-7d lagged rolling means.\n")
-cat("All fits on the primary sample (same as the primary NegBin/Poisson above).\n")
-cat("Reporting b3 (SWH:post_mou) only; see CSV for full coefficients.\n\n")
-cat(sprintf("  %-6s %-8s  %+10s  %10s  %10s\n",
-            "window", "family", "b3", "SE", "p"))
+cat("\n\n=== RATE MODEL (source-specific offset) ===\n")
+cat(sprintf(
+  "IOM rate sample:    N=%d days (drops %d zero-attempt days).\n",
+  nrow(d_rate_iom), nrow(d) - nrow(d_rate_iom)))
+cat(sprintf(
+  "UNITED rate sample: N=%d days (drops %d zero-attempt days).\n\n",
+  nrow(d_rate_u), nrow(d) - nrow(d_rate_u)))
+
+cat("--- NW(14) SEs ---\n")
+print(etable(m_rate_u, m_rate,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("UNITED rate", "IOM rate")))
+
+cat("\n--- Slope decomposition, NW(14) (IRR = exp(coef)) ---\n")
+print_slope_summary(rate_slopes, show_irr = TRUE)
+
+cat("\n--- Elasticity check: free log(attempts), Wald test vs 1, NW(14) ---\n")
+print_elast(elast_tbl)
+cat("\nSWH slopes, exposure freed, NW(14):\n")
+print_slope_summary(elast_slopes, show_irr = FALSE)
+
+cat("\n--- Cluster(month_year) SEs ---\n")
+print(etable(m_rate_u, m_rate,
+             vcov = ~month_year_fac, se.below = TRUE,
+             headers = c("UNITED rate", "IOM rate")))
+
+cat("\n\n=== EXPOSURE SENSITIVITY (PAST WINDOWS + FUTURE PLACEBOS) ===\n")
+cat("Past exposures: lag 1d, 1-3d, 1-5d, 1-7d means.\n")
+cat("Future placebo exposures: lead 1d, 1-3d, 1-5d, 1-7d means.\n")
+cat(sprintf("Shared sensitivity sample: N = %d days (%s to %s).\n",
+            nrow(d_sens), min(d_sens$date), max(d_sens$date)))
+cat("b3 = SWH:post_mou; full coefficients in the CSV.\n\n")
+cat(sprintf("  %-7s %-14s %-9s %-8s  %+10s  %10s  %10s\n",
+            "source", "timing", "window", "family", "b3", "SE", "p"))
 for (i in seq_len(nrow(sens_tbl))) {
   r <- sens_tbl[i, ]
   star <- if (r$p3 < 0.05) " *" else ""
-  cat(sprintf("  %-6s %-8s  %+10.3f  %10.3f  %10.4f%s\n",
-              r$window, r$family, r$b3, r$se3, r$p3, star))
+  cat(sprintf("  %-7s %-14s %-9s %-8s  %+10.3f  %10.3f  %10.4f%s\n",
+              as.character(r$source), as.character(r$timing), r$window,
+              r$family, r$b3, r$se3, r$p3, star))
 }
 cat(sprintf("\n  Full table: output/tables/20_exposure_sensitivity.csv\n"))
 
-cat("\n\n=== ROBUSTNESS: LAGGED CROSSING CONTROLS ===\n\n")
-cat("NegBin:\n")
+cat("\n\n=== COUNT ROBUSTNESS: LAGGED CROSSING CONTROLS ===\n\n")
+cat("UNITED NegBin:\n")
+print(etable(m_nb_u, m_nb_u_lag7, m_nb_u_lag14, vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 7d", "Lag 14d")))
+cat("\nUNITED Poisson:\n")
+print(etable(m_pois_u, m_pois_u_lag7, m_pois_u_lag14,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 7d", "Lag 14d")))
+cat("\nIOM NegBin:\n")
 print(etable(m_nb, m_nb_lag7, m_nb_lag14, vcov = NW(14), se.below = TRUE,
              headers = c("No control", "Lag 7d", "Lag 14d")))
-cat("\nPoisson:\n")
+cat("\nIOM Poisson:\n")
 print(etable(m_pois, m_pois_lag7, m_pois_lag14, vcov = NW(14), se.below = TRUE,
              headers = c("No control", "Lag 7d", "Lag 14d")))
 
 # Summary table
-cat("\n\n=== SUMMARY: b3 (SWH x post_mou) ===\n\n")
+cat("\n\n=== COUNT SUMMARY: b3 (SWH x post_mou) ===\n\n")
 for (info in list(
-  list(m_nb,         "NegBin, no control"),
-  list(m_nb_lag7,    "NegBin, lag 7d"),
-  list(m_nb_lag14,   "NegBin, lag 14d"),
-  list(m_pois,       "Poisson, no control"),
-  list(m_pois_lag7,  "Poisson, lag 7d"),
-  list(m_pois_lag14, "Poisson, lag 14d")
+  list(m_nb_u,         "UNITED NegBin, no control"),
+  list(m_nb_u_lag7,    "UNITED NegBin, lag 7d"),
+  list(m_nb_u_lag14,   "UNITED NegBin, lag 14d"),
+  list(m_pois_u,       "UNITED Poisson, no control"),
+  list(m_pois_u_lag7,  "UNITED Poisson, lag 7d"),
+  list(m_pois_u_lag14, "UNITED Poisson, lag 14d"),
+  list(m_nb,           "IOM NegBin, no control"),
+  list(m_nb_lag7,      "IOM NegBin, lag 7d"),
+  list(m_nb_lag14,     "IOM NegBin, lag 14d"),
+  list(m_pois,         "IOM Poisson, no control"),
+  list(m_pois_lag7,    "IOM Poisson, lag 7d"),
+  list(m_pois_lag14,   "IOM Poisson, lag 14d")
 )) {
   ct <- coeftable(info[[1]], vcov = NW(14))
   r <- grep(":post_mou", rownames(ct))

@@ -1,7 +1,7 @@
 # 31_united_periods.R
 # ====================
-# SWH-mortality gradient by political/operational period, IOM and UNITED
-# side by side. This is the LONG-SPAN sibling of 28: same data construction
+# SWH-mortality gradient by political/operational period, UNITED primary and
+# IOM comparison. This is the LONG-SPAN sibling of 28: same data construction
 # as 20/28 (corridor-joined IOM via build_iom_daily(); corridor-joined
 # UNITED via build_united_daily()), but estimated on the full ERA5 span
 # (2013-present) WITHOUT the Frontex-bounded crossing control, so the early
@@ -17,10 +17,9 @@
 # series at all). Both sources go through the shared _helpers.R builders so
 # the filter cannot drift again.
 #
-# Span caveat: IOM MMP coverage starts in 2014, so the IOM series is
-# left-truncated relative to UNITED inside period 1 (2013 -> 2014 days are
-# zero-filled for IOM). Reported openly in the period breakdown below; this
-# is why the long-span design is run on BOTH sources rather than IOM alone.
+# Span caveat: IOM MMP coverage starts in 2014, so 2013 is UNITED-only.
+# The full-span model is therefore UNITED 2013-present. IOM is estimated as a
+# 2014-present comparison rather than zero-filled through 2013.
 #
 # Periods (revised 2026-04-21):
 #   1. Post-Arab Spring:    2013-01-01 to 2017-01-31
@@ -53,12 +52,13 @@ source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
 # Period boundary dates
 DATE_START <- as.Date("2013-01-01")
+IOM_START  <- as.Date("2014-01-01")
 D_12       <- as.Date("2017-01-31")  # end Post-Arab Spring
 D_23       <- as.Date("2019-12-31")  # end MoU + Salvini
 D_34       <- as.Date("2022-10-21")  # end Partial rollback (Meloni sworn 10-22)
 
-# Both sources, same corridor-joined construction as 20/28.
-SRC <- c(IOM = "n_dead_iom", UNITED = "n_dead_united")
+# Same corridor-joined construction as 20/28; UNITED is primary.
+SRC <- c(UNITED = "n_dead_united", IOM = "n_dead_iom")
 
 add_period <- function(df) {
   df %>% mutate(period = factor(case_when(
@@ -70,12 +70,12 @@ add_period <- function(df) {
 }
 
 cat("============================================\n")
-cat("31  PERIOD-SPECIFIC SWH GRADIENTS (2013-present)\n")
-cat("    IOM + UNITED, corridor-joined (20/28 construction)\n")
+cat("31  PERIOD-SPECIFIC SWH GRADIENTS\n")
+cat("    UNITED primary 2013-present; IOM comparison 2014-present\n")
 cat("============================================\n\n")
 
 # ── 1. Build extended panel ──
-cat("--- 1. Building extended panel (both sources) ---\n")
+cat("--- 1. Building extended panel (UNITED primary + IOM comparison) ---\n")
 
 era5 <- readRDS(file.path(BASE_DIR, "data", "processed",
                            "era5_swh_daily.RDS")) %>%
@@ -106,22 +106,36 @@ panel <- panel %>%
 cat(sprintf("  Panel: %s to %s (%d days)\n",
             min(panel$date), max(panel$date), nrow(panel)))
 for (s in names(SRC)) {
-  v  <- panel[[SRC[s]]]
-  nz <- panel$date[v > 0]
-  cat(sprintf("  %-7s deaths: %7.0f  (first death-day %s, last %s)\n",
-              s, sum(v), min(nz), max(nz)))
+  dat <- if (s == "IOM") filter(panel, date >= IOM_START) else panel
+  v  <- dat[[SRC[s]]]
+  cat(sprintf("  %-7s sample: %s to %s; deaths: %7.0f  (first death-day %s, last %s)\n",
+              s, min(dat$date), max(dat$date), sum(v), min(dat$date[v > 0]),
+              max(dat$date[v > 0])))
 }
 
-cat("\n  Period breakdown (IOM | UNITED):\n")
-panel %>%
+period_breakdown <- panel %>%
   group_by(period) %>%
-  summarise(from = min(date), to = max(date), n_days = n(),
-            iom_death_days    = sum(n_dead_iom    > 0),
-            utd_death_days    = sum(n_dead_united > 0),
-            iom_dead          = sum(n_dead_iom),
-            utd_dead          = sum(n_dead_united),
-            .groups = "drop") %>%
-  print(n = Inf, width = Inf)
+  summarise(from = min(date), to = max(date),
+            n_days_united = n(),
+            n_days_iom_observed = sum(date >= IOM_START),
+            united_only_days = sum(date < IOM_START),
+            iom_death_days = sum(n_dead_iom[date >= IOM_START] > 0),
+            utd_death_days = sum(n_dead_united > 0),
+            iom_dead = sum(n_dead_iom[date >= IOM_START]),
+            utd_dead = sum(n_dead_united),
+            .groups = "drop")
+
+cat("\n  Period breakdown (2013 explicitly UNITED-only):\n")
+print(period_breakdown, n = Inf, width = Inf)
+
+y2013 <- panel %>% filter(date >= DATE_START, date < IOM_START)
+cat(sprintf("\n  2013 UNITED-only days: %d; UNITED deaths: %.0f; IOM deaths counted: %.0f\n",
+            nrow(y2013), sum(y2013$n_dead_united), sum(y2013$n_dead_iom)))
+
+fit_data_full <- list(
+  UNITED = panel,
+  IOM    = panel %>% filter(date >= IOM_START)
+)
 
 # ── 2. Period-specific gradient (full span, both sources) ──
 cat("\n--- 2. Period-specific gradient (full span) ---\n")
@@ -165,8 +179,7 @@ wald_test <- function(m, label) {
   list(stat = stat, p = p, df = k - 1)
 }
 
-m_full <- lapply(SRC, fit_period, data = panel)
-names(m_full) <- names(SRC)
+m_full <- imap(SRC, ~ fit_period(.x, fit_data_full[[.y]]))
 
 per_full <- imap(m_full, ~ extract_per(.x, .y) %>% mutate(source = .y)) %>%
   list_rbind()
@@ -289,7 +302,12 @@ cat("\n--- 3. Wald test: all period gradients equal? ---\n")
 
 wald <- list()
 for (s in names(SRC)) {
-  wald[[paste0(s, "_full")]] <- wald_test(m_full[[s]],     sprintf("%s full 2013-present (no ctrl)", s))
+  full_label <- if (s == "UNITED") {
+    "UNITED full 2013-present (no ctrl)"
+  } else {
+    "IOM comparison 2014-present (no ctrl)"
+  }
+  wald[[paste0(s, "_full")]] <- wald_test(m_full[[s]], full_label)
   wald[[paste0(s, "_no")]]   <- wald_test(m_sub[[s]]$no,    sprintf("%s 2014-2023 (no ctrl)", s))
   wald[[paste0(s, "_lc14")]] <- wald_test(m_sub[[s]]$lc14,  sprintf("%s 2014-2023 (lag-14 clean)", s))
 }
@@ -298,7 +316,7 @@ for (s in names(SRC)) {
 cat("\n--- 4. Plots ---\n")
 
 period_labels_full <- c(
-  "Post-Arab Spring\n(2013-Jan17)",
+  "Post-Arab Spring\n(UNITED 2013-Jan17;\nIOM 2014-Jan17)",
   "MoU + Salvini\n(Feb17-2019)",
   "Partial rollback\n(2020-Oct22)",
   "Meloni\n(Oct22-)"
@@ -313,7 +331,8 @@ relabel <- function(df) {
     ungroup()
 }
 
-per_full_p <- relabel(per_full %>% mutate(spec = "Full 2013-present (no ctrl)"))
+per_full_p <- relabel(per_full %>%
+                        mutate(spec = "Full span: UNITED 2013-present; IOM 2014-present"))
 per_sub_p  <- relabel(per_sub)
 
 src_cols <- c("IOM" = "#2166AC", "UNITED" = "#B2182B")
@@ -325,11 +344,11 @@ p_full <- ggplot(per_full_p, aes(period_short, beta, colour = source)) +
                 linewidth = 0.8, position = position_dodge(width = 0.4)) +
   scale_colour_manual(values = src_cols) +
   labs(
-    title = "Full 2013-present, no crossing control (corridor-joined)",
+    title = "Full span, no crossing control (corridor-joined)",
     subtitle = sprintf(
-      "Wald all-equal: IOM chi2(%d)=%.1f p=%.3f | UNITED chi2(%d)=%.1f p=%.3f",
-      wald$IOM_full$df, wald$IOM_full$stat, wald$IOM_full$p,
-      wald$UNITED_full$df, wald$UNITED_full$stat, wald$UNITED_full$p),
+      "UNITED primary 2013-present; IOM comparison starts 2014. Wald: UNITED chi2(%d)=%.1f p=%.3f | IOM chi2(%d)=%.1f p=%.3f",
+      wald$UNITED_full$df, wald$UNITED_full$stat, wald$UNITED_full$p,
+      wald$IOM_full$df, wald$IOM_full$stat, wald$IOM_full$p),
     x = NULL, y = expression(beta[SWH_prev5days]), colour = "Source"
   ) +
   theme_minimal(base_size = 11) +
@@ -365,16 +384,17 @@ cat("\n--- 5. Saving text output ---\n")
 sink_file <- file.path(BASE_DIR, "output", "tables", "31_united_periods.txt")
 sink(sink_file)
 
-cat("31  SWH-MORTALITY GRADIENT BY POLITICAL PERIOD (IOM + UNITED)\n")
+cat("31  SWH-MORTALITY GRADIENT BY POLITICAL PERIOD\n")
 cat("=============================================================\n")
 cat("Long-span sibling of 28. Data construction IDENTICAL to 20/28:\n")
 cat("  IOM    = build_iom_daily()    (corridor spatial join)\n")
 cat("  UNITED = build_united_daily() (corridor spatial join; same\n")
 cat("           country/cause filter as 20/28, NOT 31's old filter)\n")
-cat("Estimated on the full ERA5 span (2013-present), NO Frontex\n")
-cat("crossing control, so Mare Nostrum / Meloni regimes are not\n")
-cat("truncated by Frontex coverage. IOM MMP starts 2014, so the IOM\n")
-cat("series is left-truncated inside period 1 (see breakdown).\n\n")
+cat("UNITED is the primary long-span source and is estimated on the full\n")
+cat("ERA5 span (2013-present), with NO Frontex crossing control, so Mare\n")
+cat("Nostrum / Meloni regimes are not truncated by Frontex coverage. IOM\n")
+cat("MMP starts 2014, so IOM is estimated only as a 2014-present comparison;\n")
+cat("2013 is explicitly UNITED-only (see breakdown).\n\n")
 cat("Periods:\n")
 cat("  1. Post-Arab Spring  (2013-01-01 to 2017-01-31):\n")
 cat("       Mare Nostrum + Frontex + NGO SAR\n")
@@ -385,24 +405,20 @@ cat("       Narrow humanitarian protection restored\n")
 cat("  4. Meloni            (2022-10-22 onwards):\n")
 cat("       Single-rescue rule on NGOs; restricted humanitarian protection\n\n")
 
-cat(sprintf("Panel: %s to %s (%d days)\n",
+cat(sprintf("Panel: %s to %s (%d days for UNITED)\n",
             min(panel$date), max(panel$date), nrow(panel)))
 for (s in names(SRC)) {
-  v <- panel[[SRC[s]]]
-  cat(sprintf("  %-7s deaths: %.0f\n", s, sum(v)))
+  dat <- fit_data_full[[s]]
+  v <- dat[[SRC[s]]]
+  cat(sprintf("  %-7s sample: %s to %s; deaths: %.0f; N=%d days\n",
+              s, min(dat$date), max(dat$date), sum(v), nrow(dat)))
 }
 cat("Model: fenegbin(n_dead ~ swh_prev5days:period | month_year), NW(14)\n\n")
 
 cat("=== Period breakdown ===\n")
-panel %>%
-  group_by(period) %>%
-  summarise(from = min(date), to = max(date), n_days = n(),
-            iom_death_days = sum(n_dead_iom > 0),
-            utd_death_days = sum(n_dead_united > 0),
-            iom_dead = sum(n_dead_iom),
-            utd_dead = sum(n_dead_united),
-            .groups = "drop") %>%
-  print(n = Inf, width = Inf)
+print(period_breakdown, n = Inf, width = Inf)
+cat(sprintf("\n2013 UNITED-only days: %d; UNITED deaths: %.0f; IOM deaths counted: %.0f\n",
+            nrow(y2013), sum(y2013$n_dead_united), sum(y2013$n_dead_iom)))
 
 for (s in names(SRC)) {
   cat(sprintf("\n=== [%s] Period-specific gradient, full span, NW(14) ===\n", s))

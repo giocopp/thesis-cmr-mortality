@@ -33,15 +33,10 @@
 # use the same shared builder, so UNITED numbers reconcile EXACTLY with 31
 # on the shared (Frontex-bounded) sample.
 #
-# EXCLUDED by design (see plan): per-incident fatality rate; offset rate
-# model (deaths-in-denominator, Denton imputation, regime-varying
-# undercount, unit-elasticity offset). 23 stays as the IOM z-scored SAR
-# deep-dive; 28 adds the raw-scale + UNITED versions. Zone split deferred.
-#
-# Honest limitation: all instruments inherit IOM/UNITED recorded-event
-# selection (unwitnessed sinkings absent), plausibly worse in low-SAR
-# periods -> understates the effect. No control group -> descriptive
-# regime-resolved elasticity/probability, not causal identification.
+# Scope: count/probability regime decomposition. The offset rate model is
+# in 20_primary_model.R (boat-composition robustness in 27). Per-incident
+# fatality rates are not computed (incident counts are not crossing exposure).
+# No control group: estimates are descriptive regime-resolved, not causal.
 #
 # In:  analysis/data/daily_panel_complete.RDS
 #      data/processed/iom_mmp_incidents.RDS (via build_iom_daily)
@@ -350,8 +345,8 @@ p2_df <- f2_tbl %>%
 p_panel2 <- ggplot(p2_df, aes(b_int, lab, colour = source)) +
   geom_vline(xintercept = 0, linetype = "dashed", colour = "grey50") +
   geom_point(size = 2.6, position = position_dodge(width = 0.4)) +
-  geom_errorbarh(aes(xmin = ci_lo, xmax = ci_hi), height = 0.2,
-                 position = position_dodge(width = 0.4)) +
+  geom_errorbar(aes(xmin = ci_lo, xmax = ci_hi), orientation = "y",
+                width = 0.2, position = position_dodge(width = 0.4)) +
   scale_colour_manual(values = c("IOM" = "#2166AC", "UNITED" = "#B2182B")) +
   labs(title = "F2: SWH x SAR-moderator interaction (raw scale)",
        subtitle = "Count model, month-year FE, NW(14). Negative = more SAR flattens the SWH-death slope.",
@@ -392,8 +387,9 @@ cat(sprintf("Sample: %s to %s (N = %d days; 20 primary sample)\n",
 cat("UNITED filter = build_united_daily() (corridor join); shared by 20/27/28/31.\n")
 cat("2-period cut: post_mou from 2017-07-01. 4-period: 31 boundaries\n")
 cat("(1->2 at 2017-01-31). Frontex-bounded -> period 1 left-truncated at\n")
-cat("2014, period 4 (Meloni) thin (~7 months). Excluded: per-incident\n")
-cat("fatality rate, offset rate model. No control group -> descriptive.\n\n")
+cat("2014, period 4 (Meloni) thin (~7 months). Count/probability regime\n")
+cat("decomposition; offset rate model is in 20 (boat controls in 27).\n")
+cat("No control group -> descriptive.\n\n")
 
 cat("=== FAMILY 1: count, 2-period (swh:post_mou) ===\n")
 print(etable(f1_2p_iom_nb, f1_2p_iom_po, f1_2p_utd_nb, f1_2p_utd_po,
