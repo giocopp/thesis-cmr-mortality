@@ -6,9 +6,9 @@ Deaths IOM    (corridor, drowning + mixed):       15285
 
 Models (month_year FE; NW(14) SEs; UNITED primary, IOM comparison):
   count : deaths ~ swh_prev5days + swh_prev5days:post_mou   (NegBin, Poisson)
-  rate  : count spec + offset(log(attempts_src))            (Poisson)
-  elast : count spec + log(attempts_src) free               (Poisson)
-  attempts_src = frx_persons + lcg_tcg_pushbacks + deaths_src
+  rate  : count spec + log(crossing_attempts) free          (Poisson)
+  crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing
+  (common denom; free covariate; tests proportionality assumption)
 Slope decomposition: b_pre, b_shift (=SWH:post_mou),
   b_post = b_pre + b_shift (delta-method SE).
 N = estimation N after fixest drops all-zero FE cells.
@@ -87,62 +87,62 @@ Over-dispersion                0.03987            --    0.05968         --
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 
-=== RATE MODEL (source-specific offset) ===
-IOM rate sample:    N=2076 days (drops 1348 zero-attempt days).
-UNITED rate sample: N=2036 days (drops 1388 zero-attempt days).
+=== RATE-LIKE MODEL (common denom, free exposure) ===
+crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing
+Common denominator for both sources. Free covariate (not forced offset).
+Rate sample: N=2125 days (drops 1299 zero-crossing days).
 
 --- NW(14) SEs ---
                                  m_rate_u           m_rate
                               UNITED rate         IOM rate
 Dependent Var.:             n_dead_united       n_dead_iom
                                                           
-swh_prev5days                   -2.008***        -2.506** 
-                                (0.5385)         (0.8855) 
-swh_prev5days x post_mou         2.833***         3.257***
-                                (0.6409)         (0.9819) 
+swh_prev5days                  -1.431**         -1.823*   
+                               (0.4970)         (0.7486)  
+log_crossing_attempts           0.3617***        0.2751***
+                               (0.0689)         (0.0592)  
+swh_prev5days x post_mou        2.378***         2.559**  
+                               (0.5955)         (0.8128)  
 Fixed-Effects:              -------------       ----------
 month_year_fac                        Yes              Yes
 ________________________    _____________       __________
 S.E. type                New.-West (L=14) New.-West (L=14)
-Observations                        1,933            2,021
-Squared Cor.                      0.22401          0.15511
-Pseudo R2                         0.18988          0.14904
-BIC                              75,381.9         65,195.6
+Observations                        1,989            2,069
+Squared Cor.                      0.19494          0.16287
+Pseudo R2                         0.30293          0.29851
+BIC                              65,079.0         54,404.5
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
---- Slope decomposition, NW(14) (IRR = exp(coef)) ---
-  source  family        N       b_pre         SE          p     b_shift         SE          p      b_post         SE          p     IRR_pre  IRR_shift   IRR_post
-  UNITED  Poisson    1933      -2.008      0.539     0.0002      +2.833      0.641     0.0000      +0.824      0.348     0.0177       0.134     16.991      2.281
-  IOM     Poisson    2021      -2.506      0.885     0.0046      +3.257      0.982     0.0009      +0.751      0.425     0.0771       0.082     25.975      2.119
-
---- Elasticity check: free log(attempts), Wald test vs 1, NW(14) ---
-  source    b_exposure         SE     z_vs_1     p_vs_1
-  UNITED        +0.371      0.065      -9.67     0.0000
-  IOM           +0.257      0.058     -12.79     0.0000
-
-SWH slopes, exposure freed, NW(14):
+--- Slope decomposition, NW(14) ---
   source  family        N       b_pre         SE          p     b_shift         SE          p      b_post         SE          p
-  UNITED  Poisson    1933      -1.397      0.480     0.0036      +2.262      0.566     0.0001      +0.864      0.294     0.0033
-  IOM     Poisson    2021      -1.818      0.757     0.0164      +2.555      0.820     0.0018      +0.737      0.310     0.0173
+  UNITED  Poisson    1989      -1.431      0.497     0.0040      +2.378      0.596     0.0001      +0.947      0.324     0.0035
+  IOM     Poisson    2069      -1.823      0.749     0.0149      +2.559      0.813     0.0016      +0.736      0.310     0.0177
+
+--- Elasticity: log(crossing_attempts) vs 1, NW(14) ---
+  source    b_exposure         SE     z_vs_1     p_vs_1
+  UNITED        +0.362      0.069      -9.26     0.0000
+  IOM           +0.275      0.059     -12.24     0.0000
 
 --- Cluster(month_year) SEs ---
                               m_rate_u     m_rate
                            UNITED rate   IOM rate
 Dependent Var.:          n_dead_united n_dead_iom
                                                  
-swh_prev5days                -2.008***   -2.506**
-                             (0.5169)    (0.9444)
-swh_prev5days x post_mou      2.833***    3.257**
-                             (0.6188)    (1.033) 
+swh_prev5days               -1.431**   -1.823*   
+                            (0.4365)   (0.8206)  
+log_crossing_attempts        0.3617***  0.2751***
+                            (0.0732)   (0.0539)  
+swh_prev5days x post_mou     2.378***   2.559**  
+                            (0.5485)   (0.8803)  
 Fixed-Effects:           ------------- ----------
 month_year_fac                     Yes        Yes
 ________________________ _____________ __________
 S.E.: Clustered          by: month_y.. by: mont..
-Observations                     1,933      2,021
-Squared Cor.                   0.22401    0.15511
-Pseudo R2                      0.18988    0.14904
-BIC                           75,381.9   65,195.6
+Observations                     1,989      2,069
+Squared Cor.                   0.19494    0.16287
+Pseudo R2                      0.30293    0.29851
+BIC                           65,079.0   54,404.5
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 

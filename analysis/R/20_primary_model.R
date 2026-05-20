@@ -206,37 +206,31 @@ m_nb_u   <- fenegbin(n_dead_united ~ swh_prev5days + swh_prev5days:post_mou | mo
 m_pois_u <- fepois  (n_dead_united ~ swh_prev5days + swh_prev5days:post_mou | month_year_fac,
                      data = d, vcov = NW(14), panel.id = ~unit + date)
 
-# ── 2b. Rate model: Poisson with source-specific offset ──
-# attempts_src == 0 dropped (log undefined).
-d_rate_iom <- d %>%
-  filter(attempts_iom > 0) %>%
-  mutate(log_attempts_iom = log(attempts_iom))
-
-d_rate_u <- d %>%
-  filter(attempts_united > 0) %>%
-  mutate(log_attempts_united = log(attempts_united))
-
-m_rate   <- fepois(
-  n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
-               offset(log_attempts_iom) | month_year_fac,
-  data = d_rate_iom, vcov = NW(14), panel.id = ~unit + date)
+# ── 2b. Rate-like model: Poisson with crossing-volume control ──
+# Uses crossing_attempts from the panel (common denominator for both sources):
+#   crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing
+# Fixes two problems with the old spec:
+#   (i)  source-specific circularity: UNITED deaths were in the UNITED denom
+#   (ii) forced elasticity = 1 (offset): strongly rejected (b_exposure ~ 0.3)
+# log(crossing_attempts) enters as a free covariate; coefficient tested vs 1.
+d_rate <- d %>%
+  filter(crossing_attempts > 0) %>%
+  mutate(log_crossing_attempts = log(crossing_attempts))
 
 m_rate_u <- fepois(
   n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
-                  offset(log_attempts_united) | month_year_fac,
-  data = d_rate_u, vcov = NW(14), panel.id = ~unit + date)
+                  log_crossing_attempts | month_year_fac,
+  data = d_rate, vcov = NW(14), panel.id = ~unit + date)
 
-# ── 2c. log(attempts) as a free covariate (elasticity check) ──
-# elast_test() Wald-tests this coefficient against 1.
-m_elast   <- fepois(
+m_rate <- fepois(
   n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
-               log_attempts_iom | month_year_fac,
-  data = d_rate_iom, vcov = NW(14), panel.id = ~unit + date)
+               log_crossing_attempts | month_year_fac,
+  data = d_rate, vcov = NW(14), panel.id = ~unit + date)
 
-m_elast_u <- fepois(
-  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
-                  log_attempts_united | month_year_fac,
-  data = d_rate_u, vcov = NW(14), panel.id = ~unit + date)
+# ── 2c. Elasticity check: test log(crossing_attempts) coef against 1 ──
+# b_exposure << 1 => deaths do not scale proportionally with attempts;
+# the rate interpretation requires this assumption, which the data must
+# support (or the model is at best a volume-controlled count model).
 
 elast_test <- function(m, xname, label) {
   ct <- coeftable(m, vcov = NW(14))
@@ -253,8 +247,8 @@ elast_test <- function(m, xname, label) {
 }
 
 elast_tbl <- bind_rows(
-  elast_test(m_elast_u, "log_attempts_united", "UNITED"),
-  elast_test(m_elast,   "log_attempts_iom",    "IOM")
+  elast_test(m_rate_u, "log_crossing_attempts", "UNITED"),
+  elast_test(m_rate,   "log_crossing_attempts", "IOM")
 )
 
 print_elast <- function(tbl) {
@@ -268,10 +262,8 @@ print_elast <- function(tbl) {
 }
 
 cat(sprintf("  Count sample: N = %d days (all)\n", nrow(d)))
-cat(sprintf("  Rate sample IOM:    N = %d days (drops %d zero-attempt days)\n",
-            nrow(d_rate_iom), nrow(d) - nrow(d_rate_iom)))
-cat(sprintf("  Rate sample UNITED: N = %d days (drops %d zero-attempt days)\n",
-            nrow(d_rate_u), nrow(d) - nrow(d_rate_u)))
+cat(sprintf("  Rate sample (common): N = %d days (drops %d zero-crossing days)\n",
+            nrow(d_rate), nrow(d) - nrow(d_rate)))
 
 slope_summary <- function(m, label, family, estimand) {
   ct <- coeftable(m, vcov = NW(14))
@@ -314,14 +306,8 @@ count_slopes <- bind_rows(
 )
 
 rate_slopes <- bind_rows(
-  slope_summary(m_rate_u, "UNITED", "Poisson", "rate"),
-  slope_summary(m_rate,   "IOM",    "Poisson", "rate")
-)
-
-# SWH slopes from the free-exposure fit.
-elast_slopes <- bind_rows(
-  slope_summary(m_elast_u, "UNITED", "Poisson", "rate-free-exposure"),
-  slope_summary(m_elast,   "IOM",    "Poisson", "rate-free-exposure")
+  slope_summary(m_rate_u, "UNITED", "Poisson", "rate-free-exposure"),
+  slope_summary(m_rate,   "IOM",    "Poisson", "rate-free-exposure")
 )
 
 print_slope_summary <- function(tbl, show_irr = FALSE) {
@@ -354,18 +340,16 @@ print(etable(m_nb_u, m_pois_u, m_nb, m_pois,
 cat("\n  Count, slope decomposition, NW(14):\n")
 print_slope_summary(count_slopes, show_irr = FALSE)
 
-cat("\n  Rate model (source-specific offset), NW(14):\n")
+cat("\n  Rate-like model (common denom, free exposure), NW(14):\n")
 print(etable(m_rate_u, m_rate,
              vcov = NW(14), se.below = TRUE,
              headers = c("UNITED rate", "IOM rate")))
 
 cat("\n  Rate, slope decomposition, NW(14):\n")
-print_slope_summary(rate_slopes, show_irr = TRUE)
+print_slope_summary(rate_slopes, show_irr = FALSE)
 
-cat("\n  Elasticity: free log(attempts), Wald test vs 1, NW(14):\n")
+cat("\n  Elasticity: log(crossing_attempts) vs 1, NW(14):\n")
 print_elast(elast_tbl)
-cat("\n  SWH slopes, exposure freed, NW(14):\n")
-print_slope_summary(elast_slopes, show_irr = FALSE)
 
 cat("\n  All models, cluster(month_year):\n")
 print(etable(m_nb_u, m_pois_u, m_nb, m_pois, m_rate_u, m_rate,
@@ -443,9 +427,9 @@ cat(sprintf("Deaths IOM    (corridor, drowning + mixed):       %.0f\n",
             sum(d$n_dead_iom)))
 cat("\nModels (month_year FE; NW(14) SEs; UNITED primary, IOM comparison):\n")
 cat("  count : deaths ~ swh_prev5days + swh_prev5days:post_mou   (NegBin, Poisson)\n")
-cat("  rate  : count spec + offset(log(attempts_src))            (Poisson)\n")
-cat("  elast : count spec + log(attempts_src) free               (Poisson)\n")
-cat("  attempts_src = frx_persons + lcg_tcg_pushbacks + deaths_src\n")
+cat("  rate  : count spec + log(crossing_attempts) free          (Poisson)\n")
+cat("  crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing\n")
+cat("  (common denom; free covariate; tests proportionality assumption)\n")
 cat("Slope decomposition: b_pre, b_shift (=SWH:post_mou),\n")
 cat("  b_post = b_pre + b_shift (delta-method SE).\n")
 cat("N = estimation N after fixest drops all-zero FE cells.\n\n")
@@ -468,26 +452,23 @@ print(etable(m_nb_u, m_pois_u, m_nb, m_pois,
              headers = c("UNITED NB", "UNITED Poiss",
                          "IOM NB", "IOM Poiss")))
 
-cat("\n\n=== RATE MODEL (source-specific offset) ===\n")
+cat("\n\n=== RATE-LIKE MODEL (common denom, free exposure) ===\n")
+cat("crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing\n")
+cat("Common denominator for both sources. Free covariate (not forced offset).\n")
 cat(sprintf(
-  "IOM rate sample:    N=%d days (drops %d zero-attempt days).\n",
-  nrow(d_rate_iom), nrow(d) - nrow(d_rate_iom)))
-cat(sprintf(
-  "UNITED rate sample: N=%d days (drops %d zero-attempt days).\n\n",
-  nrow(d_rate_u), nrow(d) - nrow(d_rate_u)))
+  "Rate sample: N=%d days (drops %d zero-crossing days).\n\n",
+  nrow(d_rate), nrow(d) - nrow(d_rate)))
 
 cat("--- NW(14) SEs ---\n")
 print(etable(m_rate_u, m_rate,
              vcov = NW(14), se.below = TRUE,
              headers = c("UNITED rate", "IOM rate")))
 
-cat("\n--- Slope decomposition, NW(14) (IRR = exp(coef)) ---\n")
-print_slope_summary(rate_slopes, show_irr = TRUE)
+cat("\n--- Slope decomposition, NW(14) ---\n")
+print_slope_summary(rate_slopes, show_irr = FALSE)
 
-cat("\n--- Elasticity check: free log(attempts), Wald test vs 1, NW(14) ---\n")
+cat("\n--- Elasticity: log(crossing_attempts) vs 1, NW(14) ---\n")
 print_elast(elast_tbl)
-cat("\nSWH slopes, exposure freed, NW(14):\n")
-print_slope_summary(elast_slopes, show_irr = FALSE)
 
 cat("\n--- Cluster(month_year) SEs ---\n")
 print(etable(m_rate_u, m_rate,

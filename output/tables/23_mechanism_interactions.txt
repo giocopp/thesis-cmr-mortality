@@ -1,6 +1,8 @@
-23  MECHANISM: SWH x SAR moderator (share, persons)
-====================================================
-Sample: 2014-01-15 to 2023-05-31 (N = 3232 days, 15092 deaths)
+23  MECHANISM: SWH x SAR moderator (UNITED primary + IOM comparison)
+======================================================================
+Sample: 2014-01-15 to 2023-05-31 (N = 3232 days)
+  UNITED  deaths: 19862 over 489 death-days
+  IOM     deaths: 15092 over 603 death-days
 
 Two moderator variants, both weekly-summed (days t-7 to t-1), z-scored:
   (i)  share:    sar_events_pw / incidents_pw
@@ -15,19 +17,213 @@ PRIMARY spec: no crossing control.
 ROBUSTNESS spec: +log1p(lag-14d crossings). Post-treatment control
   (crossings are affected by both SWH and SAR); lag 14 (t-14 to t-8)
   is much more pre-treatment than lag 7: r(control, SWH) drops from
-  -0.50 at lag 7 to -0.25 at lag 14. The interaction at lag 14 matches
-  the no-control spec, confirming it is not a volume-selection artefact.
+  -0.50 at lag 7 to -0.25 at lag 14.
 
 WHY TWO MODERATORS:
   The share denominator includes LCG/TCG pullbacks and other Not-SAR
-  events. After 2018 those rise sharply (see desc_panel_event_type.png),
-  so the share can fall mechanically even if absolute SAR is unchanged.
-  The log-persons variant drops the denominator and measures absolute
-  SAR rescue capacity directly. Same-sign interactions across the two
+  events. After 2018 those rise sharply, so the share can fall
+  mechanically even if absolute SAR is unchanged. The log-persons
+  variant drops the denominator. Same-sign interactions across the two
   moderators rule out the share-mechanics critique.
 
-=== (i) Share moderator -- year + month-of-year FE, NW(14) ===
-                                      m_ym_base       m_ym_sar..
+=== [UNITED] (i) Share moderator -- year + month-of-year FE, NW(14) ===
+                                   fits$ym_base    fits$ym_sar..
+                                  Baseline (NB)        NB no ctl
+Dependent Var.:                   n_dead_united    n_dead_united
+                                                                
+swh_prev5days                           0.2080          0.2577  
+                                       (0.2634)        (0.2438) 
+sar_share_pw_z                                          1.121***
+                                                       (0.2813) 
+swh_prev5days x sar_share_pw_z                         -0.5892**
+                                                       (0.2123) 
+log1p_lc_lag14                                                  
+                                                                
+Fixed-Effects:                    -------------    -------------
+year_fac                                    Yes              Yes
+month_of_year                               Yes              Yes
+______________________________    _____________    _____________
+Family                                Neg. Bin.        Neg. Bin.
+S.E. type                      New.-West (L=14) New.-West (L=14)
+Observations                              3,232            3,232
+Squared Cor.                            0.01084          0.01234
+Pseudo R2                               0.00407          0.00548
+BIC                                     7,335.4          7,341.4
+Over-dispersion                         0.03267          0.03310
+
+                                fits$ym_sar...1  fits$ym_sar...2
+                                    Pois no ctl  NB + log(cross)
+Dependent Var.:                   n_dead_united    n_dead_united
+                                                                
+swh_prev5days                         -0.0686           0.2564  
+                                      (0.3014)         (0.2406) 
+sar_share_pw_z                         1.084***         1.142***
+                                      (0.2839)         (0.2775) 
+swh_prev5days x sar_share_pw_z        -0.6145**        -0.5971**
+                                      (0.1963)         (0.2075) 
+log1p_lc_lag14                                         -0.0564  
+                                                       (0.0579) 
+Fixed-Effects:                    -------------    -------------
+year_fac                                    Yes              Yes
+month_of_year                               Yes              Yes
+______________________________    _____________    _____________
+Family                                  Poisson        Neg. Bin.
+S.E. type                      New.-West (L=14) New.-West (L=14)
+Observations                              3,232            3,232
+Squared Cor.                            0.02487          0.01312
+Pseudo R2                               0.07580          0.00558
+BIC                                   103,151.3          7,348.7
+Over-dispersion                              --          0.03313
+
+                                 fits$ym_sar...3
+                               Pois + log(cross)
+Dependent Var.:                    n_dead_united
+                                                
+swh_prev5days                          -0.0725  
+                                       (0.3049) 
+sar_share_pw_z                          1.092***
+                                       (0.2812) 
+swh_prev5days x sar_share_pw_z         -0.6205**
+                                       (0.1947) 
+log1p_lc_lag14                         -0.0380  
+                                       (0.0668) 
+Fixed-Effects:                     -------------
+year_fac                                     Yes
+month_of_year                                Yes
+______________________________     _____________
+Family                                   Poisson
+S.E. type                       New.-West (L=14)
+Observations                               3,232
+Squared Cor.                             0.02513
+Pseudo R2                                0.07635
+BIC                                    103,098.1
+Over-dispersion                               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== [UNITED] (i) Share moderator -- month-year FE, NW(14) ===
+                                   fits$my_base    fits$my_sar..
+                                  Baseline (NB)        NB no ctl
+Dependent Var.:                   n_dead_united    n_dead_united
+                                                                
+swh_prev5days                           0.0263          0.2078  
+                                       (0.3758)        (0.3320) 
+sar_share_pw_z                                          1.503** 
+                                                       (0.5253) 
+swh_prev5days x sar_share_pw_z                         -1.466***
+                                                       (0.3787) 
+log1p_lc_lag14                                                  
+                                                                
+Fixed-Effects:                    -------------    -------------
+month_year_fac                              Yes              Yes
+______________________________    _____________    _____________
+Family                                Neg. Bin.        Neg. Bin.
+S.E. type                      New.-West (L=14) New.-West (L=14)
+Observations                              2,995            2,995
+Squared Cor.                            0.05314          0.05558
+Pseudo R2                               0.01958          0.02120
+BIC                                     7,798.1          7,802.6
+Over-dispersion                         0.04104          0.04163
+
+                                fits$my_sar...1  fits$my_sar...2
+                                    Pois no ctl  NB + log(cross)
+Dependent Var.:                   n_dead_united    n_dead_united
+                                                                
+swh_prev5days                        -0.0604            0.3108  
+                                     (0.2423)          (0.3520) 
+sar_share_pw_z                        1.136***          1.566** 
+                                     (0.3055)          (0.5295) 
+swh_prev5days x sar_share_pw_z       -0.8336***        -1.502***
+                                     (0.2092)          (0.3840) 
+log1p_lc_lag14                                         -0.1564  
+                                                       (0.0826) 
+Fixed-Effects:                    -------------    -------------
+month_year_fac                              Yes              Yes
+______________________________    _____________    _____________
+Family                                  Poisson        Neg. Bin.
+S.E. type                      New.-West (L=14) New.-West (L=14)
+Observations                              2,995            2,995
+Squared Cor.                            0.07493          0.04970
+Pseudo R2                               0.20341          0.02157
+BIC                                    87,180.3          7,808.0
+Over-dispersion                              --          0.04175
+
+                                 fits$my_sar...3
+                               Pois + log(cross)
+Dependent Var.:                    n_dead_united
+                                                
+swh_prev5days                         -0.1117   
+                                      (0.2593)  
+sar_share_pw_z                         1.186*** 
+                                      (0.3026)  
+swh_prev5days x sar_share_pw_z        -0.9046***
+                                      (0.2281)  
+log1p_lc_lag14                        -0.1419*  
+                                      (0.0682)  
+Fixed-Effects:                     -------------
+month_year_fac                               Yes
+______________________________     _____________
+Family                                   Poisson
+S.E. type                       New.-West (L=14)
+Observations                               2,995
+Squared Cor.                             0.07815
+Pseudo R2                                0.20981
+BIC                                     86,494.2
+Over-dispersion                               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== [UNITED] (ii) log1p(SAR persons) -- month-year FE, NW(14) ===
+                                          fits$my_per..  fits$my_per...1
+                                              NB no ctl      Pois no ctl
+Dependent Var.:                           n_dead_united    n_dead_united
+                                                                        
+swh_prev5days                                   0.3904          0.1237  
+                                               (0.4389)        (0.2759) 
+log1p_sar_persons_pw_z                          1.340*          1.102** 
+                                               (0.5409)        (0.4019) 
+swh_prev5days x log1p_sar_persons_pw_z         -1.177*         -0.6874**
+                                               (0.5341)        (0.2614) 
+log1p_lc_lag14                                                          
+                                                                        
+Fixed-Effects:                            -------------    -------------
+month_year_fac                                      Yes              Yes
+______________________________________    _____________    _____________
+Family                                        Neg. Bin.          Poisson
+S.E. type                              New.-West (L=14) New.-West (L=14)
+Observations                                      2,995            2,995
+Squared Cor.                                    0.04876          0.08131
+Pseudo R2                                       0.02051          0.20215
+BIC                                             7,807.5         87,316.1
+Over-dispersion                                 0.04137               --
+
+                                        fits$my_per...2   fits$my_per...3
+                                        NB + log(cross) Pois + log(cross)
+Dependent Var.:                           n_dead_united     n_dead_united
+                                                                         
+swh_prev5days                                   0.4516           0.0297  
+                                               (0.4351)         (0.2995) 
+log1p_sar_persons_pw_z                          1.362**          1.074** 
+                                               (0.5242)         (0.4003) 
+swh_prev5days x log1p_sar_persons_pw_z         -1.256*          -0.7252**
+                                               (0.5243)         (0.2681) 
+log1p_lc_lag14                                 -0.1632          -0.1174  
+                                               (0.0863)         (0.0723) 
+Fixed-Effects:                            -------------     -------------
+month_year_fac                                      Yes               Yes
+______________________________________    _____________     _____________
+Family                                        Neg. Bin.           Poisson
+S.E. type                              New.-West (L=14)  New.-West (L=14)
+Observations                                      2,995             2,995
+Squared Cor.                                    0.03423           0.07919
+Pseudo R2                                       0.02089           0.20645
+BIC                                             7,812.8          86,858.1
+Over-dispersion                                 0.04149                --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== [IOM] (i) Share moderator -- year + month-of-year FE, NW(14) ===
+                                     fits$ym_..     fits$ym_...1
                                   Baseline (NB)        NB no ctl
 Dependent Var.:                      n_dead_iom       n_dead_iom
                                                                 
@@ -51,7 +247,7 @@ Pseudo R2                               0.00775          0.00896
 BIC                                     7,615.2          7,622.2
 Over-dispersion                         0.04642          0.04688
 
-                                   m_ym_sar...1     m_ym_sar...2
+                                   fits$ym_...2     fits$ym_...3
                                     Pois no ctl  NB + log(cross)
 Dependent Var.:                      n_dead_iom       n_dead_iom
                                                                 
@@ -75,7 +271,7 @@ Pseudo R2                               0.08454          0.00898
 BIC                                    82,241.6          7,630.2
 Over-dispersion                              --          0.04688
 
-                                    m_ym_sar...3
+                                    fits$ym_...4
                                Pois + log(cross)
 Dependent Var.:                       n_dead_iom
                                                 
@@ -101,8 +297,8 @@ Over-dispersion                               --
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-=== (i) Share moderator -- month-year FE, NW(14) ===
-                                      m_my_base       m_my_sar..
+=== [IOM] (i) Share moderator -- month-year FE, NW(14) ===
+                                     fits$my_..     fits$my_...1
                                   Baseline (NB)        NB no ctl
 Dependent Var.:                      n_dead_iom       n_dead_iom
                                                                 
@@ -125,7 +321,7 @@ Pseudo R2                               0.03637          0.03732
 BIC                                     7,993.8          8,002.9
 Over-dispersion                         0.06238          0.06289
 
-                                   m_my_sar...1     m_my_sar...2
+                                   fits$my_...2     fits$my_...3
                                     Pois no ctl  NB + log(cross)
 Dependent Var.:                      n_dead_iom       n_dead_iom
                                                                 
@@ -148,7 +344,7 @@ Pseudo R2                               0.23698          0.03746
 BIC                                    67,825.3          8,009.8
 Over-dispersion                              --          0.06296
 
-                                    m_my_sar...3
+                                    fits$my_...4
                                Pois + log(cross)
 Dependent Var.:                       n_dead_iom
                                                 
@@ -173,8 +369,8 @@ Over-dispersion                               --
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-=== (ii) log1p(SAR persons) -- month-year FE, NW(14) ===
-                                             m_my_per..     m_my_per...1
+=== [IOM] (ii) log1p(SAR persons) -- month-year FE, NW(14) ===
+                                             fits$my_..     fits$my_...1
                                               NB no ctl      Pois no ctl
 Dependent Var.:                              n_dead_iom       n_dead_iom
                                                                         
@@ -197,7 +393,7 @@ Pseudo R2                                       0.03720          0.24208
 BIC                                             8,003.7         67,377.9
 Over-dispersion                                 0.06284               --
 
-                                           m_my_per...2      m_my_per...3
+                                           fits$my_...2      fits$my_...3
                                         NB + log(cross) Pois + log(cross)
 Dependent Var.:                              n_dead_iom        n_dead_iom
                                                                          
@@ -224,7 +420,23 @@ Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 === SUMMARY: SWH x SAR moderator coefficient (per 1-SD) ===
 
-  (i)  SAR share
+  [UNITED] (i)  SAR share
+    yr+mo FE, NegBin  (primary)       -0.589 (SE=0.212)  p=0.0055 *
+    yr+mo FE, Poisson (primary)       -0.614 (SE=0.196)  p=0.0017 *
+    yr+mo FE, NegBin  + log(cross)    -0.597 (SE=0.208)  p=0.0040 *
+    yr+mo FE, Poisson + log(cross)    -0.621 (SE=0.195)  p=0.0014 *
+    my FE,    NegBin  (primary)       -1.466 (SE=0.379)  p=0.0001 *
+    my FE,    Poisson (primary)       -0.834 (SE=0.209)  p=0.0001 *
+    my FE,    NegBin  + log(cross)    -1.502 (SE=0.384)  p=0.0001 *
+    my FE,    Poisson + log(cross)    -0.905 (SE=0.228)  p=0.0001 *
+
+  [UNITED] (ii) log1p(SAR persons) -- absolute level
+    my FE,    NegBin  (primary)       -1.177 (SE=0.534)  p=0.0276 *
+    my FE,    Poisson (primary)       -0.687 (SE=0.261)  p=0.0085 *
+    my FE,    NegBin  + log(cross)    -1.256 (SE=0.524)  p=0.0166 *
+    my FE,    Poisson + log(cross)    -0.725 (SE=0.268)  p=0.0068 *
+
+  [IOM] (i)  SAR share
     yr+mo FE, NegBin  (primary)       -0.451 (SE=0.238)  p=0.0586
     yr+mo FE, Poisson (primary)       -0.627 (SE=0.289)  p=0.0303 *
     yr+mo FE, NegBin  + log(cross)    -0.441 (SE=0.235)  p=0.0601
@@ -234,7 +446,7 @@ Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     my FE,    NegBin  + log(cross)    -0.906 (SE=0.412)  p=0.0281 *
     my FE,    Poisson + log(cross)    -1.040 (SE=0.323)  p=0.0013 *
 
-  (ii) log1p(SAR persons) -- absolute level
+  [IOM] (ii) log1p(SAR persons) -- absolute level
     my FE,    NegBin  (primary)       -0.853 (SE=0.492)  p=0.0827
     my FE,    Poisson (primary)       -1.019 (SE=0.320)  p=0.0015 *
     my FE,    NegBin  + log(cross)    -0.886 (SE=0.498)  p=0.0753

@@ -4,12 +4,17 @@
 # 20_primary_model.R: does the SWH:post_mou shift hold with boat-composition
 # controls (Deiana-style composition-mediation probe)?
 #
-# Sample: 20's source-specific rate sample (attempts_src > 0, lc_lag14 &
-# swh_prev5days non-NA) further restricted to frx_incidents > 0 (boat shares
-# defined only there); V1 here differs from 20 by sample restriction only.
+# Sample: 20's rate sample (crossing_attempts > 0, lc_lag14 & swh_prev5days
+# non-NA) further restricted to frx_incidents > 0 (boat shares defined only
+# there); V1 here differs from 20 by sample restriction only.
 #
-# Specs (Poisson, source-specific offset, month_year FE, NW(14), IOM+UNITED):
-#   V1: deaths ~ swh + swh:post_mou + offset
+# Specs (Poisson, log(crossing_attempts) as a free covariate, month_year FE,
+# NW(14), IOM+UNITED). The common denominator
+#   crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing
+# avoids the source-specific circularity of the old offset spec, and the
+# free covariate is honest about the rejected proportionality (see 20
+# elasticity test: b_log_attempts is far below 1):
+#   V1: deaths ~ swh + swh:post_mou + log(crossing_attempts)
 #   V2: V1 + frx_inflatable_share + frx_wooden_share
 #   V3: V2 + swh:frx_inflatable_share
 #
@@ -61,54 +66,40 @@ panel <- panel %>%
     month_year_fac = factor(month_year)
   )
 
-# 20's rate-model sample: attempts_source > 0 + lc_lag14/swh_prev5days non-NA
-d_rate_full_iom <- panel %>%
+# 20's rate-model sample: crossing_attempts > 0 + lc_lag14/swh_prev5days
+# non-NA. Common denominator -> one sample for both sources.
+d_rate_full <- panel %>%
   filter(!is.na(lc_lag14), !is.na(swh_prev5days),
-         attempts_iom > 0) %>%
-  mutate(log_attempts_iom = log(attempts_iom))
-
-d_rate_full_united <- panel %>%
-  filter(!is.na(lc_lag14), !is.na(swh_prev5days),
-         attempts_united > 0) %>%
-  mutate(log_attempts_united = log(attempts_united))
+         crossing_attempts > 0) %>%
+  mutate(log_crossing_attempts = log(crossing_attempts))
 
 # 27 boat-observable sub-sample: additionally require frx_incidents > 0
 # so that boat-composition shares are defined.
-d_rate_boat_iom <- d_rate_full_iom %>%
+d_rate_boat <- d_rate_full %>%
   filter(frx_incidents > 0)
 
-d_rate_boat_united <- d_rate_full_united %>%
-  filter(frx_incidents > 0)
-
-cat(sprintf("  Rate sample IOM (20 baseline):       N = %d days\n",
-            nrow(d_rate_full_iom)))
-cat(sprintf("  Rate sample UNITED (20 baseline):    N = %d days\n",
-            nrow(d_rate_full_united)))
-cat(sprintf("  Boat-observable IOM sub-sample:      N = %d days (%.1f%% of full)\n",
-            nrow(d_rate_boat_iom),
-            100 * nrow(d_rate_boat_iom) / nrow(d_rate_full_iom)))
-cat(sprintf("  Boat-observable UNITED sub-sample:   N = %d days (%.1f%% of full)\n",
-            nrow(d_rate_boat_united),
-            100 * nrow(d_rate_boat_united) / nrow(d_rate_full_united)))
-cat(sprintf("  Days dropped, IOM (no Frontex events):    %d\n",
-            nrow(d_rate_full_iom) - nrow(d_rate_boat_iom)))
-cat(sprintf("  Days dropped, UNITED (no Frontex events): %d\n",
-            nrow(d_rate_full_united) - nrow(d_rate_boat_united)))
+cat(sprintf("  Rate sample (20 baseline):     N = %d days\n",
+            nrow(d_rate_full)))
+cat(sprintf("  Boat-observable sub-sample:    N = %d days (%.1f%% of full)\n",
+            nrow(d_rate_boat),
+            100 * nrow(d_rate_boat) / nrow(d_rate_full)))
+cat(sprintf("  Days dropped (no Frontex events): %d\n",
+            nrow(d_rate_full) - nrow(d_rate_boat)))
 
 cat("\n  Boat composition summary (IOM boat-observable sample):\n")
 cat(sprintf("    Inflatable share: mean = %.3f  sd = %.3f  range = [%.2f, %.2f]\n",
-            mean(d_rate_boat_iom$frx_inflatable_share),
-            sd(d_rate_boat_iom$frx_inflatable_share),
-            min(d_rate_boat_iom$frx_inflatable_share),
-            max(d_rate_boat_iom$frx_inflatable_share)))
+            mean(d_rate_boat$frx_inflatable_share),
+            sd(d_rate_boat$frx_inflatable_share),
+            min(d_rate_boat$frx_inflatable_share),
+            max(d_rate_boat$frx_inflatable_share)))
 cat(sprintf("    Wooden share:     mean = %.3f  sd = %.3f  range = [%.2f, %.2f]\n",
-            mean(d_rate_boat_iom$frx_wooden_share),
-            sd(d_rate_boat_iom$frx_wooden_share),
-            min(d_rate_boat_iom$frx_wooden_share),
-            max(d_rate_boat_iom$frx_wooden_share)))
+            mean(d_rate_boat$frx_wooden_share),
+            sd(d_rate_boat$frx_wooden_share),
+            min(d_rate_boat$frx_wooden_share),
+            max(d_rate_boat$frx_wooden_share)))
 
 cat("\n  Pre/post-MoU mean inflatable share (descriptive, matches Deiana Fig 9):\n")
-print(d_rate_boat_iom %>%
+print(d_rate_boat %>%
         mutate(period = ifelse(date >= MOU_DATE, "Post-MoU", "Pre-MoU")) %>%
         group_by(period) %>%
         summarise(n_days = n(),
@@ -122,23 +113,23 @@ cat("\n--- 2. IOM rate model: V1, V2, V3 ---\n")
 # V1: baseline rate model (matches 20 m_rate spec)
 v1_iom <- fepois(
   n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
-               offset(log_attempts_iom) | month_year_fac,
-  data = d_rate_boat_iom, vcov = NW(14), panel.id = ~unit + date)
+               log_crossing_attempts | month_year_fac,
+  data = d_rate_boat, vcov = NW(14), panel.id = ~unit + date)
 
 # V2: + boat composition (additive)
 v2_iom <- fepois(
   n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
                frx_inflatable_share + frx_wooden_share +
-               offset(log_attempts_iom) | month_year_fac,
-  data = d_rate_boat_iom, vcov = NW(14), panel.id = ~unit + date)
+               log_crossing_attempts | month_year_fac,
+  data = d_rate_boat, vcov = NW(14), panel.id = ~unit + date)
 
 # V3: + boat × SWH interaction (Deiana-style mediator probe)
 v3_iom <- fepois(
   n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
                frx_inflatable_share + frx_wooden_share +
                swh_prev5days:frx_inflatable_share +
-               offset(log_attempts_iom) | month_year_fac,
-  data = d_rate_boat_iom, vcov = NW(14), panel.id = ~unit + date)
+               log_crossing_attempts | month_year_fac,
+  data = d_rate_boat, vcov = NW(14), panel.id = ~unit + date)
 
 cat("\n  IOM, NW(14):\n")
 print(etable(v1_iom, v2_iom, v3_iom,
@@ -150,21 +141,21 @@ cat("\n--- 3. UNITED rate model: V1, V2, V3 ---\n")
 
 v1_united <- fepois(
   n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
-                  offset(log_attempts_united) | month_year_fac,
-  data = d_rate_boat_united, vcov = NW(14), panel.id = ~unit + date)
+                  log_crossing_attempts | month_year_fac,
+  data = d_rate_boat, vcov = NW(14), panel.id = ~unit + date)
 
 v2_united <- fepois(
   n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
                   frx_inflatable_share + frx_wooden_share +
-                  offset(log_attempts_united) | month_year_fac,
-  data = d_rate_boat_united, vcov = NW(14), panel.id = ~unit + date)
+                  log_crossing_attempts | month_year_fac,
+  data = d_rate_boat, vcov = NW(14), panel.id = ~unit + date)
 
 v3_united <- fepois(
   n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
                   frx_inflatable_share + frx_wooden_share +
                   swh_prev5days:frx_inflatable_share +
-                  offset(log_attempts_united) | month_year_fac,
-  data = d_rate_boat_united, vcov = NW(14), panel.id = ~unit + date)
+                  log_crossing_attempts | month_year_fac,
+  data = d_rate_boat, vcov = NW(14), panel.id = ~unit + date)
 
 cat("\n  UNITED, NW(14):\n")
 print(etable(v1_united, v2_united, v3_united,
@@ -247,7 +238,7 @@ p <- ggplot(plot_df, aes(coef, spec_f, colour = source)) +
   scale_colour_manual(values = c("IOM" = "#2166AC", "UNITED" = "#B2182B")) +
   labs(
     title    = "Recorded-death rate: SWH x post_MoU across boat-control specifications",
-    subtitle = "Poisson with source-specific offsets. Month-year FE. NW(14) SEs.",
+    subtitle = "Poisson with log(crossing_attempts) free covariate. Month-year FE. NW(14) SEs.",
     x        = "SWH x post_MoU coefficient (per 1m SWH, log rate)",
     y        = NULL,
     colour   = "Source"
@@ -272,30 +263,30 @@ cat("Extension of m_rate / m_rate_u in 20_primary_model.R\n")
 cat("=====================================================\n\n")
 
 cat(sprintf("Sample (boat-observable):  %s to %s\n",
-            min(d_rate_boat_iom$date), max(d_rate_boat_iom$date)))
-cat(sprintf("                           IOM N = %d days\n", nrow(d_rate_boat_iom)))
-cat(sprintf("                           UNITED N = %d days\n", nrow(d_rate_boat_united)))
-cat(sprintf("                           (vs. 20 rate sample: IOM N = %d, UNITED N = %d)\n",
-            nrow(d_rate_full_iom), nrow(d_rate_full_united)))
+            min(d_rate_boat$date), max(d_rate_boat$date)))
+cat(sprintf("                           N = %d days (single sample, both sources)\n",
+            nrow(d_rate_boat)))
+cat(sprintf("                           (vs. 20 rate sample: N = %d days)\n",
+            nrow(d_rate_full)))
 cat("                           Sample is restricted to frx_incidents > 0 so boat shares are defined.\n")
-cat("Outcome: recorded deaths per source-specific constructed crossing attempt\n")
+cat("Outcome: recorded deaths (IOM or UNITED) on a common-denominator rate.\n")
 cat("Standard errors: Newey-West (lag = 14)\n")
-cat("IOM offset:    log(frx_persons + lcg_tcg_pushbacks + n_dead_iom)\n")
-cat("UNITED offset: log(frx_persons + lcg_tcg_pushbacks + n_dead_united)\n")
+cat("Common denom: crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing\n")
+cat("log(crossing_attempts) enters as a free covariate (not a forced offset).\n")
 cat("N = estimation N after fixest drops all-zero FE cells.\n\n")
 
 cat("Three specifications:\n")
 cat("  V1: Baseline (matches 20 m_rate spec, on the boat-observable sample)\n")
-cat("       deaths ~ swh + swh:post_mou + offset | month_year_fac\n")
+cat("       deaths ~ swh + swh:post_mou + log(crossing_attempts) | month_year_fac\n")
 cat("  V2: + boat composition (additive)\n")
 cat("       deaths ~ swh + swh:post_mou + inflatable_share + wooden_share\n")
-cat("              + offset | month_year_fac\n")
+cat("              + log(crossing_attempts) | month_year_fac\n")
 cat("  V3: + boat x SWH interaction (Deiana-style mediator probe)\n")
 cat("       deaths ~ swh + swh:post_mou + swh:inflatable_share +\n")
-cat("              + inflatable_share + wooden_share + offset | month_year_fac\n\n")
+cat("              + inflatable_share + wooden_share + log(crossing_attempts) | month_year_fac\n\n")
 
 cat("=== Boat composition: pre/post-MoU descriptive ===\n")
-print(d_rate_boat_iom %>%
+print(d_rate_boat %>%
         mutate(period = ifelse(date >= MOU_DATE, "Post-MoU", "Pre-MoU")) %>%
         group_by(period) %>%
         summarise(n_days = n(),
