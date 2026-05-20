@@ -1,0 +1,190 @@
+26  PUSH-FACTOR DECOMPOSITION (libya_conflict x SWH x post_MoU)
+============================================================
+
+Main sample (d):        N = 3424 days (2014-01-15 to 2023-05-31)
+SAR-restricted (d_sar): N = 3232
+UNITED deaths: 20368 over 503 death-days
+IOM    deaths: 15285 over 616 death-days
+libya_conflict_lag1w: mean=15.31 sd=14.55 median=13 range=[0, 96]
+cor(ACLED_z, swh_prev5days)     = +0.022
+cor(ACLED_z, crossing_attempts) = -0.044
+cor(ACLED_z, post_mou)          = -0.319
+
+Identification logic:
+  L2 outcome is crossing_attempts (= frx_persons + lcg_tcg_pushbacks +
+  n_dead_missing). UNITED deaths are NOT in the denominator, so the
+  L1-L2 decomposition with UNITED on the death side is clean of
+  source-specific circularity.
+
+=== LAYER 1: deaths ~ SWH + SWH:post_mou + ACLED_z
+            + ACLED_z:post_mou + SWH:ACLED_z
+            + SWH:post_mou:ACLED_z | month_year_fac ===
+
+                                                l1$united_nb     l1$united_po        l1$iom_nb        l1$iom_po
+                                                   UNITED NB      UNITED Pois           IOM NB         IOM Pois
+Dependent Var.:                                n_dead_united    n_dead_united       n_dead_iom       n_dead_iom
+                                                                                                               
+swh_prev5days                                      -2.467***        -1.140**         -1.620**         -1.584** 
+                                                   (0.5100)         (0.4290)         (0.5179)         (0.5298) 
+libya_conflict_z                                   -0.2708           0.3566           0.8688           0.8480  
+                                                   (0.7585)         (0.4743)         (0.7858)         (0.6802) 
+swh_prev5days x post_mou                            4.290***         1.914***         2.646***         2.100***
+                                                   (0.7774)         (0.5307)         (0.7460)         (0.6345) 
+post_mou x libya_conflict_z                        -2.216           -1.124           -2.496*          -1.659*  
+                                                   (1.145)          (0.5973)         (0.9702)         (0.7786) 
+swh_prev5days x libya_conflict_z                   -0.9493          -0.7382          -1.210           -1.412   
+                                                   (0.6221)         (0.5554)         (0.7285)         (0.8422) 
+swh_prev5days x post_mou x libya_conflict_z         2.313*           1.314*           2.225*           1.781*  
+                                                   (0.9598)         (0.6370)         (0.9682)         (0.9028) 
+Fixed-Effects:                                 -------------    -------------       ----------       ----------
+month_year_fac                                           Yes              Yes              Yes              Yes
+________________________________________       _____________    _____________       __________       __________
+Family                                             Neg. Bin.          Poisson        Neg. Bin.          Poisson
+S.E. type                                   New.-West (L=14) New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                                           3,197            3,197            3,286            3,286
+Squared Cor.                                         0.05218          0.08622          0.04869          0.10618
+Pseudo R2                                            0.02320          0.20579          0.03991          0.25410
+BIC                                                  8,070.2         90,281.4          8,263.2         68,418.8
+Over-dispersion                                      0.04056               --          0.06036               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+--- L1 key coefficients ---
+  source       family          coef          SE           p  term
+  UNITED       NegBin        -2.467       0.510      0.0000  swh_prev5days *
+  UNITED       NegBin        +4.290       0.777      0.0000  swh_prev5days:post_mou *
+  UNITED       NegBin        -0.271       0.759      0.7211  libya_conflict_z
+  UNITED       NegBin        -2.216       1.145      0.0529  libya_conflict_z:post_mou
+  UNITED       NegBin        -0.949       0.622      0.1270  swh_prev5days:libya_conflict_z
+  UNITED       NegBin        +2.313       0.960      0.0160  swh_prev5days:post_mou:libya_conflict_z *
+  UNITED       Poisson       -1.140       0.429      0.0079  swh_prev5days *
+  UNITED       Poisson       +1.914       0.531      0.0003  swh_prev5days:post_mou *
+  UNITED       Poisson       +0.357       0.474      0.4521  libya_conflict_z
+  UNITED       Poisson       -1.124       0.597      0.0599  libya_conflict_z:post_mou
+  UNITED       Poisson       -0.738       0.555      0.1838  swh_prev5days:libya_conflict_z
+  UNITED       Poisson       +1.314       0.637      0.0391  swh_prev5days:post_mou:libya_conflict_z *
+  IOM          NegBin        -1.620       0.518      0.0018  swh_prev5days *
+  IOM          NegBin        +2.646       0.746      0.0004  swh_prev5days:post_mou *
+  IOM          NegBin        +0.869       0.786      0.2689  libya_conflict_z
+  IOM          NegBin        -2.496       0.970      0.0101  libya_conflict_z:post_mou *
+  IOM          NegBin        -1.210       0.729      0.0968  swh_prev5days:libya_conflict_z
+  IOM          NegBin        +2.225       0.968      0.0216  swh_prev5days:post_mou:libya_conflict_z *
+  IOM          Poisson       -1.584       0.530      0.0028  swh_prev5days *
+  IOM          Poisson       +2.100       0.634      0.0009  swh_prev5days:post_mou *
+  IOM          Poisson       +0.848       0.680      0.2125  libya_conflict_z
+  IOM          Poisson       -1.659       0.779      0.0331  libya_conflict_z:post_mou *
+  IOM          Poisson       -1.412       0.842      0.0937  swh_prev5days:libya_conflict_z
+  IOM          Poisson       +1.781       0.903      0.0486  swh_prev5days:post_mou:libya_conflict_z *
+
+
+=== LAYER 1b: ACLED triple + SAR-share triple (SAR-restricted N=3232) ===
+
+                                               l1b$united_nb    l1b$united_po       l1b$iom_nb       l1b$iom_po
+                                                   UNITED NB      UNITED Pois           IOM NB         IOM Pois
+Dependent Var.:                                n_dead_united    n_dead_united       n_dead_iom       n_dead_iom
+                                                                                                               
+swh_prev5days                                      -2.547             0.1634           0.7086           0.0967 
+                                                   (1.360)           (0.7330)         (1.136)          (0.9906)
+libya_conflict_z                                   -0.1940            0.3991           0.6534           0.8019 
+                                                   (0.7199)          (0.4543)         (0.7480)         (0.6451)
+sar_share_pw_z                                      0.8921            1.919*           3.244**          2.058* 
+                                                   (1.580)           (0.8321)         (1.217)          (0.9835)
+swh_prev5days x post_mou                            4.700**           0.9739           0.9719           0.8144 
+                                                   (1.516)           (0.8189)         (1.267)          (1.057) 
+post_mou x libya_conflict_z                        -2.472*           -1.277*          -2.637**         -1.756* 
+                                                   (1.069)           (0.5895)         (0.9587)         (0.7644)
+swh_prev5days x libya_conflict_z                   -0.8391           -0.7550          -1.030           -1.373  
+                                                   (0.5789)          (0.5502)         (0.5906)         (0.8153)
+post_mou x sar_share_pw_z                          -0.8999           -2.322*          -3.407*          -2.460* 
+                                                   (1.766)           (0.9292)         (1.374)          (1.098) 
+swh_prev5days x sar_share_pw_z                      0.2853           -1.091           -1.770           -1.444  
+                                                   (1.157)           (0.5703)         (1.011)          (0.7585)
+swh_prev5days x post_mou x libya_conflict_z         2.857***          1.575*           2.612**          2.020* 
+                                                   (0.8007)          (0.6294)         (0.8538)         (0.9023)
+swh_prev5days x post_mou x sar_share_pw_z          -0.5815            1.243*           1.876            1.626* 
+                                                   (1.383)           (0.6337)         (1.122)          (0.8221)
+Fixed-Effects:                                 -------------    -------------       ----------       ----------
+month_year_fac                                           Yes              Yes              Yes              Yes
+________________________________________       _____________    _____________       __________       __________
+Family                                             Neg. Bin.          Poisson        Neg. Bin.          Poisson
+S.E. type                                   New.-West (L=14) New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                                           2,995            2,995            3,038            3,038
+Squared Cor.                                         0.04063          0.09417          0.03481          0.10855
+Pseudo R2                                            0.02469          0.22163          0.04074          0.25837
+BIC                                                  7,833.9         85,261.9          8,033.6         66,004.3
+Over-dispersion                                      0.04284               --          0.06453               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+--- L1 -> L1b: ACLED triple coefficient across specs ---
+  source       family   spec            ACLED triple          SE           p  N
+  UNITED       NegBin   base (full)         +2.313       0.960      0.0160 *  3197
+  UNITED       NegBin   base (SAR smp)      +2.750       0.803      0.0006 *  2995
+  UNITED       NegBin   +SAR triple         +2.857       0.801      0.0004 *  2995
+  UNITED       Poisson  base (full)         +1.314       0.637      0.0391 *  3197
+  UNITED       Poisson  base (SAR smp)      +1.495       0.677      0.0271 *  2995
+  UNITED       Poisson  +SAR triple         +1.575       0.629      0.0123 *  2995
+  IOM          NegBin   base (full)         +2.225       0.968      0.0216 *  3286
+  IOM          NegBin   base (SAR smp)      +2.555       0.916      0.0053 *  3038
+  IOM          NegBin   +SAR triple         +2.612       0.854      0.0022 *  3038
+  IOM          Poisson  base (full)         +1.781       0.903      0.0486 *  3286
+  IOM          Poisson  base (SAR smp)      +2.018       0.932      0.0303 *  3038
+  IOM          Poisson  +SAR triple         +2.020       0.902      0.0252 *  3038
+
+--- Layer 1b: SAR-share triple (own channel diagnostic) ---
+  source       family          coef          SE           p
+  UNITED       NegBin        -0.581       1.383      0.6742
+  UNITED       Poisson       +1.243       0.634      0.0499 *
+  IOM          NegBin        +1.876       1.122      0.0945
+  IOM          Poisson       +1.626       0.822      0.0480 *
+
+
+=== LAYER 2: crossing_attempts ~ SWH + SWH:post_mou + ACLED_z
+            + ACLED_z:post_mou | month_year_fac ===
+
+                                     l2$ca_nb           l2$ca_po
+                             CrossAttempts NB CrossAttempts Pois
+Dependent Var.:             crossing_attempts  crossing_attempts
+                                                                
+swh_prev5days                         0.2222             0.1923 
+                                     (0.2364)           (0.1678)
+libya_conflict_z                      0.0208             0.0463 
+                                     (0.1550)           (0.1230)
+swh_prev5days x post_mou             -0.4232            -0.5168*
+                                     (0.2846)           (0.2262)
+post_mou x libya_conflict_z          -0.1568             0.0766 
+                                     (0.2010)           (0.1724)
+Fixed-Effects:              -----------------  -----------------
+month_year_fac                            Yes                Yes
+___________________________ _________________  _________________
+Family                              Neg. Bin.            Poisson
+S.E. type                   Newey-West (L=14)  Newey-West (L=14)
+Observations                            3,424              3,424
+Squared Cor.                          0.14344            0.14525
+Pseudo R2                             0.01158            0.24043
+BIC                                  35,363.9        2,016,460.8
+Over-dispersion                       0.15985                 --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+--- L2 key coefficients ---
+  outcome              family          coef          SE           p  term
+  crossing_attempts    NegBin        +0.222       0.236      0.3474  swh_prev5days
+  crossing_attempts    NegBin        -0.423       0.285      0.1371  swh_prev5days:post_mou
+  crossing_attempts    NegBin        +0.021       0.155      0.8931  libya_conflict_z
+  crossing_attempts    NegBin        -0.157       0.201      0.4354  libya_conflict_z:post_mou
+  crossing_attempts    Poisson       +0.192       0.168      0.2518  swh_prev5days
+  crossing_attempts    Poisson       -0.517       0.226      0.0223  swh_prev5days:post_mou *
+  crossing_attempts    Poisson       +0.046       0.123      0.7069  libya_conflict_z
+  crossing_attempts    Poisson       +0.077       0.172      0.6568  libya_conflict_z:post_mou
+
+
+=== LAYER 3: stratified by libya_conflict_lag1w median = 13 ===
+  Low:  N=1807  UNITED=8586  IOM=6706
+  High: N=1617  UNITED=11782  IOM=8579
+
+  source  stratum        N       b_pre         SE          p     b_shift         SE          p      b_post         SE          p
+  UNITED  low push    1625      -0.916      2.541     0.7185      +1.168      2.569     0.6494      +0.252      0.383     0.5106
+  UNITED  high push   1326      -2.589      0.732     0.0004      +6.510      1.394     0.0000      +3.921      1.182     0.0009
+  IOM     low push    1667      +0.682      2.015     0.7349      -0.843      2.065     0.6830      -0.161      0.454     0.7231
+  IOM     high push   1429      -2.259      1.140     0.0475      +4.981      1.607     0.0019      +2.722      1.129     0.0159

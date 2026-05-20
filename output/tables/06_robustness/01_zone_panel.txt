@@ -1,0 +1,38 @@
+051  ZONE-LEVEL REDUCED-FORM: AFR vs EU SAR
+Aligned with 20_primary_model.R
+===========================================
+Spec: n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou |
+      month_year_fac + sar_bloc
+NegBin (fenegbin) AND Poisson QMLE (fepois), NW(14) SEs.
+
+Sample: 2014-01-15 to 2023-05-31 (N = 3424 days).
+Filter: !is.na(lc_lag14) & !is.na(swh_prev5days) (matches 05d exactly).
+Outcome: n_dead_iom (zone-level deaths summed over 2 blocs,
+         renamed from the zone panel's n_dead_missing).
+
+=== 2-bloc (AFR vs EU) ===
+                                m_bloc_nb       m_bloc_p..
+                                   NegBin          Poisson
+Dependent Var.:                n_dead_iom       n_dead_iom
+                                                          
+swh_prev5days                   -5.309***        -2.717** 
+                                (0.8081)         (0.8917) 
+swh_prev5days x post_mou         5.817***         3.163***
+                                (0.8712)         (0.9470) 
+Fixed-Effects:                 ----------       ----------
+month_year_fac                        Yes              Yes
+sar_bloc                              Yes              Yes
+________________________       __________       __________
+Family                          Neg. Bin.          Poisson
+S.E. type                New.-West (L=14) New.-West (L=14)
+Observations                        6,332            6,332
+Squared Cor.                      8.74e-5          0.03331
+Pseudo R2                         0.04995          0.23678
+BIC                               7,414.8         80,311.5
+Over-dispersion                   0.02358               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== Summary (b3 = swh_prev5days:post_mou) ===
+  2-bloc (AFR/EU) - NegBin        b3 = +5.817 (SE=0.871)  IRR = 336.109  p = 0.0000 *
+  2-bloc (AFR/EU) - Poisson       b3 = +3.163 (SE=0.947)  IRR = 23.647  p = 0.0008 *

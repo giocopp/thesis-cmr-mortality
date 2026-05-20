@@ -1,0 +1,88 @@
+25  FRONTEX EVENT-COUNT SWH GRADIENT (SAR vs Not-SAR)
+======================================================
+Sample: 2014-01-01 to 2023-05-31 (N = 3438 days)
+SAR events:     6200 (active on 1349 days)
+Not-SAR events: 6553 (active on 1383 days)
+
+Specifications:
+  frx_n_sar    ~ swh_prev5days + swh_prev5days:post_mou | month_year
+  frx_n_notsar ~ swh_prev5days + swh_prev5days:post_mou | month_year
+  Daily aggregation, month-year FE, NW(14) SEs.
+  Mirrors 20_primary_model.R applied to deaths.
+  Not-SAR series serves as placebo channel.
+
+=== SWH x post_MoU on event counts ===
+--- NW(14) SEs ---
+                                 m_nb_sar        m_pois_..         m_nb_not       m_pois_not
+                                   SAR NB        SAR Poiss        NotSAR NB     NotSAR Poiss
+Dependent Var.:                 frx_n_sar        frx_n_sar     frx_n_notsar     frx_n_notsar
+                                                                                            
+swh_prev5days                     0.1393          0.1446           -0.4137*         -0.2690 
+                                 (0.1816)        (0.1575)          (0.1967)         (0.1898)
+swh_prev5days x post_mou         -0.5223*        -0.6620**          0.2069           0.2522 
+                                 (0.2396)        (0.2216)          (0.2470)         (0.2481)
+Fixed-Effects:                  ---------        ---------     ------------     ------------
+month_year_fac                        Yes              Yes              Yes              Yes
+________________________        _________        _________     ____________     ____________
+Family                          Neg. Bin.          Poisson        Neg. Bin.          Poisson
+S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                        3,407            3,407            3,438            3,438
+Squared Cor.                      0.18577          0.18626          0.28969          0.29272
+Pseudo R2                         0.09019          0.26286          0.11974          0.36161
+BIC                              10,844.7         16,821.8         10,706.7         15,900.8
+Over-dispersion                   0.42284               --          0.52055               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+--- Cluster(month_year) SEs ---
+                          m_nb_sar m_pois_sar     m_nb_not   m_pois_not
+                            SAR NB  SAR Poiss    NotSAR NB NotSAR Poiss
+Dependent Var.:          frx_n_sar  frx_n_sar frx_n_notsar frx_n_notsar
+                                                                       
+swh_prev5days              0.1393   0.1446        -0.4137*     -0.2690 
+                          (0.1770) (0.1337)       (0.1999)     (0.1801)
+swh_prev5days x post_mou  -0.5223* -0.6620***      0.2069       0.2522 
+                          (0.2330) (0.1905)       (0.2464)     (0.2313)
+Fixed-Effects:           --------- ---------- ------------ ------------
+month_year_fac                 Yes        Yes          Yes          Yes
+________________________ _________ __________ ____________ ____________
+Family                   Neg. Bin.    Poisson    Neg. Bin.      Poisson
+S.E.: Clustered          by: mon.. by: mont.. by: month_.. by: month_..
+Observations                 3,407      3,407        3,438        3,438
+Squared Cor.               0.18577    0.18626      0.28969      0.29272
+Pseudo R2                  0.09019    0.26286      0.11974      0.36161
+BIC                       10,844.7   16,821.8     10,706.7     15,900.8
+Over-dispersion            0.42284         --      0.52055           --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== Stacked: SWH x SAR-flag interaction ===
+                            m_nb_s..        m_pois_..
+                              NegBin          Poisson
+Dependent Var.:             n_events         n_events
+                                                     
+swh_prev5days               -0.3228*        -0.3528* 
+                            (0.1442)        (0.1521) 
+sar                         -0.2593         -0.4524* 
+                            (0.2489)        (0.1887) 
+swh_prev5days x sar          0.3692          0.4810**
+                            (0.2040)        (0.1794) 
+Fixed-Effects:              --------        ---------
+month_year_fac                   Yes              Yes
+___________________         ________        _________
+Family                     Neg. Bin.          Poisson
+S.E. type           New.-West (L=14) New.-West (L=14)
+Observations                   6,876            6,876
+Squared Cor.                 0.12176          0.12737
+Pseudo R2                    0.04481          0.16701
+BIC                         22,069.6         38,614.0
+Over-dispersion              0.30503               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== SUMMARY: SWH x post_MoU coefficient (b3) ===
+
+  SAR events, NegBin         b3=-0.522  SE_NW=0.240  p_NW=0.0292  SE_cl=0.233  p_cl=0.0250
+  SAR events, Poisson        b3=-0.662  SE_NW=0.222  p_NW=0.0028  SE_cl=0.191  p_cl=0.0005
+  Not-SAR events, NegBin     b3=+0.207  SE_NW=0.247  p_NW=0.4023  SE_cl=0.246  p_cl=0.4011
+  Not-SAR events, Poisson    b3=+0.252  SE_NW=0.248  p_NW=0.3094  SE_cl=0.231  p_cl=0.2756

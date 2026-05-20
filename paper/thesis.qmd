@@ -95,29 +95,31 @@ Word Count: @WORDCOUNT_BODY@
 
      3. Approach
         Daily corridor panel 2014-2023; ERA5 wave height; IOM + UNITED death
-        series triangulated; Frontex SAR records. Main risk-oriented spec:
-        Poisson rate model with source-specific constructed-attempt offsets,
-        month-year FE, and NW(14) SEs. Count models are supporting evidence.
-        Report pre-period SWH slope, swh:post_mou shift, and implied post-period
-        slope. Mechanism: replace the binary policy event with continuous SAR
-        capacity (rescued persons).
+        series triangulated; Frontex SAR records. Main spec: daily recorded
+        death counts with month-year FE and NW(14) SEs, using UNITED as the
+        primary source and IOM as comparison. Rate-like models include the
+        constructed crossing-attempt measure as a free log covariate, not a
+        forced offset. Report pre-period SWH slope, swh:post_mou shift, and
+        implied post-period slope. Mechanism: replace the binary policy event
+        with continuous SAR capacity (share and rescued persons).
 
-     4. Results with magnitudes (lift verbatim from 20_primary_model.txt)
-        Main rate-model slopes: report b_pre, b_shift, and b_post separately
-        for IOM and UNITED. Do not summarize only the interaction, because the
-        implied post-MoU slope is not always significant for IOM.
-        Mechanism: ~ -0.9 per 1-SD of SAR capacity.
+     4. Results with magnitudes (lift verbatim from output/tables/05_analysis/01_primary_model.txt)
+        Main count-model slopes: report b_pre, b_shift, and b_post separately
+        for UNITED and IOM. Do not summarize only the interaction, because the
+        implied post-MoU slope is clearly positive for UNITED but imprecise
+        for IOM count models. Report rate-like sensitivity separately.
+        Mechanism: negative SWH x SAR-capacity interactions.
 
      5. Contribution
         Relative to @rodriguezsanchez2023 (null volume at monthly),
         @deiana2024 (mechanism on behaviour not mortality), @tafani2025
         (route diversion), and @hoffmannpham2024 (smuggler boat choice),
-        this thesis takes the SWH-recorded mortality rate SLOPE as the estimand —
+        this thesis takes the SWH-recorded mortality SLOPE as the estimand —
         an unfilled position in this literature.
         Two precedents matter most. METHODOLOGICALLY, @deiana2024 — same
         daily CMR corridor panel, same SWH-as-exogenous identification,
         same Poisson + NW HAC SEs — but their estimand is the crossings
-        slope, not the mortality-rate slope. SUBSTANTIVELY (same policy event,
+        slope, not the recorded-death slope. SUBSTANTIVELY (same policy event,
         mortality-related outcome), @zambiasi2025 — spatial DiD on the
         same 2017 MoU finding increased deadly-incident probability in
         LCG-patrolled areas. We adopt Deiana's identification logic and
@@ -197,296 +199,302 @@ Word Count: @WORDCOUNT_BODY@
 
 # Theory
 
-## Search and rescue as a safeguard at sea
+## Search and rescue as a guardrail at sea
 
-Search-and-rescue (SAR) at sea is an institutionally constituted safeguard
-against death from maritime distress. International law places a duty on
-states and on every shipmaster to render assistance to persons in distress
-at sea, regardless of nationality or legal status [@moreno-lax2018]. In the
-Central Mediterranean this duty is operationalised through a dispersed
-network of actors --- state navies and coast guards, EU agencies, international
-organisations, and a substantial civil-society fleet of NGO rescue vessels
---- whose legal mandates differ but whose shared output, when the system
-functions, is the recovery of vessels in distress and the prevention of
-drowning. NGOs reference "the international conventions of the sea, [...]
-the Refugee Convention and the human rights conventions"; state agencies
-reference national frameworks; coast guards in non-EU states reference
-border-control mandates [@duvell2024]. The institutional response to a
-vessel in distress, then, is what stands between physical hazard at sea
-and death. When it functions, rough seas can be recovered into postponed
-crossings; when it does not, the same rough seas has a high probability of 
-translating into deaths.
+Search-and-rescue (SAR) is an institutionally constituted safeguard against
+death from maritime distress. International law places a duty on states and
+shipmasters to assist persons in distress at sea, regardless of nationality
+or legal status. The duty is codified in Article 98 of the UN Convention on
+the Law of the Sea (UNCLOS), which obliges both shipmasters to render
+assistance to any person in danger at sea and coastal states to maintain
+effective search-and-rescue services; its translation into EU-Mediterranean
+practice is analysed by @moreno-lax2018. In the Central Mediterranean this duty is
+carried out by a dispersed set of actors: state navies and coast guards, EU
+agencies, international organisations, merchant vessels, and NGO rescue ships.
+Their legal mandates differ, but the relevant operational output is the same:
+when a vessel becomes unable to complete the crossing safely, some actor can
+locate it, reach it, and prevent distress from becoming drowning.
 
-$P(\text{death} \mid \text{rough seas, no SAR})$ is high
-
-This thesis takes that institutional response --- operationalised below as
-the slope of expected deaths with respect to wave height --- as its object
-of study. We refer to the underlying argument as the *guardrail* view of
-SAR: like guardrails on a highway, SAR does not eliminate the hazard
-(the rough seas, the sharp curves), but it limits how the hazard becomes
-harm.
+The argument developed here is the *guardrail* view of SAR. Rough seas are the
+physical hazard. SAR does not remove that hazard, and it does not determine
+whether smugglers launch a boat on a given day. It changes what happens after
+a hazardous crossing has begun. When rescue capacity is close enough and
+willing enough to intervene, distress can become rescue, delay, or
+disembarkation. When that capacity is absent or redirected toward
+interception, the same physical hazard is more likely to become a recorded
+death. The theoretical object is therefore not the level of deaths before and
+after a policy change, but the gradient that maps sea state into mortality.
 
 ## The 2017 shift: from rescue to interception
 
-Before 2017, the Central Mediterranean was patrolled by a substantial
-European rescue capacity in international waters. The Italian state-led
-Mare Nostrum operation (2013--2014), the EUNAVFOR MED Sophia mission, and
-a fleet of NGO vessels operating close to the Libyan coast --- @cusumano2021
-documents that NGOs alone assisted approximately 120,000 migrants between
-2014 and 2019 --- together constituted the rescue infrastructure of the
-corridor. This infrastructure was politically contested but operationally
-substantial.
+Before 2017, the Central Mediterranean contained substantial European and
+civil-society rescue capacity. The Italian state-led Mare Nostrum operation,
+EUNAVFOR MED Sophia, and NGO vessels operating close to the Libyan coast
+together formed the corridor's rescue infrastructure
+[@rodriguezsanchez2023; @cusumano2021]. This infrastructure was
+politically contested, but operationally meaningful: @cusumano2021 documents
+that NGOs alone assisted approximately 120,000 migrants between 2014 and
+2019.
 
-The 2017 Italy--Libya Memorandum of Understanding (MoU) marked a
-qualitative shift to what @duvell2024's interviewees describe as "a
-pull-back regime." The Minniti--Gentiloni Code of Conduct restricted NGO
-operations, and subsequent Salvini decrees criminalised NGO activity
-during a period in which "NGOs were persecuted" [@duvell2024;
-@cusumano2021; @cusumano2021a]. The Italian Maritime Rescue Coordination
-Centre is reported to have withdrawn from international waters
-[@duvell2024]; EUNAVFOR MED Sophia was downscaled and replaced by
-Operation Irini, primarily an arms-embargo rather than a rescue mission.
-In parallel, EU funding built up the operational capacity of the Libyan
-Coast Guard (LCG), whose mandate is to return intercepted migrants to
-Libya rather than to disembark them in safety. The post-2017 rise in LCG
-interceptions is documented in the Frontex and IOM data we use in §
-[Methods]. Returnees face well-documented violence at the point of
-interception and abuse in Libyan detention facilities; @duvell2024
-summarises UN Human Rights Council findings that migrants across Libya
-are "victims of crimes against humanity."
-
-@moreno-lax2018 names this transition the consolidation of a
+The 2017 Italy--Libya Memorandum of Understanding (MoU) marks a qualitative
+shift in this infrastructure. The Minniti--Gentiloni Code of Conduct
+restricted NGO operations [@cusumano2021], subsequent Salvini decrees
+criminalised NGO activity [@cusumano2021a; @punzo2024], and interview
+evidence describes a move toward a "pull-back regime" [@duvell2024]. At the same time, EU and Italian
+support increased the operational role of the Libyan Coast Guard, whose
+mandate is interception and return to Libya rather than disembarkation in a
+European place of safety. @moreno-lax2018 describes this as a
 "rescue-through-interdiction / rescue-without-protection" paradigm: the
-language of rescue is retained but its operational content shifts from
-disembarkation in safety to return to a place of harm. The shift is
-qualitative, not just quantitative. Where pre-2017 rescue was conducted
-predominantly by actors operating under maritime and humanitarian law,
-post-2017 the dominant institutional actor in international waters off
-Libya is one whose mandate is incompatible with the duty to deliver
-rescued persons to a place of safety. The reduction in SAR is therefore
-also a reduction in the *kind* of safeguard --- not only a reduction in its
-quantity.
+language of rescue remains, but the institutional content shifts from
+protection to containment.
+
+This matters for the empirical design because the MoU is not a clean switch
+from SAR to no SAR. It is a bundled policy-regime change: NGO restrictions [@cusumano2021],
+Italian and EU operational changes [@punzo2024], Libyan interceptions,
+boat-composition responses [@deiana2024], and broader externalisation
+politics [@wolff2024] move together. The MoU is
+therefore a proxy for a change in the rescue/interception regime, not an
+exogenous treatment that isolates SAR alone. The empirical question must be
+phrased accordingly.
 
 ## Why measuring SAR's effect on mortality directly is hard
 
-A direct test of "did SAR removal cause more deaths" would require, at
-minimum: (a) a credible counterfactual for what SAR exposure would have
-been absent the MoU, (b) a complete count of deaths under each regime,
-and (c) a complete count of attempted crossings against which to compute
-a fatality rate. None of these are cleanly available. The data
-limitations are not minor: they are structural to the setting.
+A direct estimate of how many lives SAR saved would require at least three
+objects: the counterfactual rescue capacity that would have existed absent the
+policy shift, the true number of deaths under each regime, and the true number
+of crossing attempts. None is observed cleanly. The data limitations are not
+incidental; they are part of the setting.
 
 **Departures are not observed.** No public dataset records all departures
-from the North African shore. Frontex records events its operational
-assets engage with; NGOs record their own incidents; smugglers keep no
-records that reach analysts. The most reliable approximation of attempted
-crossings --- arrivals to Europe plus pullbacks plus deaths --- is itself
-constructed from the partial records of each actor and is bounded below
-by what each actor reports. Without a credible denominator, fatality
-*rates* cannot be computed without strong assumptions, and any "deaths
-per crossing" comparison inherits the bias of every component dataset.
+from the North African shore. Frontex records events its operational assets
+engage with; coast-guard pullback series record some returns to Libya and
+Tunisia; death datasets record fatal outcomes; smugglers' departures are not
+observed. The constructed crossing-attempt measure used later in the paper
+adds Frontex-recorded persons, LCG/TCG pullbacks, and IOM dead or missing
+persons. This is a useful lower-bound exposure measure, not observed daily
+departures.
 
 **Recorded deaths are a selected subset of true deaths.** The empirical
-analysis therefore treats UNITED as the primary mortality source and
-uses IOM Missing Migrants Project estimates as a robustness comparison.
-This choice is substantive rather than cosmetic: the two projects use
-different reporting and verification procedures, and in the corridor
-sample used here UNITED records more deaths than IOM. IOM remains useful
-because it is widely used and transparently documented, but it is more
-closely tied to located, witnessed, or otherwise reported incidents.
-Boats that sink unwitnessed may be absent from either source. In the
-data used in this thesis, fewer than half of IOM-recorded death events
-have a corresponding Frontex incident on the same date and zone ---
-direct evidence that a substantial share of fatal events occurs outside
-the European operational gaze. @duvell2024 describes the rescue and
-surveillance network of the corridor as "vast" and "patchy" and reports
-that "the vast space and the patchy surveillance and rescue network, as
-well as the continuously high level of lives lost at sea, demonstrate
-that rescue remains unreliable, that migrants and refugees cannot count
-on rescue and that the risk of dying at sea is significant." The
-unreliability of rescue is also the unreliability of the recording of
-death.
+analysis uses UNITED as the primary mortality source and IOM Missing Migrants
+Project data as a comparison series. This choice is substantive. In the
+corridor sample used for the main models, UNITED records more total deaths
+but fewer death-days than IOM; the two series are strongly correlated at
+monthly frequency but differ in event coverage and verification practices.
+That divergence is useful triangulation, but it also shows why a single
+death series cannot be treated as complete; methodological reviews of
+Mediterranean mortality estimation reach the same conclusion at the
+corridor level [@last2014; @kovras2016].
 
 **The selection mechanism for what gets recorded changes when the
 policy regime changes.** Before 2017, NGO presence was a major source of
-incident documentation; after 2017, NGO retreat reduces the rate at
-which incidents in international waters are seen and reported. From
-2019, the Italian coastguard reclassified most SAR operations as "law
-enforcement" operations, which @duvell2024 reports introduces ambiguity
-into the official statistics. Pullbacks remove migrants from the at-sea
-population without generating mortality records: a returnee may face
-detention, abuse, or death in Libya, but not in the IOM mortality
-dataset. The upshot is that *whatever bias exists in observed death
-counts is likely to have shifted in magnitude, and possibly in
-direction, around the policy event*. A naive comparison of pre-MoU and
-post-MoU recorded deaths therefore conflates genuine change in mortality
-with change in mortality measurement. Plausibly, post-MoU
-under-recording is *worse* (fewer rescue assets to witness sinkings),
-which would make naive estimates *understate* the true mortality change.
+incident documentation; after 2017, NGO retreat and reclassification of
+operations altered what is seen and how it is categorised [@duvell2024].
+Pullbacks also remove people from the at-sea population without necessarily
+generating Mediterranean mortality records. The parallel case of US-Mexico
+border deaths is instructive: undercounting of around 19% has been
+documented within a single jurisdiction, with rates fluctuating over time
+[@leutert2024]. A before/after comparison of recorded deaths would
+therefore mix mortality, reporting, and exposure changes.
 
-These three problems compound. A naive "deaths per crossing, before vs.
-after the MoU" estimate would have an incompletely measured numerator
-divided by an unobserved denominator, with both subject to selection
-mechanisms that shifted at the policy event. The strategy this thesis
-adopts therefore treats the daily UNITED death count as the primary
-reduced-form outcome, estimates the same models on IOM as a comparison,
-and reports constructed-rate models only as risk-oriented sensitivity
-checks.
+For this reason, the paper does not claim to estimate a complete fatality
+rate or a total number of lives saved. The primary empirical object is the
+daily association between sea state and recorded deaths. Constructed-exposure
+models are reported as sensitivity checks, and they enter exposure flexibly
+because the data do not support imposing a one-for-one proportional
+relationship between attempts and recorded deaths.
 
 ## The wave--mortality slope as a sensible empirical strategy
 
-The estimand we adopt is how the *slope* of recorded mortality with
-respect to lagged daily mean significant wave height (SWH) changes across
-SAR/policy regimes. The main empirical implementation models daily
-recorded deaths, using UNITED as the primary series and IOM as an
-independent comparison. A Poisson offset specification divides deaths by
-a source-specific constructed-attempt denominator, but this is secondary:
-the denominator is not observed daily departures, and the offset imposes
-a unit elasticity between attempts and deaths that the data need not
-satisfy. Three properties make the slope estimand informative under the
-data limitations described above.
+The key empirical move is to study how the slope of recorded deaths with
+respect to lagged significant wave height (SWH) changes across policy
+regimes. SWH is useful because day-to-day marine weather is plausibly
+exogenous to the migration-control regime. The Italy--Libya MoU does not
+cause rough seas; rough seas do, however, affect both the decision to depart
+and the probability that a crossing becomes fatal.
 
-First, **SWH is exogenous to the policy regime**. Atmospheric and
-oceanic conditions do not respond to the Italy--Libya MoU. The same
-physical hazard --- a 2-metre wave on a given day --- acts on a small
-overloaded vessel in the same physical way regardless of whether NGO
-ships are at sea, regardless of who is patrolling, regardless of which
-mandate the patrolling actor operates under.
+The sign of the observed daily count slope is therefore theoretically
+ambiguous. Rough seas can reduce departures or delay crossings, pushing
+recorded deaths down on rough days. Conditional on a boat being at sea, the
+same rough seas increase the probability of distress and death. SAR capacity
+moderates the second channel: when rescue capacity is high, the lethality
+margin is partly buffered; when rescue is reduced or converted into
+interception, the lethality margin should become stronger. The guardrail
+prediction is therefore not simply "rough seas increase deaths." It is that
+the SWH-death gradient shifts upward when the rescue/interception regime
+weakens the guardrail.
 
-Second, **the rate model is informative but weaker than the count model
-as a primary design**. Daily deaths change both because crossings become
-more or less lethal and because the number of people attempting the
-crossing changes. A risk estimand would therefore require daily
-departures, but those departures are unobserved. The rate specification
-uses a constructed lower-bound denominator: Frontex-recorded persons plus
-LCG/TCG pushbacks plus deaths from the same outcome source. For IOM
-outcomes the offset is based on IOM deaths; for UNITED outcomes the
-offset is based on UNITED deaths. This source-specific construction
-avoids putting IOM deaths in the UNITED denominator, but it remains an
-approximation rather than observed exposure and is reported as
-sensitivity evidence.
+This framing also explains why the count model is the main design. A true
+risk model would require observed departures. Since departures are not
+observed, the count model estimates the reduced-form gradient of recorded
+deaths on SWH. The rate-like model adds the constructed lower-bound exposure
+measure, but as a free log covariate rather than an offset. If exposure were a
+valid denominator with unit elasticity, an offset would be appropriate. The
+scripts explicitly test this proportionality and reject it, so the theory
+should not rest on a fatality-rate interpretation.
 
-Third, **the slope on SWH is robust to many natural patterns of
-under-reporting in death data**. If under-reporting is approximately
-multiplicative --- some constant fraction of true deaths is missed,
-regardless of weather --- then under-reporting affects the *level* of
-recorded deaths but leaves the *slope* on weather essentially unchanged.
-The claim "the slope shifted around the MoU" is then identified even if
-the death series is biased downwards in both regimes. The remaining
-threat is *differential* bias: if under-reporting changed differently
-with SWH across regimes, the slope estimate would mix genuine change
-with reporting change. We discuss this concern explicitly in
-[Methods] and probe it by replicating the analysis on an independently
-sourced death series ([Results]).
-
-This logic mirrors the methodological move of @deiana2024, who use
-day-to-day SWH variation as an exogenous source of identifying variation
-in the same corridor. The estimand they target is the slope of
-*crossings* on SWH; the main estimand here is the slope of *recorded
-deaths* on SWH, with constructed-rate estimates reported as a secondary
-risk-oriented check. Both inherit the exogeneity of the underlying
-weather variation; both are silent about parts of the system that cannot
-be observed.
+The remaining identifying concern is differential reporting. If missing
+deaths are a roughly constant share of true deaths within each weather
+regime, the slope comparison remains informative even though levels are
+biased. If, instead, post-2017 reporting worsens especially on rough days, the
+SWH gradient could partly reflect changing observation rather than changing
+lethality. The analysis responds by estimating the same models on UNITED and
+IOM, by checking future-weather placebo windows, and by using SAR-capacity,
+boat-composition, crossing-volume, and period decompositions as diagnostic
+evidence rather than as separate causal designs.
 
 ## Competing predictions
 
-The four readings of SAR in the literature imply distinct predictions
-for the SWH--mortality slope.
+The literature implies four competing readings of SAR, each with a distinct
+implication for the SWH-death gradient.
+
+The *guardrail* view holds that SAR moderates the conditional translation of
+maritime hazard into death once a boat is at sea. Its prediction is sharp:
+the SWH-mortality gradient should shift upward when rescue capacity is
+reduced, and higher measured SAR capacity should flatten the gradient at any
+given regime.
 
 The *pull-factor* view holds that SAR primarily affects the volume of
-attempts and is broadly silent on per-crossing risk; the slope between
-waves and deaths should be roughly invariant to SAR regimes
-[@rodriguezsanchez2023]. The *moral-hazard* view holds that SAR
-availability shifts the composition of crossings toward unsafe vessels,
-which become more weather-sensitive; the slope should *steepen* when
-SAR is *abundant* [@deiana2024]. The *deterrence-and-diversion* view
-holds that the post-2017 regime deterred crossings on the CMR and
-diverted some flow elsewhere; falling mortality after the MoU could
-reflect a falling denominator rather than safer crossings, and the
-slope on weather need not change [@hoffmannpham2024; @tafani2025;
-@camarena2020]. The *guardrail* view, which this thesis develops, holds
-that SAR primarily affects the per-crossing fatality rate by
-determining whether distress is resolved; the slope should *flatten*
-when SAR is abundant and *steepen* when SAR is removed.
+attempts rather than conditional lethality [@rodriguezsanchez2023]. If this
+channel dominates, any post-MoU change in the SWH gradient should operate
+through changes in crossing volume and be absorbed once exposure is
+controlled.
 
-The closest precedent on the same policy event is @zambiasi2025, who
-estimate a spatial difference-in-differences on the 2017 MoU and find
-an increase in the probability of a deadly incident in areas patrolled
-by the LCG after the deal. Their result is consistent with the
-guardrail prediction in the spatial dimension; this thesis pursues the
-temporal dimension --- the change in the SWH--mortality slope ---
-which @zambiasi2025 do not estimate.
+The *moral-hazard* view holds that SAR availability changes the composition
+of attempts, for instance toward flimsier boats and willingness to depart on
+rougher days [@deiana2024]. If this channel dominates, the SWH gradient
+should be steeper when SAR is abundant, or should be substantially attenuated
+by boat-composition controls after the MoU.
 
-The four views are not mutually exclusive: SAR could simultaneously
-shift volume, composition, per-crossing risk, and route choice. They
-imply distinct empirical signatures, however, and the SWH--mortality
-slope is the signature most directly tied to the guardrail view.
+The *deterrence-and-diversion* view holds that the post-2017 regime deterred
+or rerouted movement on the Central Mediterranean route [@hoffmannpham2024;
+@tafani2025; @camarena2020]. If this channel dominates, observed mortality
+may fall because the denominator falls or shifts to other routes, and the
+weather gradient need not identify rescue capacity at all.
+
+These four mechanisms operate at different *stages* of the journey: selection
+into crossing (moral hazard, pull factor), route or destination (diversion),
+and outcome conditional on crossing (guardrail). This staging is what makes
+the predictions partly separable. The guardrail view alone predicts that,
+conditional on exposure and boat composition, the SWH-mortality slope should
+respond to the policy regime; the other views do not.
+
+The evidence required to sustain the guardrail interpretation is therefore
+not one coefficient but a pattern: an upward post-MoU shift in the SWH-death
+gradient across death sources and count families; persistence under exposure
+and boat-composition checks; absence of the same pattern in future-weather
+placebos; and a negative interaction between SWH and direct SAR-capacity
+measures. The spatial analogue of this prediction has already been documented
+on the same policy event: @zambiasi2025 find increased deadly-incident
+probability in Libyan-Coast-Guard-patrolled areas post-MoU, and
+@prieto-flores2025 report a parallel pattern on the Western Mediterranean
+route after the 2018 EU-Morocco agreements. This thesis examines whether the
+same prediction holds in time.
 
 ## Theoretical estimand
 
-Let $M(s, R)$ denote expected recorded deaths per constructed crossing
-attempt on a day with significant wave height $s$ and SAR capacity $R$.
-The guardrail view predicts that the partial derivative of $M$ with
-respect to $s$ is more negative (or less positive) when $R$ is high than
-when $R$ is low. The theoretical estimand is the difference between
-these two slopes:
+Let $D_t$ denote recorded deaths on day $t$, $s_t$ lagged SWH, $A_t$ true
+crossing attempts, $R_t$ SAR capacity, and $q_t$ the probability that deaths
+are recorded. A stylised representation is
 
 $$
-\Delta\beta \;=\; \left.\frac{\partial M(s, R)}{\partial s}\right|_{R=R_{\text{low}}}
-\;-\; \left.\frac{\partial M(s, R)}{\partial s}\right|_{R=R_{\text{high}}}
+\mathbb{E}[D_t \mid s_t, R_t]
+\;=\;
+q(s_t,R_t) \, A(s_t,R_t) \, m(s_t,R_t),
 $$
 
-A positive $\Delta\beta$ means that the same rough day is associated
-with a higher recorded death rate when SAR has been removed than when
-SAR is in place. This is the guardrail prediction stated as a slope
-comparison, not as an estimate of lives saved by SAR.
+where $m(s_t,R_t)$ is the latent mortality risk per attempt. The guardrail
+claim concerns $m$: higher SAR capacity should reduce the marginal effect of
+rough seas on lethality. Formally,
+
+$$
+\Delta_m
+\;=\;
+\left.\frac{\partial m(s,R)}{\partial s}\right|_{R=R_{\text{low}}}
+\;-\;
+\left.\frac{\partial m(s,R)}{\partial s}\right|_{R=R_{\text{high}}}
+\;>\;0.
+$$
+
+This is the conceptual estimand. It is not directly observed because $A_t$,
+$q_t$, and $m(s_t, R_t)$ are not separately identified in the available
+data. The observable object is the reduced-form slope of recorded deaths on
+SWH, which decomposes as
+
+$$
+\frac{\partial \log \mathbb{E}[D_t \mid s_t, R_t]}{\partial s_t}
+\;=\;
+\underbrace{\frac{\partial \log q}{\partial s_t}}_{\text{recording}}
+\;+\;
+\underbrace{\frac{\partial \log A}{\partial s_t}}_{\text{exposure}}
+\;+\;
+\underbrace{\frac{\partial \log m}{\partial s_t}}_{\text{lethality}}.
+$$
+
+The guardrail prediction concerns the cross-derivative of the third term
+with respect to SAR capacity:
+$\partial^{2} \log m / \partial s \, \partial R < 0$. Identifying this
+cross-derivative from the reduced-form slope shift across regimes requires
+assumptions on the first two channels. Specifically, either
+(i) $\partial^{2} \log q / \partial s \, \partial R$ and
+$\partial^{2} \log A / \partial s \, \partial R$ are zero, meaning recording
+and exposure sensitivities to weather do not change with the
+rescue/interception regime; or (ii) they move in the opposite direction to
+the lethality channel, in which case the recovered slope shift is a lower
+bound on the lethality shift.
+
+The empirical strategy assesses these assumptions but cannot rule them out
+fully. The future-weather placebos and the IOM/UNITED cross-source
+comparison address differential recording; the constructed-exposure
+sensitivity and the boat-composition controls address the exposure channel.
+The observable implication is therefore weaker than the structural
+cross-derivative: if the guardrail channel is important and the auxiliary
+assumptions hold at least directionally, the SWH gradient in recorded deaths
+should become less negative or more positive when SAR capacity is reduced,
+and it should flatten when measured SAR capacity is higher.
 
 ## From theoretical to empirical estimand
 
-We do not observe SAR capacity as an exogenous variable. We instead
-observe a policy event that approximately marks a shift between the
-two regimes described in §1: the 2017 Italy--Libya MoU, in force from 1
-July 2017. We treat the MoU date as an indicator of this regime change
-and define the empirical estimand as the change in the SWH--recorded
-mortality-rate slope around it:
+The main empirical estimand is the change in the SWH-recorded-death slope
+around the post-MoU regime:
 
 $$
 \beta_3 \;=\; \beta_{\text{post}} \;-\; \beta_{\text{pre}}
 $$
 
-where $\beta_{\text{pre}}$ and $\beta_{\text{post}}$ are the slopes of
-the conditional expected recorded death rate on lagged five-day mean
-SWH, before and after 1 July 2017. The count specification estimates the
-same slope for daily recorded deaths and is reported as supporting
-reduced-form evidence.
+where $\beta_{\text{pre}}$ and $\beta_{\text{post}}$ are the slopes of daily
+recorded deaths on the lagged five-day mean of SWH before and after 1 July
+2017. UNITED is the primary mortality series; IOM is an independent comparison
+series. Negative pre-period slopes are not a problem for the theory: they are
+consistent with rough seas suppressing departures when the guardrail is
+stronger. The guardrail prediction is an upward shift in the slope after the
+policy-regime change.
 
-The link from $\beta_3$ to $\Delta\beta$ rests on the assumption that
-the MoU is a meaningful proxy for the SAR regime change of interest.
-This assumption faces two threats. First, the MoU bundles SAR removal
-with other contemporaneous changes: the criminalisation of NGOs
-[@cusumano2021], the Salvini decrees of mid-2018, the broader
-externalisation logic of EU migration policy [@wolff2024], and a
-documented shift in boat composition [@deiana2024]. Whatever shift in
-$\beta_3$ we estimate is a reduced-form moderation by the policy-regime
-bundle, not an isolated effect of SAR alone. Second, the policy effect
-could spread gradually over calendar time, making the MoU date a coarse
-signal of an ongoing transition.
+The interpretation of $\beta_3$ requires caution. It is a reduced-form
+policy-regime moderation parameter, not an isolated SAR effect. The MoU
+bundles NGO restrictions, Italian decrees, Libyan interceptions, route and
+boat-composition changes, push factors, and possible changes in reporting.
+The mechanism analysis therefore replaces the binary post-MoU indicator with
+continuous SAR-capacity moderators, but those moderators are themselves
+endogenous to operational decisions and distress events. The period and
+rolling-gradient analyses likewise treat the regime change as gradual and
+uneven, not as a permanent step function.
 
-We address the first threat with a complementary mechanism
-specification ([Methods]) that replaces the binary policy-event
-indicator with a continuous measure of SAR capacity --- the weekly
-number of persons rescued by Frontex-coordinated operations --- and
-asks whether the slope tracks SAR capacity directly. We address the
-second by reporting regime and rolling-gradient decompositions
-([Results]).
+A note on interpretation: mechanically, $\beta_3$ is the interaction between
+a continuous regressor (lagged SWH) and a time indicator (post-MoU), which
+is algebraically the same object as a continuous-regressor
+difference-in-differences estimator. The interpretation here is more limited
+because the corridor has no second unit to serve as a control: $\beta_3$
+does not identify a counterfactual untreated trajectory. What it identifies
+is a within-corridor change in the conditional slope of recorded deaths on
+SWH, given month-year fixed effects. The "policy-regime moderation" label is
+meant to preserve this distinction.
 
-The remaining gap between the theoretical estimand $\Delta\beta$ and
-the empirical estimand $\beta_3$ is real and we do not paper over it.
-We estimate how the marginal association between sea state and recorded
-deaths changes across SAR/policy regimes. Under the assumption that
-within-month SWH variation is exogenous and no other post-2017 factor
-changed the weather-to-death gradient, the estimates can be interpreted
-as policy-regime moderation. That is a strong assumption.
+The empirical claim this thesis can sustain is therefore precise: recorded
+deaths became more sensitive to lagged rough seas after the rescue/interception
+regime changed, and the broader pattern of robustness and mechanism evidence
+is more consistent with the guardrail view than with pure pull-factor,
+composition-only, or diversion-only explanations. The evidence does not by
+itself identify the number of deaths caused by SAR withdrawal.
 
 ## Research question
 
@@ -495,84 +503,291 @@ This framing yields a single empirical question:
 > How does the marginal association between sea state and recorded
 > deaths change across SAR/policy regimes?
 
-A positive shift is consistent with --- though not unique to --- the
-guardrail view. A null shift is consistent with the pull-factor view. A
-shift opposite in sign would be consistent with the moral-hazard view.
-Distinguishing among these, given the data limitations described in §3,
-is the empirical task that follows.
+A positive shift is consistent with the guardrail view. A null shift would fit
+a pure volume or pull-factor account. A shift in the opposite direction would
+fit a moral-hazard account in which abundant SAR makes crossings more
+weather-sensitive. Because the data cannot isolate all channels, the results
+section evaluates the whole pattern of evidence rather than treating one
+coefficient as dispositive.
 
 # Methods and Data
 
-<!-- TO WRITE NEXT (after Theory). ~6-8 pages. Subsections:
+## Setting and unit of observation
 
-     ## Setting and unit of observation
-        Establishes: corridor-day panel, why daily, why corridor.
-       Setting: CMR 2014-2023 for Frontex-bounded models; UNITED-only
-       long-span comparisons can start in 2013.
+The analysis is a daily panel of the Central Mediterranean Route (CMR). The
+unit of observation in the main models is a corridor-day. This level is useful
+for two reasons. First, the theoretical mechanism is short-run: sea state
+changes from day to day and can affect both departure decisions and the
+survival margin once a boat is at sea. Second, the closest methodological
+precedent in this literature uses daily variation in significant wave height
+(SWH) to study behavioural responses to SAR operations in the same corridor
+[@deiana2024]. Aggregating to months would remove much of the weather variation
+that identifies the slope of interest.
 
-     ## Data sources and construction
-        Establishes: each data source, what it captures, what it misses.
-        - ERA5 daily SWH from raw netCDFs aggregated to corridor polygon
-        - UNITED for Intercultural Action deaths (primary mortality source)
-        - IOM Missing Migrants Project incident-level deaths (comparison)
-        - Frontex Themis incidents (SAR identification)
-        - LCG/TCG monthly pullbacks (Denton-disaggregated to daily)
-        - UNHCR daily arrivals (validation)
-        - ACLED conflict data (control)
-        Each subsection: source, definition, filter, sample restriction.
+The Frontex-bounded panel covers 1 January 2014 to 31 May 2023, for 3,438
+calendar days. The end date is not chosen by hand. It is read from the daily
+LCG/TCG interception series used in the crossing-exposure construction, which
+currently ends on 31 May 2023. The main regression sample starts on 15 January
+2014, after lagged crossing and SWH windows are available, and runs through 31
+May 2023. This gives 3,424 available corridor-days before fixed-effect cells
+with no outcome variation are dropped by the count estimators.
 
-     ## Outcome and exposure denominator
-        Establishes: outcome is daily CMR deaths from drowning + mixed/unknown.
-        UNITED is primary; IOM is estimated separately as a robustness comparison.
-        Constructed rate denominator is source-specific:
-        frx_persons + lcg_tcg_pushbacks + deaths_source. This avoids putting
-        IOM deaths in the UNITED offset, but the denominator is still a
-        constructed lower-bound exposure, not observed daily departures, and
-        the offset model is sensitivity evidence rather than the main design.
-        Count totals and rate-model sample sizes should be copied from the
-        regenerated 20_primary_model.txt.
+The policy-regime indicator is defined as
+$Post_t = 1\{t \geq \text{1 July 2017}\}$. This date follows the operational
+definition used in the main model scripts. It is not interpreted as a sharp
+causal switch. Rather, it marks the post-MoU rescue/interception regime for
+the reduced-form comparison. Additional period and rolling-window analyses
+relax the two-period structure and examine whether the weather-mortality
+gradient evolves gradually over later operational regimes.
 
-     ## Exposure: significant wave height
-        Establishes: SWH is the physical hazard; 5-day lagged mean is the
-        primary measure (matches expected crossing duration). Present the lag
-        grid prominently: the result strengthens over 3-7 day exposure windows;
-        the 1-day IOM NegBin result does not support the same claim.
+## Data sources and construction
 
-     ## Empirical estimand and identification (the main subsection)
-        Establishes:
-          - Empirical estimand: how the marginal association between sea state
-            and recorded deaths changes across SAR/policy regimes.
-          - Main specification:
-            deaths_source ~ swh + swh:post_mou | month_year_fac
-            with UNITED as primary and IOM as comparison. Rate sensitivity:
-            same count spec + offset(log(frx_persons + lcg_tcg_pushbacks
-            + deaths_source)).
-          - Report beta_pre, beta_shift, and beta_post, not only the
-            interaction.
-          - Identification assumption: conditional on month-year FE,
-            day-to-day variation in SWH is exogenous to other drivers of
-            mortality. Under the stronger assumption that no other post-2017
-            factor changed the weather-to-death gradient, the estimates can be
-            interpreted as policy-regime moderation. This is not a SAR
-            lives-saved estimate.
-          - Threats: bundling of MoU with other policies (named in Theory,
-            partly addressed in mechanism); serial correlation (handled by
-            NW(14)); zero-inflation (handled by NegBin and Poisson QMLE
-            comparison); no untreated control unit in the corridor (a
-            spatial DiD was attempted and dropped, see Appendix; @zambiasi2025
-            estimate one separately).
+The empirical panel combines seven data sources: ERA5 wave data, UNITED for
+Intercultural Action deaths, IOM Missing Migrants Project deaths, Frontex
+Themis incident records, LCG/TCG pullback counts, UNHCR arrivals, and ACLED
+conflict data. The construction is automated in the project scripts. The daily
+panel used by the models is saved as `analysis/data/daily_panel_complete.RDS`;
+source-specific mortality series are then rebuilt in the analysis scripts from
+the raw processed death files so that the outcome filters are explicit and
+consistent.
 
-     ## Estimation strategy
-        Establishes: NegBin and Poisson QMLE daily-count models are the main
-        evidence. Poisson offset/rate models are reported as risk-oriented
-        sensitivity checks because the denominator is constructed and the unit
-        elasticity restriction is not guaranteed. Newey-West SEs (lag 14).
-        Cluster(month_year) reported as alternative inference.
+The weather exposure is constructed from ERA5 daily netCDF files for 2008-2025.
+The cleaning script aggregates significant wave height over the core corridor
+polygon saved in `data/processed/core_corridor.RDS`. The resulting daily SWH
+series is a simple spatial mean over ocean grid cells in the corridor. The
+same corridor polygon is used later to spatially filter death records, so the
+weather and mortality measures refer to the same sea area. The primary
+regressor is the lagged five-day mean of SWH, $SWH_{t-1:t-5}$. The script also
+constructs one-day, three-day, and seven-day lagged means. All lagged windows
+exclude day-$t$ weather, which keeps the regressor temporally prior to the
+recorded outcome day.
 
-     ## Mechanism specification
-        Establishes: replace post_mou with continuous SAR moderator
-        (share, log persons rescued). Endogeneity caveats stated.
--->
+Mortality is measured with two independent event datasets. UNITED is the
+primary outcome series. The UNITED builder keeps deaths in Algeria, Italy,
+Libya, Malta, Tunisia, and open-sea records coded as Mediterranean; restricts
+causes to drowning or other/unknown maritime deaths; drops records without
+usable coordinates when the spatial filter is applied; and spatially joins the
+remaining incidents to the core corridor polygon. IOM is estimated separately
+as a comparison series. The IOM builder keeps Central Mediterranean incidents
+in Algeria, Italy, Libya, Malta, and Tunisia; restricts the analytical outcome
+to incident records rather than split incidents; keeps drowning and mixed or
+unknown causes; and applies the same corridor-polygon spatial filter. Split
+incidents are excluded from the analytical IOM outcome because they spread one
+reported event across multiple calendar dates, weakening the link between
+recent sea state and the event date and reducing comparability with UNITED.
+
+In the 2014-2023 corridor window, the matched analytical filters produce
+20,368 UNITED deaths on 503 death-days and 15,285 IOM dead or missing on 616
+death-days. The two sources do not agree event by event. UNITED records more
+deaths but on fewer death-days, while IOM records deaths on more days. This is
+why the paper treats UNITED as the primary source and IOM as a triangulation
+check rather than pooling the two series. Their monthly counts are highly
+correlated in the constructed corridor sample, but the daily differences are
+substantively meaningful and remain part of the measurement uncertainty.
+
+Frontex Themis records provide daily information on CMR events observed by
+Frontex-linked operations. The panel keeps departures from Libya, Tunisia, and
+Algeria and aggregates events, persons, SAR status, interceptor type, detection
+method, departure country, and boat type to the day. SAR status in this source
+refers to the European-side engagement of a detected boat. It is therefore
+kept conceptually separate from LCG/TCG pullbacks, which are returns to Libya
+or Tunisia rather than rescues to a European place of safety.
+
+The constructed exposure measure is a lower-bound count of observed crossing
+attempts:
+
+$$
+C_t =
+\text{Frontex persons}_t
++ \text{LCG/TCG pullbacks}_t
++ \text{IOM dead or missing}_t .
+$$
+
+This follows the broad logic in the CMR migration-flow literature of combining
+arrivals/interceptions, pushbacks, and deaths to approximate attempted
+crossings [@rodriguezsanchez2023; @deiana2024]. In this thesis, the measure is
+daily and deliberately conservative. It excludes undetected arrivals computed
+from UNHCR-Frontex daily gaps because the daily timing mismatch between
+event-day and landing-day records inflates that gap mechanically. The scripts
+retain UNHCR arrivals for validation, but the regression denominator is
+`frx_persons + lcg_tcg_pushbacks + n_dead_missing`, where `n_dead_missing` is
+the broad IOM count in the base panel rather than a source-specific analytical
+outcome. Across the full panel this measure sums to 1,082,372 observed
+attempts, consisting of 819,576 Frontex-recorded persons, 242,934 LCG/TCG
+pullbacks, and 19,862 broad IOM dead or missing persons.
+
+LCG and TCG pullbacks enter the daily panel through a Denton-disaggregated
+series. Monthly pullback counts are allocated to days using Frontex daily
+departures as the high-frequency indicator, then rounded so monthly totals are
+preserved. ACLED data are used for push-factor checks. The conflict variable
+used in those checks is a Libya composite of battles, explosions/remote
+violence, and violence against civilians, lagged by one week in the
+decomposition script. These variables are not part of the primary count
+specification; they are used to examine whether the SWH-mortality shift is
+better explained by changing conflict pressure.
+
+## Outcome, exposure, and estimand
+
+The main outcome is the daily count of recorded deaths in source $j$,
+$D^j_t$, where $j \in \{\text{UNITED}, \text{IOM}\}$. The estimand is the
+change in the marginal association between lagged sea state and recorded
+deaths across the post-MoU rescue/interception regime. It is not the level
+change in deaths, not a completed-crossing fatality rate, and not the number
+of lives saved by SAR. The object of interest is the slope:
+
+$$
+\beta_3 =
+\frac{\partial \mathbb{E}[D^j_t \mid SWH_t, Post_t=1]}{\partial SWH_t}
+-
+\frac{\partial \mathbb{E}[D^j_t \mid SWH_t, Post_t=0]}{\partial SWH_t}.
+$$
+
+This estimand matches the theory section. If SAR acts as a guardrail, rough
+seas should translate into recorded deaths more strongly when rescue capacity
+is reduced or redirected toward interception. A positive $\beta_3$ is therefore
+consistent with the guardrail interpretation. It is not sufficient by itself
+to prove that SAR withdrawal caused deaths, because the post-MoU regime bundles
+many operational and reporting changes.
+
+## Main count specification
+
+The primary specification estimates daily recorded deaths as a function of
+lagged SWH and its interaction with the post-MoU indicator:
+
+$$
+\mathbb{E}[D^j_t \mid SWH_t, Post_t, \alpha_{m(t)}]
+=
+\exp\left(
+\alpha_{m(t)}
++ \beta_1 SWH_{t-1:t-5}
++ \beta_3 SWH_{t-1:t-5} \times Post_t
+\right).
+$$
+
+The fixed effect $\alpha_{m(t)}$ is a month-year fixed effect. It absorbs
+seasonality and common monthly shocks; the model does not estimate a separate
+post-MoU level shift. With this fixed-effect structure, identification comes
+from within-month variation in lagged sea state and from how the SWH slope
+differs before and after the post-MoU date. The coefficient $\beta_1$ is the
+pre-period SWH slope, while $\beta_3$ is the post-MoU change in that slope.
+Results are reported as
+$\beta_1$, $\beta_3$, and the implied post-period slope
+$\beta_1 + \beta_3$, with a delta-method standard error for the latter.
+
+The count model is estimated with both negative binomial maximum likelihood
+and Poisson quasi-maximum likelihood. The negative binomial model is useful
+because recorded deaths are overdispersed and heavily zero-valued. The Poisson
+QMLE is reported alongside it because it estimates the conditional mean
+directly and does not require equality of the conditional variance and mean for
+consistency of the mean parameters. UNITED is the primary source in the
+presentation; IOM is estimated with the same specification and sample logic as
+an independent comparison.
+
+Inference uses Newey-West standard errors with a 14-day lag and
+`panel.id = ~ unit + date` in the daily corridor models. The 14-day bandwidth
+allows for serial correlation over a period longer than the five-day SWH
+window and the lagged crossing windows used in robustness checks. The scripts
+also report standard errors clustered by month-year as an alternative
+inference choice. The main conclusions are evaluated against this broader
+pattern, not against a single standard-error convention.
+
+## Rate-like sensitivity with constructed exposure
+
+Because true departures are unobserved, the count specification is the main
+design. A risk or fatality-rate model would require a denominator that measures
+all attempts. The constructed exposure measure $C_t$ is informative, but it is
+a lower bound and may be measured with error. For this reason, the rate-like
+models do not impose an offset. Instead, they estimate
+
+$$
+\mathbb{E}[D^j_t \mid SWH_t, Post_t, C_t, \alpha_{m(t)}]
+=
+\exp\left(
+\alpha_{m(t)}
++ \beta_1 SWH_{t-1:t-5}
++ \beta_3 SWH_{t-1:t-5} \times Post_t
++ \gamma \log(C_t)
+\right),
+$$
+
+on days with $C_t>0$. This keeps exposure as a flexible covariate rather than
+forcing deaths to scale one-for-one with observed attempts. The distinction is
+empirically important. In the current output, the coefficient on
+`log(crossing_attempts)` is far below one for both UNITED and IOM, and Wald
+tests reject the unit-elasticity restriction. The rate-like models should
+therefore be read as volume-controlled count models, not as estimates of a
+true daily fatality rate. The shared rate-like sample contains 2,125 days with
+positive constructed exposure before all-zero fixed-effect cells are dropped.
+
+## Identification assumptions and threats
+
+The identifying assumption for the reduced-form slope is that, conditional on
+month-year fixed effects, day-to-day variation in lagged SWH is as-good-as
+random with respect to other determinants of recorded mortality. This
+assumption is most plausible for marine weather itself: the post-MoU policy
+regime does not cause rough seas. The stronger interpretation, that the
+post-MoU change in the SWH-death slope captures the changed
+rescue/interception regime, additionally requires that no other post-2017
+factor changed the weather-to-death gradient in the same direction.
+
+That stronger assumption is demanding. The MoU coincided with NGO
+restrictions, Italian decrees, expanded Libyan interceptions, changes in
+smuggler strategy, changing boat composition, conflict dynamics in Libya, and
+potential changes in reporting. The paper therefore treats the post-MoU
+interaction as a reduced-form moderation parameter. It asks whether the
+weather-mortality slope changed around the policy regime, then examines
+whether the surrounding diagnostics are more consistent with the guardrail
+mechanism than with pure volume, composition, or diversion explanations.
+
+Measurement error is the second major threat. Recorded deaths are not true
+deaths, and observed attempts are not true departures. Differential reporting
+would be especially problematic if post-2017 deaths became more likely to be
+missed on rough-weather days. The two-source design partly addresses this:
+UNITED and IOM use different collection and verification practices, so a
+similar pattern across both sources is less likely to be a single-source
+artefact. This does not remove reporting bias, but it makes the measurement
+assumption visible rather than hidden.
+
+## Mechanism and robustness specifications
+
+The mechanism analysis replaces the binary policy-regime interaction with
+continuous SAR-capacity moderators. The main mechanism specification is
+
+$$
+\mathbb{E}[D^j_t]
+=
+\exp\left(
+\alpha_{f(t)}
++ \theta_1 SWH_{t-1:t-5}
++ \theta_2 R_{t-1:t-7}
++ \theta_3 SWH_{t-1:t-5} \times R_{t-1:t-7}
+\right),
+$$
+
+where $R_{t-1:t-7}$ is a weekly lagged SAR measure. The scripts use two
+versions: the share of Frontex incidents classified as SAR over the previous
+week, and the log of one plus the number of persons in Frontex SAR events over
+the previous week. Both moderators are standardised. The share measure is
+close to the theoretical idea of SAR prevalence, but it has a denominator
+concern when non-SAR events and pullbacks change sharply. The rescued-persons
+measure is therefore reported as a complementary absolute-capacity proxy. These
+models are mechanism checks, not separate identification strategies, because
+measured SAR capacity is itself endogenous to crossings, distress, detection,
+and operational decisions.
+
+Robustness checks are organised around the main threats to interpretation.
+Exposure-window checks re-estimate the SWH-post-MoU model using lagged
+one-day, three-day, five-day, and seven-day SWH windows, and compare them to
+future-weather placebo windows. Fixed-effect and inference checks vary the
+calendar controls, Newey-West bandwidths, and clustering. Lagged crossing
+controls add pre-determined crossing-volume measures. Boat-composition checks
+restrict to days with Frontex-observed boats and add inflatable and wooden
+boat shares, plus an interaction between SWH and inflatable share. ACLED checks
+test whether the post-MoU SWH-death shift varies with lagged Libya conflict.
+Period and rolling-gradient models relax the binary post-MoU structure, while
+zone-level models examine whether the pattern differs across broad African and
+European SAR blocs. These checks do not turn the design into a clean causal
+experiment, but they discipline the interpretation of the main slope estimate.
 
 # Analysis and Results
 
@@ -581,13 +796,13 @@ is the empirical task that follows.
      ## Descriptive evidence
         Establishes: deaths concentrated in 2015-2017; SWH-mortality
         relationship visible in raw data. Reference figures
-        (12_descriptives_swh_grid_panel, 13_ts_deathrate_swh).
+        (04_descriptive/03_swh_grid_panel, 04_descriptive/04_ts_deathrate_swh).
 
      ## Main count model: the weather-mortality association changes post-MoU
         Establishes: UNITED daily-count results are the main reduced-form
         evidence, with IOM as comparison. Report beta_pre, beta_shift, and
         beta_post for UNITED first, then IOM, copied from regenerated
-        20_primary_model.txt. Then report Poisson offset/rate models as
+        05_analysis/01_primary_model.txt. Then report Poisson rate-like models as
         sensitivity evidence. Do not report a causal percent effect for SAR.
 
      ## Cross-source comparison: IOM robustness
@@ -605,8 +820,8 @@ is the empirical task that follows.
      ## Regime and rolling-gradient decomposition
         Establishes: shift is not a sharp break; it builds gradually
         2018-2020 and partially recedes 2021-2023.
-        Reference 22_rolling_beta.png, 28_period_sar_gradient.png, and
-        31_united_period_gradient.png.
+        Reference 05_analysis/02_rolling_beta.png, 05_analysis/04_period_sar_gradient.png,
+        and 05_analysis/05_united_period_gradient.png.
 
      ## Robustness
         Establishes: result is sensitive to the exposure window. The 1-5d
@@ -615,8 +830,9 @@ is the empirical task that follows.
         should not show the same sustained pattern; any isolated future-window
         significance should be reported as a caveat. Also report lagged crossing controls,
         cluster(month-year) inference, and boat composition controls
-        (script 27 — the SWH:post_mou shift is not absorbed by the
-        post-MoU compositional shift toward fewer inflatables). Zone-level
+        (06_robustness/05_rate_with_boat_controls — the SWH:post_mou shift is
+        not absorbed by the post-MoU compositional shift toward fewer inflatables).
+        Zone-level
         heterogeneity: gradient shift is concentrated in international-waters
         zones, not in the Italian SRR (descriptive, not identification).
 -->
@@ -665,7 +881,7 @@ is the empirical task that follows.
      C. Per-zone descriptive heterogeneity (the within-corridor heterogeneity
         finding).
      D. Sensitivity to alternative SWH exposure windows (full grid).
-     E. Rate model with boat composition controls (script 27 full output).
+     E. Rate model with boat composition controls (06_robustness/05_rate_with_boat_controls full output).
      F. Cross-source comparison: distribution of incident dates and locations
         between IOM and UNITED.
 -->

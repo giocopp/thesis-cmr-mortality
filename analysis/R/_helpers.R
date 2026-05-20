@@ -1,67 +1,46 @@
-# _helpers.R
-# ==========
-# Shared helpers for the analysis pipeline. Not a numbered pipeline step —
-# sourced by other scripts.
-#
-# build_iom_daily()
-# -----------------
-# Builds a daily aggregate of dead+missing from raw IOM MMP with configurable
-# filters. Analytical scripts source this file and call build_iom_daily() with
-# the filter combination they want to test — the defaults match the primary
-# analytical spec of 05_reduced_form_primary.R.
-#
-# Switch between sensitivity variants by changing one argument, e.g.:
-#   build_iom_daily()                                    # primary
-#   build_iom_daily(spatial = "all_cmr")                 # drop spatial filter
-#   build_iom_daily(causes  = "sea")                     # sea-only causes
-#   build_iom_daily(incident_types = c("incident", "split incident"),
-#                   spatial = "all_cmr")                 # broad/descriptive
-#
-# Arguments
-#   incident_types : character vector of IOM `Incident Type` values to keep.
-#                    Default c("incident") — split incidents EXCLUDED.
-#                    "Split incidents" are IOM's decomposition of ONE
-#                    reported event across multiple calendar dates. That
-#                    date-smearing decouples deaths from the day's recent
-#                    SWH, flattens the SWH->mortality gradient, and has no
-#                    analogue in UNITED (one event -> one date), so keeping
-#                    them breaks IOM/UNITED comparability. Verified in the
-#                    P2/P3 decomposition: dropping split moves the IOM
-#                    4-period gradient toward UNITED (P2 +0.14 -> +0.39,
-#                    P3 +0.04 -> +0.46) and barely touches P1. Costs ~10%
-#                    of sample rows. Pass c("incident", "split incident")
-#                    to opt back in (e.g. the broad volume-denominator
-#                    build in 01_build_daily_panel.R).
-#   spatial        : "central" (restrict to points inside the core corridor
-#                    polygon via spatial join) or "all_cmr" (no spatial filter).
-#                    Default "central".
-#   causes         : "sea" or "all". "sea" keeps Drowning + Mixed or unknown —
-#                    the cause categories that map most directly to the act of
-#                    crossing the sea (where SWH is the relevant exposure).
-#                    Other categories (violence, vehicle accident, sickness,
-#                    harsh exposure) include events from before/after the
-#                    maritime leg of the journey and are dropped. Either choice
-#                    introduces some measurement error; drown+mixed are the
-#                    overwhelming majority of CMR deaths so they are the
-#                    default and "all" is the robustness alternative.
-#                    Default "sea".
-#   countries      : character vector of allowed `Country of Incident` values.
-#                    Default = the 5 CMR countries.
-#   base_dir       : project root. Default here::here().
-#
-# Returns a tibble with columns `date` and `n_dead_missing`, one row per day
-# with at least one matching incident. Dates with no matching incidents are
-# absent and should be filled with 0 after left-joining onto the panel.
-#
-# The function avoids loading `sf` at source time; it uses `sf::` prefixed
-# calls only when a spatial filter is requested, so callers that do not need
-# spatial filtering do not need `library(sf)`.
+# ── Shared helpers ────────────────────────────────────────────────────────────
+# Builders for IOM/UNITED daily series and small path/spatial utilities.
+# Sourced by every analytical script.
 
+source(here::here("analysis", "R", "_constants.R"))
+
+# ── Output paths ──────────────────────────────────────────────────────────────
+# fig_path("05_analysis", "01_primary.png") returns the full path under
+# output/figures/05_analysis/ and creates the directory if needed.
+fig_path <- function(section, file) {
+  p <- here::here("output", "figures", section, file)
+  dir.create(dirname(p), recursive = TRUE, showWarnings = FALSE)
+  p
+}
+
+tbl_path <- function(section, file) {
+  p <- here::here("output", "tables", section, file)
+  dir.create(dirname(p), recursive = TRUE, showWarnings = FALSE)
+  p
+}
+
+# ── Spatial: restrict to core corridor ────────────────────────────────────────
+# Spatial filter to the corridor polygon. Expects non-missing coords; toggles
+# off s2 for robust point-in-polygon on lon/lat.
+filter_corridor <- function(d, coords = c("lon", "lat"),
+                            base_dir = here::here()) {
+  core_poly <- readRDS(file.path(base_dir, "data", "processed", "core_corridor.RDS"))
+  prev_s2 <- sf::sf_use_s2(FALSE)
+  on.exit(sf::sf_use_s2(prev_s2), add = TRUE)
+  pts    <- sf::st_as_sf(d, coords = coords, crs = 4326, remove = FALSE)
+  inside <- lengths(sf::st_within(pts, core_poly)) > 0
+  dplyr::filter(d, inside)
+}
+
+# ── IOM daily deaths ──────────────────────────────────────────────────────────
+# Daily aggregate of dead+missing from raw IOM MMP. Defaults match the primary
+# analytical spec: incident-only, corridor spatial join, drowning + mixed cause.
+# Override incident_types/spatial/causes for robustness variants.
 build_iom_daily <- function(
   incident_types = c("incident"),
   spatial        = c("central", "all_cmr"),
   causes         = c("sea", "all"),
-  countries      = c("Algeria", "Italy", "Libya", "Malta", "Tunisia"),
+  countries      = CMR_INCIDENT_COUNTRIES,
   base_dir       = here::here()
 ) {
   spatial <- match.arg(spatial)
@@ -87,12 +66,9 @@ build_iom_daily <- function(
   }
 
   if (spatial == "central") {
-    d <- tidyr::drop_na(d, lon, lat)
-    core_poly <- readRDS(file.path(base_dir, "data", "processed", "core_corridor.RDS"))
-    prev_s2 <- sf::sf_use_s2(FALSE)
-    on.exit(sf::sf_use_s2(prev_s2), add = TRUE)
-    pts <- sf::st_as_sf(d, coords = c("lon", "lat"), crs = 4326)
-    d <- d[lengths(sf::st_within(pts, core_poly)) > 0, , drop = FALSE]
+    d <- d |>
+      tidyr::drop_na(lon, lat) |>
+      filter_corridor(coords = c("lon", "lat"), base_dir = base_dir)
   }
 
   d |>
@@ -101,43 +77,14 @@ build_iom_daily <- function(
     dplyr::arrange(date)
 }
 
-# build_united_daily()
-# --------------------
-# UNITED daily death aggregate, constructed with the SAME spatial + cause
-# logic as build_iom_daily() so the two sources are directly comparable.
-# This is the single source of truth for the UNITED series: scripts must
-# call this instead of re-implementing the filter inline (inline copies
-# drift — that is exactly how 31 diverged from 20/28).
-#
-# With the defaults this reproduces, byte-for-byte, the UNITED block in
-# 20_primary_model.R / 28_period_sar_gradient.R (country in CMR+Med, manner
-# in {drowned, other_unknown}, non-missing lon/lat, spatial join to the
-# core_corridor polygon).
-#
-# Arguments
-#   causes    : "sea" (manner_of_death in {drowned, other_unknown}) or
-#               "all" (no manner-of-death filter). Default "sea".
-#   spatial   : "central" (spatial join to the core corridor polygon;
-#               requires non-missing lon/lat) or "all_cmr" (no spatial
-#               filter). Default "central".
-#   countries : allowed `country_of_death` values. Default = the 5 CMR
-#               countries + "Mediterranean" (UNITED records open-sea
-#               deaths under "Mediterranean"; the IOM analogue does not
-#               need this because build_iom_daily filters Country of
-#               Incident on the CMR route instead).
-#   base_dir  : project root. Default here::here().
-#
-# Returns a tibble with columns `date` and `n_dead_united`, one row per
-# day with at least one matching incident. Dates with no matching incident
-# are absent and should be filled with 0 after left-joining onto the panel.
-#
-# Like build_iom_daily(), this avoids loading `sf` at source time and only
-# uses `sf::` prefixed calls when spatial == "central".
-
+# ── UNITED daily deaths ───────────────────────────────────────────────────────
+# Same spatial + cause logic as build_iom_daily() so the two sources are
+# directly comparable. UNITED records open-sea deaths under "Mediterranean",
+# so that label is added to the country list.
 build_united_daily <- function(
   causes    = c("sea", "all"),
   spatial   = c("central", "all_cmr"),
-  countries = c("Algeria", "Italy", "Libya", "Malta", "Tunisia", "Mediterranean"),
+  countries = c(CMR_INCIDENT_COUNTRIES, "Mediterranean"),
   base_dir  = here::here()
 ) {
   causes  <- match.arg(causes)
@@ -152,12 +99,9 @@ build_united_daily <- function(
   }
 
   if (spatial == "central") {
-    d <- dplyr::filter(d, !is.na(latitude), !is.na(longitude))
-    core_poly <- readRDS(file.path(base_dir, "data", "processed", "core_corridor.RDS"))
-    prev_s2 <- sf::sf_use_s2(FALSE)
-    on.exit(sf::sf_use_s2(prev_s2), add = TRUE)
-    pts <- sf::st_as_sf(d, coords = c("longitude", "latitude"), crs = 4326)
-    d <- d[lengths(sf::st_within(pts, core_poly)) > 0, , drop = FALSE]
+    d <- d |>
+      dplyr::filter(!is.na(latitude), !is.na(longitude)) |>
+      filter_corridor(coords = c("longitude", "latitude"), base_dir = base_dir)
   }
 
   d |>
@@ -166,19 +110,10 @@ build_united_daily <- function(
     dplyr::arrange(date)
 }
 
-# add_crossing_exposure()
-# -----------------------
-# Single source of truth for the constructed crossing-exposure denominator
-# (shared by the rate-model scripts; previously inline-duplicated in 20/27/28).
-#
-# Call AFTER the build_*_daily() left-joins and replace_na(): input must
-# already have `frx_persons`, `lcg_tcg_pushbacks`, `n_dead_iom`,
-# `n_dead_united`.
-#
-# Adds:
-#   living_crossings = frx_persons + lcg_tcg_pushbacks
-#   attempts_iom     = living_crossings + n_dead_iom
-#   attempts_united  = living_crossings + n_dead_united   (source-specific)
+# ── Crossing-exposure columns ─────────────────────────────────────────────────
+# Adds living_crossings (frx_persons + lcg_tcg_pushbacks) and the source-specific
+# attempts_iom / attempts_united denominators. Call after the build_*_daily()
+# joins and the replace_na() step that fills n_dead_{iom,united}.
 add_crossing_exposure <- function(df) {
   stopifnot(all(c("frx_persons", "lcg_tcg_pushbacks",
                   "n_dead_iom", "n_dead_united") %in% names(df)))

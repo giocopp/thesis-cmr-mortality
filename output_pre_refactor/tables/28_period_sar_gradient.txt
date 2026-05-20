@@ -1,0 +1,229 @@
+28  REGIME-RESOLVED SWH-MORTALITY MODELS (IOM + UNITED)
+=======================================================
+Sample: 2014-01-15 to 2023-05-31 (N = 3424 days; 20 primary sample)
+UNITED filter = build_united_daily() (corridor join); shared by 20/27/28/31.
+2-period cut: post_mou from 2017-07-01. 4-period: 31 boundaries
+(1->2 at 2017-01-31). Frontex-bounded -> period 1 left-truncated at
+2014, period 4 (Meloni) thin (~7 months). Count/probability regime
+decomposition; offset rate model is in 20 (boat controls in 27).
+No control group -> descriptive.
+
+=== FAMILY 1: count, 2-period (swh:post_mou) ===
+                               f1_2p_io..     f1_2p_io...1     f1_2p_utd_nb
+                                   IOM NB         IOM Pois        UNITED NB
+Dependent Var.:                n_dead_iom       n_dead_iom    n_dead_united
+                                                                           
+swh_prev5days                   -2.036***         -1.989**        -2.719***
+                                (0.5989)          (0.6929)        (0.6270) 
+swh_prev5days x post_mou         2.546***          2.351**         3.696***
+                                (0.7107)          (0.7528)        (0.7492) 
+Fixed-Effects:                 ----------       ----------    -------------
+month_year_fac                        Yes              Yes              Yes
+________________________       __________       __________    _____________
+Family                          Neg. Bin.          Poisson        Neg. Bin.
+S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                        3,286            3,286            3,197
+Squared Cor.                      0.03876          0.08654          0.06011
+Pseudo R2                         0.03841          0.24405          0.02105
+BIC                               8,242.2         69,295.9          8,053.7
+Over-dispersion                   0.05968               --          0.03987
+
+                             f1_2p_utd_po
+                              UNITED Pois
+Dependent Var.:             n_dead_united
+                                         
+swh_prev5days                   -1.417** 
+                                (0.4318) 
+swh_prev5days x post_mou         1.970***
+                                (0.5152) 
+Fixed-Effects:              -------------
+month_year_fac                        Yes
+________________________    _____________
+Family                            Poisson
+S.E. type                New.-West (L=14)
+Observations                        3,197
+Squared Cor.                      0.07706
+Pseudo R2                         0.20006
+BIC                              90,893.8
+Over-dispersion                        --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== FAMILY 1: count, 4-period (swh:period) ===
+                                                f1_4p_io..     f1_4p_io...1
+                                                    IOM NB         IOM Pois
+Dependent Var.:                                 n_dead_iom       n_dead_iom
+                                                                           
+swh_prev5days x period1. Post-Arab Spring         -2.087**         -2.026* 
+                                                  (0.6941)         (0.7913)
+swh_prev5days x period2. MoU + Salvini             0.3880          -0.1526 
+                                                  (0.5755)         (0.4204)
+swh_prev5days x period3. Partial rollback          0.4593           0.1037 
+                                                  (0.7998)         (0.4841)
+swh_prev5days x period4. Meloni                    0.2239           0.4863 
+                                                  (0.4237)         (0.4089)
+Fixed-Effects:                                  ----------       ----------
+month_year_fac                                         Yes              Yes
+________________________________________        __________       __________
+Family                                           Neg. Bin.          Poisson
+S.E. type                                 New.-West (L=14) New.-West (L=14)
+Observations                                         3,286            3,286
+Squared Cor.                                       0.03560          0.08506
+Pseudo R2                                          0.03811          0.24037
+BIC                                                8,260.7         69,645.3
+Over-dispersion                                    0.05953               --
+
+                                              f1_4p_utd_nb     f1_4p_utd_po
+                                                 UNITED NB      UNITED Pois
+Dependent Var.:                              n_dead_united    n_dead_united
+                                                                           
+swh_prev5days x period1. Post-Arab Spring        -2.806***         -1.381**
+                                                 (0.7244)          (0.4852)
+swh_prev5days x period2. MoU + Salvini            1.196             0.0498 
+                                                 (0.7325)          (0.4065)
+swh_prev5days x period3. Partial rollback         0.7770            0.3440 
+                                                 (0.7609)          (0.4361)
+swh_prev5days x period4. Meloni                   0.4038            0.7076*
+                                                 (0.4032)          (0.3555)
+Fixed-Effects:                               -------------    -------------
+month_year_fac                                         Yes              Yes
+________________________________________     _____________    _____________
+Family                                           Neg. Bin.          Poisson
+S.E. type                                 New.-West (L=14) New.-West (L=14)
+Observations                                         3,197            3,197
+Squared Cor.                                       0.05559          0.07486
+Pseudo R2                                          0.02074          0.19569
+BIC                                                8,072.1         91,401.6
+Over-dispersion                                    0.03975               --
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Wald test (4 period gradients equal):
+  IOM NB       chi2(3) = 9.880, p = 0.0196
+  IOM Pois     chi2(3) = 8.042, p = 0.0451
+  UNITED NB    chi2(3) = 19.425, p = 0.0002
+  UNITED Pois  chi2(3) = 12.272, p = 0.0065
+
+=== FAMILY 2: count, continuous-SAR moderator (raw scale) ===
+Spec: n_dead ~ swh + swh:SARmod + SARmod | month_year_fac (23 design)
+Negative b_int = more SAR flattens the SWH-death slope (guardrail).
+
+  source  moderator      family        b_int         SE          p
+  IOM     frx_n_sar      NegBin      +0.0666     0.0846     0.4308
+  IOM     frx_n_sar      Poisson     -0.0009     0.0288     0.9764
+  IOM     frx_sar_share  NegBin      -1.9066     1.0289     0.0639
+  IOM     frx_sar_share  Poisson     -2.2390     0.8850     0.0114 *
+  IOM     sar_n_pw       NegBin      -0.0150     0.0241     0.5328
+  IOM     sar_n_pw       Poisson     -0.0261     0.0230     0.2565
+  IOM     sar_share_pw   NegBin      -2.3574     1.0987     0.0319 *
+  IOM     sar_share_pw   Poisson     -2.6807     0.8361     0.0013 *
+  UNITED  frx_n_sar      NegBin      +0.1696     0.1019     0.0960
+  UNITED  frx_n_sar      Poisson     +0.0201     0.0354     0.5702
+  UNITED  frx_sar_share  NegBin      -2.4383     0.9539     0.0106 *
+  UNITED  frx_sar_share  Poisson     -1.3847     0.5278     0.0087 *
+  UNITED  sar_n_pw       NegBin      -0.0143     0.0227     0.5287
+  UNITED  sar_n_pw       Poisson     -0.0028     0.0233     0.9041
+  UNITED  sar_share_pw   NegBin      -4.0096     1.0357     0.0001 *
+  UNITED  sar_share_pw   Poisson     -2.2800     0.5722     0.0001 *
+
+=== FAMILY 3: deadly-day probability ===
+
+--- 4-period LPM, NW(14) ---
+                                                  f3_4p_..       f3_4p_ut..
+                                                   IOM LPM       UNITED LPM
+Dependent Var.:                                     dd_iom        dd_united
+                                                                           
+swh_prev5days x period1. Post-Arab Spring         -0.0305        -0.0785***
+                                                  (0.0201)       (0.0230)  
+swh_prev5days x period2. MoU + Salvini            -0.0425        -0.0075   
+                                                  (0.0361)       (0.0289)  
+swh_prev5days x period3. Partial rollback         -0.0244        -0.0509   
+                                                  (0.0388)       (0.0391)  
+swh_prev5days x period4. Meloni                   -0.0542        -0.0420   
+                                                  (0.0505)       (0.0604)  
+Fixed-Effects:                                    --------       ----------
+month_year_fac                                         Yes              Yes
+________________________________________          ________       __________
+S.E. type                                 New.-West (L=14) New.-West (L=14)
+Observations                                         3,424            3,424
+R2                                                 0.14059          0.10227
+Within R2                                          0.00114          0.00281
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+--- 4-period logit, cluster(month_year) ---
+                                           f3_4p_..    f3_4p_u..
+                                          IOM logit UNITED logit
+Dependent Var.:                              dd_iom    dd_united
+                                                                
+swh_prev5days x period1. Post-Arab Spring  -0.4122     -1.244***
+                                           (0.2472)    (0.3620) 
+swh_prev5days x period2. MoU + Salvini     -0.3650     -0.0727  
+                                           (0.3185)    (0.2652) 
+swh_prev5days x period3. Partial rollback  -0.1810     -0.3987  
+                                           (0.2924)    (0.2948) 
+swh_prev5days x period4. Meloni            -0.3784     -0.2788  
+                                           (0.3535)    (0.4886) 
+Fixed-Effects:                             --------    ---------
+month_year_fac                                  Yes          Yes
+________________________________________   ________    _________
+S.E.: Clustered                            by: mo..    by: mon..
+Observations                                  3,286        3,197
+Squared Cor.                                0.13358      0.09230
+Pseudo R2                                   0.13200      0.10096
+BIC                                         3,659.5      3,381.5
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+--- 2-period LPM, NW(14) ---
+                                 f3_2p_..       f3_2p_ut..
+                                  IOM LPM       UNITED LPM
+Dependent Var.:                    dd_iom        dd_united
+                                                          
+swh_prev5days                    -0.0557*       -0.0902***
+                                 (0.0229)       (0.0225)  
+swh_prev5days x post_mou          0.0327         0.0705*  
+                                 (0.0331)       (0.0317)  
+Fixed-Effects:                   --------       ----------
+month_year_fac                        Yes              Yes
+________________________         ________       __________
+S.E. type                New.-West (L=14) New.-West (L=14)
+Observations                        3,424            3,424
+R2                                0.14070          0.10257
+Within R2                         0.00127          0.00314
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+--- Continuous SAR (weekly share) LPM, NW(14) ---
+                                     f3_sar..        f3_sar_..
+                                      IOM LPM       UNITED LPM
+Dependent Var.:                        dd_iom        dd_united
+                                                              
+swh_prev5days                         0.0112          0.0273  
+                                     (0.0367)        (0.0313) 
+sar_share_pw                          0.0962          0.1446* 
+                                     (0.0707)        (0.0670) 
+swh_prev5days x sar_share_pw         -0.0616         -0.1193**
+                                     (0.0502)        (0.0450) 
+Fixed-Effects:                       --------        ---------
+month_year_fac                            Yes              Yes
+____________________________         ________        _________
+S.E. type                    New.-West (L=14) New.-West (L=14)
+Observations                            3,232            3,232
+R2                                    0.14228          0.10591
+Within R2                             0.00092          0.00316
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+--- Descriptive projected P(deadly day) at SWH=1.65 (90th pct) ---
+LPM projection: period mean P + period slope x (swh90 - period mean swh).
+Descriptive only (FE absorbed at sample mean), not a structural prediction.
+
+  IOM     1. Post-Arab Spring    base P=0.121  slope=-0.0304  P@swh90=0.102
+  IOM     2. MoU + Salvini       base P=0.166  slope=-0.0425  P@swh90=0.139
+  IOM     3. Partial rollback    base P=0.236  slope=-0.0244  P@swh90=0.219
+  IOM     4. Meloni              base P=0.279  slope=-0.0542  P@swh90=0.247
+  UNITED  1. Post-Arab Spring    base P=0.118  slope=-0.0785  P@swh90=0.067
+  UNITED  2. MoU + Salvini       base P=0.140  slope=-0.0075  P@swh90=0.135
+  UNITED  3. Partial rollback    base P=0.159  slope=-0.0509  P@swh90=0.122
+  UNITED  4. Meloni              base P=0.270  slope=-0.0420  P@swh90=0.245

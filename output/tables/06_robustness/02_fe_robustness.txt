@@ -1,0 +1,73 @@
+24  FE ROBUSTNESS OF PRIMARY REDUCED FORM
+Aligned with 20_primary_model.R
+=========================================
+Sample: 2014-01-15 to 2023-05-31 (N = 3424 days, 15285 deaths)
+Model: n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou | <FE>
+       (matches 20_primary_model.R; post_mou main effect omitted)
+Families: NegBin (fenegbin) + Poisson QMLE (fepois)
+SEs:   Newey-West(14) unless stated otherwise.
+
+=== 1. SWH variance absorbed by FE ===
+# A tibble: 6 × 3
+  fe_spec                 `abs R2`  n_fe
+  <chr>                   <chr>    <int>
+1 year                    1.0%        10
+2 month-of-year           42.3%       12
+3 year + month            43.1%       22
+4 quarter-year            39.0%       38
+5 month-year (primary/20) 51.1%      113
+6 month-year + dow        51.1%      120
+
+=== 2. NegBin estimates across FE specs ===
+# A tibble: 6 × 7
+  fe_spec                 `abs R2`  n_fe b1                      b3                        AIC pr2  
+  <chr>                   <chr>    <int> <chr>                   <chr>                   <dbl> <chr>
+1 year                    1.0%        10 -0.930 (0.411, p=0.024) +0.604 (0.461, p=0.190) 7674. 0.007
+2 month-of-year           42.3%       12 +0.098 (0.331, p=0.767) -0.641 (0.192, p=0.001) 7688. 0.005
+3 year + month            43.1%       22 -0.675 (0.416, p=0.105) +0.521 (0.434, p=0.229) 7683. 0.008
+4 quarter-year            39.0%       38 -1.595 (0.478, p=0.001) +2.042 (0.582, p=0.000) 7622. 0.021
+5 month-year (primary/20) 51.1%      108 -2.036 (0.599, p=0.001) +2.546 (0.711, p=0.000) 7572. 0.038
+6 month-year + dow        51.1%      115 -2.056 (0.613, p=0.001) +2.464 (0.713, p=0.001) 7577. 0.039
+
+=== 3. Poisson estimates across FE specs ===
+# A tibble: 6 × 6
+  fe_spec                 `abs R2`  n_fe b1                      b3                      pr2  
+  <chr>                   <chr>    <int> <chr>                   <chr>                   <chr>
+1 year                    1.0%        10 -0.785 (0.397, p=0.048) +0.038 (0.354, p=0.914) 0.060
+2 month-of-year           42.3%       12 -0.379 (0.468, p=0.418) -0.783 (0.236, p=0.001) 0.053
+3 year + month            43.1%       22 -0.879 (0.671, p=0.190) +0.217 (0.496, p=0.662) 0.077
+4 quarter-year            39.0%       38 -1.500 (0.633, p=0.018) +1.648 (0.677, p=0.015) 0.154
+5 month-year (primary/20) 51.1%      108 -1.989 (0.693, p=0.004) +2.351 (0.753, p=0.002) 0.244
+6 month-year + dow        51.1%      115 -2.008 (0.684, p=0.003) +2.355 (0.734, p=0.001) 0.250
+
+=== 4. SE variants on month_year_fac (same point estimate) ===
+NegBin:
+# A tibble: 6 × 2
+  variant             b3                     
+  <chr>               <chr>                  
+1 NW(7)               +2.546 (0.627, p=0.000)
+2 NW(14) [primary]    +2.546 (0.711, p=0.000)
+3 NW(21)              +2.546 (0.764, p=0.001)
+4 cluster: month_year +2.546 (0.923, p=0.006)
+5 cluster: year       +2.546 (1.062, p=0.016)
+6 iid                 +2.546 (0.694, p=0.000)
+
+Poisson:
+# A tibble: 6 × 2
+  variant             b3                     
+  <chr>               <chr>                  
+1 NW(7)               +2.351 (0.716, p=0.001)
+2 NW(14) [primary]    +2.351 (0.753, p=0.002)
+3 NW(21)              +2.351 (0.793, p=0.003)
+4 cluster: month_year +2.351 (0.867, p=0.007)
+5 cluster: year       +2.351 (0.888, p=0.008)
+6 iid                 +2.351 (0.060, p=0.000)
+
+=== 5. Sample restriction on month_year_fac (re-fit NegBin) ===
+# A tibble: 4 × 4
+  variant                  N b1                      b3                     
+  <chr>                <int> <chr>                   <chr>                  
+1 full                  3286 -2.036 (0.599, p=0.001) +2.546 (0.711, p=0.000)
+2 drop zero-death days   601 -0.766 (0.653, p=0.241) +1.294 (0.712, p=0.069)
+3 cap deaths at 100     3197 -1.491 (0.409, p=0.000) +1.908 (0.555, p=0.001)
+4 drop FE singletons    3286 -2.036 (0.599, p=0.001) +2.546 (0.711, p=0.000)

@@ -1,0 +1,23 @@
+SAR zone assignment diagnostics
+===============================
+
+Input rows (Frontex):        14267
+Rows with coordinates:       2898
+Rows in any SAR zone:        2884
+Rows in 1 zone only:         2878
+Rows in 2 zones (overlap):   6
+Rows in 0 zones:             14
+
+Per-country counts (double-counts overlaps):
+  sar_italy    20
+  sar_malta    71
+  sar_libya    2798
+  sar_tunisia  1
+
+Most common sar_countries values:
+  Libya                                      2798
+  Malta                                        65
+  Italy                                        14
+  (none)                                       14
+  Italy, Malta                                  6
+  Tunisia                                       1

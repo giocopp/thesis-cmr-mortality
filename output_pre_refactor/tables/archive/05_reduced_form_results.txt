@@ -1,0 +1,49 @@
+REDUCED-FORM PRIMARY: n_dead_missing ~ SWH x post_mou | month-year FE
+NegBin (fenegbin) | Newey-West(14) SEs | Raw prev-week SWH (per 1 metre)
+Primary outcome: incident-only, core corridor polygon,
+                 cause = Drowning or Mixed/unknown (cases most directly
+                 tied to the act of crossing the sea).
+Sample window: 2014-01-01 to 2023-05-31
+
+=== 2014..2020-12-31 ===
+  Primary (drowning + mixed)        b3 = +3.475 (SE=1.399)  IRR = 32.284  p = 0.0130
+  No outliers >100 (robust.)        b3 = +1.942 (SE=1.166)  IRR = 6.974  p = 0.0958
+  All causes (robust.)              b3 = +2.935 (SE=1.303)  IRR = 18.814  p = 0.0243
+  All CMR countries (robust.)       b3 = +2.892 (SE=1.136)  IRR = 18.031  p = 0.0109
+  Next-7d (falsification)           b3 = -1.366 (SE=0.902)  IRR = 0.255  p = 0.1298
+
+=== 2014..2023-05-31 ===
+  Primary (drowning + mixed)        b3 = +2.480 (SE=0.994)  IRR = 11.938  p = 0.0126
+  No outliers >100 (robust.)        b3 = +1.433 (SE=0.696)  IRR = 4.193  p = 0.0395
+  All causes (robust.)              b3 = +2.023 (SE=0.894)  IRR = 7.560  p = 0.0236
+  All CMR countries (robust.)       b3 = +1.976 (SE=0.800)  IRR = 7.214  p = 0.0135
+  Next-7d (falsification)           b3 = -0.858 (SE=0.831)  IRR = 0.424  p = 0.3021
+
+TREND TESTS FOR β(SWH)
+----------------------
+(1) Continuous linear trend: slope of swh_prevweek:year_index
+(2) Joint Wald on yearly heterogeneity (all (slope_year - slope_2014) = 0)
+Sample window: 2014-01-01 to 2023-05-31
+
+=== Full CMR corridor ===
+  (1) continuous  : +0.2159 (SE=0.1301)  p = 0.0970
+  (2) joint Wald  : chi2(9) = 25.608  p = 0.0024
+
+=== African SAR zone (Libya+Tunisia) ===
+  (1) continuous  : +0.1744 (SE=0.2981)  p = 0.5585
+  (2) joint Wald  : chi2(9) = 40.699  p = 0.0000
+
+TREND TESTS FOR β(SWH) — PER-ATTEMPT (offset model)
+----------------------------------------------------
+Same as above but with offset(log(crossing_attempts)).
+Coefficients are on the fatality RATE per attempt, not raw counts.
+Days with zero crossing attempts dropped.
+
+=== Full CMR corridor (per-attempt) ===
+  (1) continuous  : +0.1304 (SE=0.1443)  p = 0.3663
+  (2) joint Wald  : chi2(9) = 6.106  p = 0.7292
+
+=== African SAR (per-attempt) ===
+  (1) continuous  : +0.2062 (SE=0.2924)  p = 0.4807
+  (2) joint Wald  : chi2(9) = 12.385  p = 0.1924
+

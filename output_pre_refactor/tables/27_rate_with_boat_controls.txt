@@ -1,0 +1,150 @@
+27  RATE MODEL WITH BOAT COMPOSITION CONTROLS
+Extension of m_rate / m_rate_u in 20_primary_model.R
+=====================================================
+
+Sample (boat-observable):  2014-01-22 to 2023-05-31
+                           N = 1893 days (single sample, both sources)
+                           (vs. 20 rate sample: N = 2125 days)
+                           Sample is restricted to frx_incidents > 0 so boat shares are defined.
+Outcome: recorded deaths (IOM or UNITED) on a common-denominator rate.
+Standard errors: Newey-West (lag = 14)
+Common denom: crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing
+log(crossing_attempts) enters as a free covariate (not a forced offset).
+N = estimation N after fixest drops all-zero FE cells.
+
+Three specifications:
+  V1: Baseline (matches 20 m_rate spec, on the boat-observable sample)
+       deaths ~ swh + swh:post_mou + log(crossing_attempts) | month_year_fac
+  V2: + boat composition (additive)
+       deaths ~ swh + swh:post_mou + inflatable_share + wooden_share
+              + log(crossing_attempts) | month_year_fac
+  V3: + boat x SWH interaction (Deiana-style mediator probe)
+       deaths ~ swh + swh:post_mou + swh:inflatable_share +
+              + inflatable_share + wooden_share + log(crossing_attempts) | month_year_fac
+
+=== Boat composition: pre/post-MoU descriptive ===
+# A tibble: 2 × 4
+  period   n_days mean_inflatable mean_wooden
+  <chr>     <int>           <dbl>       <dbl>
+1 Post-MoU   1189           0.262       0.446
+2 Pre-MoU     704           0.610       0.129
+
+=== IOM rate model -- V1, V2, V3 (NW(14)) ===
+                                               v1_iom           v2_iom
+                                         V1: Baseline   V2: +boat ctrl
+Dependent Var.:                            n_dead_iom       n_dead_iom
+                                                                      
+swh_prev5days                              -2.128*          -2.141**  
+                                           (0.8663)         (0.7946)  
+log_crossing_attempts                       0.4053***        0.4248***
+                                           (0.0929)         (0.1013)  
+swh_prev5days x post_mou                    3.157***         3.246*** 
+                                           (0.9464)         (0.9399)  
+frx_inflatable_share                                        -0.7612   
+                                                            (0.8126)  
+frx_wooden_share                                            -0.6383   
+                                                            (0.6193)  
+swh_prev5days x frx_inflatable_share                                  
+                                                                      
+Fixed-Effects:                             ----------       ----------
+month_year_fac                                    Yes              Yes
+____________________________________       __________       __________
+S.E. type                            New.-West (L=14) New.-West (L=14)
+Observations                                    1,739            1,739
+Squared Cor.                                  0.18323          0.27618
+Pseudo R2                                     0.32384          0.33046
+BIC                                          46,389.1         45,957.1
+
+                                               v3_iom
+                                      V3: +boat x SWH
+Dependent Var.:                            n_dead_iom
+                                                     
+swh_prev5days                              -3.683**  
+                                           (1.214)   
+log_crossing_attempts                       0.4164***
+                                           (0.0896)  
+swh_prev5days x post_mou                    3.898*** 
+                                           (0.9657)  
+frx_inflatable_share                       -2.632*   
+                                           (1.252)   
+frx_wooden_share                           -0.3682   
+                                           (0.4831)  
+swh_prev5days x frx_inflatable_share        2.448*   
+                                           (1.049)   
+Fixed-Effects:                             ----------
+month_year_fac                                    Yes
+____________________________________       __________
+S.E. type                            New.-West (L=14)
+Observations                                    1,739
+Squared Cor.                                  0.38204
+Pseudo R2                                     0.34544
+BIC                                          44,953.8
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== UNITED rate model -- V1, V2, V3 (NW(14)) ===
+                                            v1_united        v2_united
+                                         V1: Baseline   V2: +boat ctrl
+Dependent Var.:                         n_dead_united    n_dead_united
+                                                                      
+swh_prev5days                              -1.611**         -1.653*** 
+                                           (0.4929)         (0.4660)  
+log_crossing_attempts                       0.4018***        0.4246***
+                                           (0.0952)         (0.0998)  
+swh_prev5days x post_mou                    2.664***         2.755*** 
+                                           (0.6069)         (0.6050)  
+frx_inflatable_share                                        -0.7926   
+                                                            (0.6292)  
+frx_wooden_share                                            -0.4221   
+                                                            (0.5229)  
+swh_prev5days x frx_inflatable_share                                  
+                                                                      
+Fixed-Effects:                          -------------    -------------
+month_year_fac                                    Yes              Yes
+____________________________________    _____________    _____________
+S.E. type                            New.-West (L=14) New.-West (L=14)
+Observations                                    1,742            1,742
+Squared Cor.                                  0.21122          0.30534
+Pseudo R2                                     0.31028          0.31805
+BIC                                          59,762.0         59,112.9
+
+                                            v3_united
+                                      V3: +boat x SWH
+Dependent Var.:                         n_dead_united
+                                                     
+swh_prev5days                              -2.624*** 
+                                           (0.7502)  
+log_crossing_attempts                       0.4133***
+                                           (0.0902)  
+swh_prev5days x post_mou                    3.219*** 
+                                           (0.6609)  
+frx_inflatable_share                       -2.126    
+                                           (1.116)   
+frx_wooden_share                           -0.2434   
+                                           (0.4772)  
+swh_prev5days x frx_inflatable_share        1.648    
+                                           (0.8995)  
+Fixed-Effects:                          -------------
+month_year_fac                                    Yes
+____________________________________    _____________
+S.E. type                            New.-West (L=14)
+Observations                                    1,742
+Squared Cor.                                  0.37443
+Pseudo R2                                     0.32646
+BIC                                          58,400.7
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== SUMMARY: SWH x post_MoU coefficient across versions ===
+
+  IOM      V1: Baseline        b = +3.157 (SE=0.946)  p = 0.0009 *
+  IOM      V2: +boat ctrl      b = +3.246 (SE=0.940)  p = 0.0006 *
+  IOM      V3: +boat x SWH     b = +3.898 (SE=0.966)  p = 0.0001 *
+  UNITED   V1: Baseline        b = +2.664 (SE=0.607)  p = 0.0000 *
+  UNITED   V2: +boat ctrl      b = +2.755 (SE=0.605)  p = 0.0000 *
+  UNITED   V3: +boat x SWH     b = +3.219 (SE=0.661)  p = 0.0000 *
+
+=== SWH x inflatable_share interaction (V3 only, Deiana-style) ===
+
+  IOM      V3                  b = +2.448 (SE=1.049)  p = 0.0197 *
+  UNITED   V3                  b = +1.648 (SE=0.900)  p = 0.0669
