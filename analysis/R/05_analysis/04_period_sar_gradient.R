@@ -1,49 +1,6 @@
-# 28_period_sar_gradient.R
-# =========================
-# Regime-resolved SWH-mortality models, IOM and UNITED side by side.
-#
-# Consolidates three model families that the existing pipeline only covers
-# partially:
-#   F1  count, period interaction      (2-period + 4-period; fills IOM gap)
-#   F2  count, continuous-SAR moderator (raw scale + UNITED; extends 23)
-#   F3  deadly-day probability          (logit + LPM; new)
-#
-# Every model is estimated on BOTH n_dead_iom and n_dead_united, on the SAME
-# sample, so the two sources are directly comparable.
-#
-# Date conventions (deliberately two different operationalisations of "the
-# MoU" -- kept distinct, not conflated):
-#   - 2-period cut  : post_mou = 1 from 2017-07-01 (MoU enforcement; the 20
-#                     primary-model definition).
-#   - 4-period cut  : boundary 1->2 at 2017-01-31 (MoU signed Feb 2017; the
-#                     31_united_periods definition). Periods:
-#       1 Post-Arab Spring  (.. 2017-01-31)  Mare Nostrum + Frontex + NGO SAR
-#       2 MoU + Salvini      (2017-02-01 .. 2019-12-31)
-#       3 Partial rollback   (2020-01-01 .. 2022-10-21)
-#       4 Meloni             (2022-10-22 ..)
-#
-# Sample = the 20_primary_model sample (!is.na(lc_lag14) & !is.na(swh_prev5days)),
-# so the F1 IOM 2-period gradient reconciles exactly with 20's b3. Because
-# the panel is Frontex-bounded (~2014-01-15 to 2023-05-31), period 1 is
-# left-truncated at 2014 and period 4 (Meloni) is thin (~7 months) -- as in
-# 31's 2014-2023 subset. Stated openly in the output.
-#
-# UNITED filter = build_united_daily() defaults (country in CMR+Med, cause
-# drowned/other_unknown, spatial join to core corridor). 20/27/28/31 all
-# use the same shared builder, so UNITED numbers reconcile EXACTLY with 31
-# on the shared (Frontex-bounded) sample.
-#
-# Scope: count/probability regime decomposition. The offset rate model is
-# in 20_primary_model.R (boat-composition robustness in 27). Per-incident
-# fatality rates are not computed (incident counts are not crossing exposure).
-# No control group: estimates are descriptive regime-resolved, not causal.
-#
-# In:  analysis/data/daily_panel_complete.RDS
-#      data/processed/iom_mmp_incidents.RDS (via build_iom_daily)
-#      data/processed/united_incidents.RDS
-#      data/processed/core_corridor.RDS
-# Out: output/tables/28_period_sar_gradient.txt
-#      output/figures/28_period_sar_gradient.png
+# ── Regime-resolved SWH-mortality gradient (IOM + UNITED) ─────────────────
+# Three families: 2/4-period interaction, continuous SAR moderator,
+# deadly-day probability. Sample matches the primary model.
 
 library(tidyverse)
 library(lubridate)
@@ -52,12 +9,11 @@ library(patchwork)
 library(sf)
 
 BASE_DIR <- here::here()
-MOU_DATE <- as.Date("2017-07-01")   # 2-period cut (20 definition)
-D_12     <- as.Date("2017-01-31")   # 4-period: end Post-Arab Spring
-D_23     <- as.Date("2019-12-31")   # 4-period: end MoU + Salvini
-D_34     <- as.Date("2022-10-21")   # 4-period: end Partial rollback
-
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
+
+D_12 <- PERIOD_END_1
+D_23 <- PERIOD_END_2
+D_34 <- PERIOD_END_3
 
 cat("============================================================\n")
 cat("28  REGIME-RESOLVED SWH-MORTALITY MODELS (IOM + UNITED)\n")

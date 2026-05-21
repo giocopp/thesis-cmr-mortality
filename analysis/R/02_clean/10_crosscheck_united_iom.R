@@ -1,5 +1,3 @@
-# 07_crosscheck_united_iom.R
-# ===========================
 # Cross-check UNITED refugee deaths against IOM Missing Migrants Project.
 #
 # Purpose: Understand the overlap between the two data sources before

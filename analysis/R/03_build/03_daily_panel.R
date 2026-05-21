@@ -1,72 +1,13 @@
-# 01_build_daily_panel.R
-# ======================
-# Build integrated daily panel merging Frontex Themis with IOM MMP.
-#
-# Crossing attempts follow the literature convention (Deiana et al. 2024,
-# Battiston 2022, Rodriguez-Sanchez et al. 2023), extended to three components:
-#
-#   crossing_attempts = frx_persons              (events engaged by Frontex)
-#                     + lcg_tcg_pushbacks        (LCG + TCG pushbacks to Africa,
-#                                                 Denton-disaggregated from monthly,
-#                                                 rounded to integers in 01)
-#                     + n_dead_missing           (dead + missing, IOM MMP)
-#
-#   Undetected arrivals (UNHCR - Frontex) are excluded from the daily formula
-#   because daily-level subtraction inflates the gap 3-27x due to timing
-#   mismatches. The annual gap is 1-12% of arrivals. crossing_attempts is
-#   therefore a lower bound. See Section 6 comments for details.
-#
-#   fatality_rate     = n_dead_missing / crossing_attempts
-#
-# IOM death count — single inclusive series:
-#   The panel aggregates all CMR dead+missing to daily frequency using the
-#   broadest reasonable filter so the panel serves as the descriptive
-#   reference (matches 04_descriptive_statistics.R exactly) and the base
-#   for downstream analyses that narrow the sample further:
-#     - Route == "Central Mediterranean"
-#     - Incident Type in {incident, split incident}  (cumulative / sub-
-#       incident excluded because they often double-count the main incident)
-#     - Country of Incident in {Algeria, Italy, Libya, Malta, Tunisia}
-#     - No cause-of-death restriction
-#     - No spatial restriction to the core corridor polygon
-#   The single column is `n_dead_missing` (deaths plus missing).
-#   Analytical scripts (05_reduced_form_primary.R, 052–056) rebuild a
-#   narrower series from raw IOM: incident-only (for robust dates) + optional
-#   geographic and cause filters.
-#
-# Terminology note:
-#   - "interception/rescue" (Frontex frx_n_sar_* / frx_n_notsar_* columns) refers to
-#      who physically engaged with the boat on the EUROPEAN side — these
-#      people end up arriving in Europe.
-#   - "pushbacks" (lcg_pushbacks / tcg_pushbacks / lcg_tcg_pushbacks) refers
-#      to coast guard pullbacks that RETURN people to Libya/Tunisia.
-#   These are opposite outcomes and must not be conflated.
-#
-# LCG/TCG pushbacks are disaggregated from monthly to daily by
-# 01_temporal_disaggregation.R using the proportional Denton method
-# (Denton 1971) with Frontex daily departures as indicators, then rounded
-# to integers per month via largest-remainder (monthly sums preserved exactly).
-#
-# Input:
-#   data/processed/frontex_incidents.RDS
-#   data/processed/iom_mmp_incidents.RDS
-#   data/processed/era5_swh_daily.RDS
-#   data/processed/acled_daily.RDS
-#   data/processed/unhcr_daily_arrivals.RDS
-#   analysis/data/interceptions_daily_disagg.RDS   (from 01, integer-valued)
-#
-# Output:
-#   analysis/data/daily_panel_complete.RDS
+# ── Daily panel: Frontex + IOM + UNHCR + LCG/TCG + ERA5 + ACLED ────────────
+# crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing.
+# Daily spine 2014-01-01 to last day of interceptions_daily_disagg.RDS.
+# Broad IOM filter here (incident + split, no cause/spatial cut) is the
+# volume denominator; analytical scripts narrow via build_iom_daily().
 
 library(tidyverse)
 library(lubridate)
 
 BASE_DIR <- here::here()
-MOU_DATE <- as.Date("2017-07-01")
-CMR_DEPARTURES <- c("Libya", "Tunisia", "Algeria")
-CMR_INCIDENT_COUNTRIES <- c("Algeria", "Italy", "Libya", "Malta", "Tunisia")
-
-# Shared helper for IOM filtering — see analysis/R/_helpers.R
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
 cat("============================================================\n")

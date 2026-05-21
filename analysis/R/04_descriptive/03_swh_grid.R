@@ -111,24 +111,12 @@ cor_with_avg <- apply(all_mat, 1,
                                     use = "pairwise.complete.obs"))
 
 # ── 6. Pairwise correlation vs great-circle distance ───────
-# Spatial decay: does correlation drop with distance?
 cell_sf <- st_as_sf(data.frame(lon = cell_lon, lat = cell_lat),
                      coords = c("lon", "lat"), crs = 4326)
-dist_m <- as.matrix(st_distance(cell_sf))
+dist_m  <- as.matrix(st_distance(cell_sf))
 dist_km <- dist_m[upper.tri(dist_m)] / 1000
 
-dist_bins <- cut(dist_km,
-                  breaks = c(0, 50, 100, 200, 400, 800, Inf),
-                  labels = c("0-50", "50-100", "100-200",
-                             "200-400", "400-800", ">800"),
-                  include.lowest = TRUE)
-binned <- tibble(r = upper, dist_bin = dist_bins) |>
-  group_by(dist_bin) |>
-  summarise(n_pairs = n(),
-            mean_r = mean(r, na.rm = TRUE),
-            median_r = median(r, na.rm = TRUE),
-            min_r = min(r, na.rm = TRUE),
-            .groups = "drop")
+dist_decay <- cor(dist_km, upper, use = "pairwise.complete.obs")
 
 # ── 6b. Incident-density-weighted SWH (sanity check) ───────
 # Build STATIC weights from the overall spatial distribution of CMR
@@ -139,18 +127,11 @@ binned <- tibble(r = upper, dist_bin = dist_bins) |>
 # not change the analysis. If lower, it's worth switching.
 cat("\n--- Incident-density-weighted SWH sanity check ---\n")
 
-iom <- readRDS(file.path(BASE_DIR, "data", "processed", "iom_mmp_incidents.RDS")) |>
-  dplyr::filter(
-    Route == "Central Mediterranean",
-    tolower(`Incident Type`) %in% c("incident", "split incident"),
-    `Country of Incident` %in% c("Algeria", "Italy", "Libya", "Malta", "Tunisia"),
-    `Cause of death (category)` %in% c("Drowning", "Mixed or unknown")
+iom <- iom_incidents(
+    incident_types = c("incident", "split incident"),
+    spatial        = "all_cmr"
   ) |>
-  dplyr::mutate(
-    lon  = as.numeric(Longitude),
-    lat  = as.numeric(Latitude),
-    dead = pmax(as.numeric(`No. dead/missing`), 0, na.rm = TRUE)
-  ) |>
+  dplyr::rename(dead = dead_missing) |>
   tidyr::drop_na(lon, lat)
 
 cat(sprintf("  IOM incidents loaded: %d\n", nrow(iom)))
@@ -248,8 +229,10 @@ cat(sprintf("  median : %.4f\n", median(cor_with_avg, na.rm = TRUE)))
 cat(sprintf("  min    : %.4f\n", min(cor_with_avg, na.rm = TRUE)))
 cat(sprintf("  10th pct: %.4f\n", quantile(cor_with_avg, 0.10, na.rm = TRUE)))
 
-cat("\n== Pairwise correlation by great-circle distance bin ==\n")
-print(binned)
+cat("\n== Pairwise correlation vs distance (continuous) ==\n")
+cat(sprintf("  Pearson r(distance_km, cell-cell correlation) = %+.4f\n", dist_decay))
+cat(sprintf("  Distance range: %.0f - %.0f km (mean %.0f)\n",
+            min(dist_km), max(dist_km), mean(dist_km)))
 
 cat("\n== Incident-density-weighted SWH sanity check ==\n")
 cat(sprintf("  Incidents snapped to polygon cells: %d\n", sum(in_mask)))

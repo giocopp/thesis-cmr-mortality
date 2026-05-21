@@ -32,11 +32,11 @@ filter_corridor <- function(d, coords = c("lon", "lat"),
   dplyr::filter(d, inside)
 }
 
-# ── IOM daily deaths ──────────────────────────────────────────────────────────
-# Daily aggregate of dead+missing from raw IOM MMP. Defaults match the primary
-# analytical spec: incident-only, corridor spatial join, drowning + mixed cause.
-# Override incident_types/spatial/causes for robustness variants.
-build_iom_daily <- function(
+# ── IOM raw incidents (filtered) ──────────────────────────────────────────────
+# Filtered incident-level IOM MMP. Returns date, dead_missing, cause_cat,
+# lon, lat (and Route/Country/Incident Type from raw if needed via base_dir).
+# Defaults match the primary analytical spec.
+iom_incidents <- function(
   incident_types = c("incident"),
   spatial        = c("central", "all_cmr"),
   causes         = c("sea", "all"),
@@ -71,17 +71,21 @@ build_iom_daily <- function(
       filter_corridor(coords = c("lon", "lat"), base_dir = base_dir)
   }
 
-  d |>
+  d
+}
+
+# Daily aggregate of dead+missing — wraps iom_incidents().
+build_iom_daily <- function(...) {
+  iom_incidents(...) |>
     dplyr::group_by(date) |>
     dplyr::summarise(n_dead_missing = sum(dead_missing), .groups = "drop") |>
     dplyr::arrange(date)
 }
 
-# ── UNITED daily deaths ───────────────────────────────────────────────────────
-# Same spatial + cause logic as build_iom_daily() so the two sources are
-# directly comparable. UNITED records open-sea deaths under "Mediterranean",
-# so that label is added to the country list.
-build_united_daily <- function(
+# ── UNITED raw incidents (filtered) ───────────────────────────────────────────
+# Same spatial + cause logic as iom_incidents() so the two sources are
+# directly comparable. UNITED records open-sea deaths under "Mediterranean".
+united_incidents <- function(
   causes    = c("sea", "all"),
   spatial   = c("central", "all_cmr"),
   countries = c(CMR_INCIDENT_COUNTRIES, "Mediterranean"),
@@ -104,7 +108,12 @@ build_united_daily <- function(
       filter_corridor(coords = c("longitude", "latitude"), base_dir = base_dir)
   }
 
-  d |>
+  d
+}
+
+# Daily aggregate of UNITED deaths — wraps united_incidents().
+build_united_daily <- function(...) {
+  united_incidents(...) |>
     dplyr::group_by(date) |>
     dplyr::summarise(n_dead_united = sum(n_deaths, na.rm = TRUE), .groups = "drop") |>
     dplyr::arrange(date)

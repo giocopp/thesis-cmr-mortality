@@ -1,27 +1,7 @@
-# 27_rate_with_boat_controls.R
-# ============================
-# Boat-composition robustness for the rate model (m_rate / m_rate_u) in
-# 20_primary_model.R: does the SWH:post_mou shift hold with boat-composition
-# controls (Deiana-style composition-mediation probe)?
-#
-# Sample: 20's rate sample (crossing_attempts > 0, lc_lag14 & swh_prev5days
-# non-NA) further restricted to frx_incidents > 0 (boat shares defined only
-# there); V1 here differs from 20 by sample restriction only.
-#
-# Specs (Poisson, log(crossing_attempts) as a free covariate, month_year FE,
-# NW(14), IOM+UNITED). The common denominator
-#   crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing
-# avoids the source-specific circularity of the old offset spec, and the
-# free covariate is honest about the rejected proportionality (see 20
-# elasticity test: b_log_attempts is far below 1):
-#   V1: deaths ~ swh + swh:post_mou + log(crossing_attempts)
-#   V2: V1 + frx_inflatable_share + frx_wooden_share
-#   V3: V2 + swh:frx_inflatable_share
-#
-# In:  analysis/data/daily_panel_complete.RDS
-#      data/processed/{iom_mmp_incidents,united_incidents,core_corridor}.RDS
-# Out: output/tables/27_rate_with_boat_controls.txt
-#      output/figures/27_rate_with_boat_controls_coefplot.png
+# ── Rate model with boat-composition controls ──────────────────────────────
+# Tests whether the SWH:post_mou shift survives inflatable/wooden share
+# controls (Deiana-style composition probe). V1: rate alone; V2: + shares;
+# V3: + SWH × inflatable. Poisson, NW(14), IOM + UNITED.
 
 library(tidyverse)
 library(lubridate)
@@ -29,8 +9,6 @@ library(fixest)
 library(sf)
 
 BASE_DIR <- here::here()
-MOU_DATE <- as.Date("2017-07-01")
-
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
 cat("============================================================\n")

@@ -1,46 +1,6 @@
-# 23_mechanism_interactions.R
-# ============================
-# Mechanism complement to 20_primary_model.R.
-#
-# 20 estimates the reduced-form SWH x post_MoU shift in the gradient: post_MoU
-# is the policy-event indicator, not a measure of SAR. 23 asks whether the
-# gradient varies with SAR capacity directly, which is the channel the
-# guardrail argument names. The two scripts answer different questions:
-#   20 -> "did the gradient shift around the policy event?"  (reduced form)
-#   23 -> "does the gradient track SAR capacity?"            (mechanism)
-#
-# UNITED is the primary source (consistent with 20_primary_model.R); IOM is
-# the comparison. Both are estimated on the same sample with the same specs.
-#
-# SAR moderator (weekly lagged, days t-7 to t-1, z-scored). Two variants:
-#   (i)  share:    sar_events_pw / incidents_pw                   [primary]
-#   (ii) persons:  log1p(sum of Frontex SAR persons, weekly)      [robustness]
-#
-# Why two variants:
-#   The share spec has a mechanical concern: when LCG/TCG pullbacks rise
-#   (post 2018) the denominator (frx_incidents) shifts and SAR share can
-#   fall even when absolute SAR capacity is unchanged. The absolute-persons
-#   variant drops the denominator and answers the question "did the
-#   SWH-mortality gradient covary with raw SAR rescue capacity?" without
-#   the share-mechanics confound. Persons rescued is the more direct
-#   measure of "rescue capacity deployed" than event counts. Both
-#   variants remain endogenous to crossings/deaths -- this is mechanism,
-#   not identification.
-#
-# Specification:
-#   deaths ~ SWH + SWH:SAR + SAR | FE
-#
-# FE variants:
-#   (a) year + month-of-year
-#   (b) month-year
-#
-# Both NegBin (fenegbin) and Poisson QMLE (fepois), NW(14) SEs.
-# Matches 20_primary_model.R choices (5-day SWH, NW(14), dual family).
-#
-# In:  analysis/data/daily_panel_complete.RDS
-#      data/processed/{iom_mmp_incidents,united_incidents,core_corridor}.RDS
-# Out: output/tables/23_mechanism_interactions.txt
-#      output/figures/23_mechanism_coefplot.png
+# ── Mechanism: SWH × SAR-capacity moderator ────────────────────────────────
+# Two SAR moderators (share, log persons) weekly-lagged t-7..t-1, z-scored.
+# UNITED primary, IOM comparison. NegBin + Poisson, NW(14).
 
 library(tidyverse)
 library(lubridate)
@@ -48,7 +8,6 @@ library(fixest)
 library(sf)
 
 BASE_DIR <- here::here()
-
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
 cat("============================================================\n")

@@ -57,16 +57,13 @@ FRX_END <- max(frx$date)
 cat(sprintf("  Frontex CMR: %d incidents (%s to %s)\n",
     nrow(frx), min(frx$date), FRX_END))
 
-# 1c. IOM MMP incidents — canonical filter (incident + split, no cause filter,
-#     CMR countries; see 01_build_daily_panel.R header for rationale).
-iom_raw <- readRDS(file.path(BASE_DIR, "data", "processed", "iom_mmp_incidents.RDS"))
-iom_cmr <- iom_raw |>
-  filter(Route == "Central Mediterranean",
-         tolower(`Incident Type`) %in% c("incident", "split incident"),
-         `Country of Incident` %in% CMR_INCIDENT_COUNTRIES) |>
-  mutate(date = as.Date(incident_date_clean),
-         dead_missing = pmax(as.numeric(`No. dead/missing`), 0, na.rm = TRUE)) |>
-  filter(!is.na(date), date <= max(panel$date))
+# 1c. IOM MMP incidents — broad descriptive filter via iom_incidents().
+iom_cmr <- iom_incidents(
+    incident_types = c("incident", "split incident"),
+    spatial        = "all_cmr",
+    causes         = "all"
+  ) |>
+  filter(date <= max(panel$date))
 cat(sprintf("  IOM CMR: %d incidents\n", nrow(iom_cmr)))
 
 # Panel end (canonical end date for descriptives) — read from the rebuilt

@@ -1,32 +1,12 @@
-# 24_fe_robustness.R
-# ==================
-# FE-choice robustness of the primary reduced form (20_primary_model.R).
-# Same data, same outcome, same SWH measure, same SEs — only the FE block
-# changes.
-#
-# Three questions:
-#   1. Is month_year_fac (the primary choice in 20) correctly specified? Inspect
-#      how much within-FE SWH variation remains, how many levels the FE has,
-#      and whether b3 is stable under alternative FE.
-#   2. How does it compare to coarser FE? b1, b3, SE, pseudo-R2 across FE specs.
-#   3. Can variance be reduced on month_year_fac without breaking identification?
-#      Cluster SE at month_year_fac, NW bandwidths, drop zero-death days, drop
-#      capped outlier rows.
-#
-# Dual family (NegBin + Poisson QMLE) matches 20_primary_model.R.
-# Sample: 05d primary (!is.na(lc_lag14) & !is.na(swh_prev5days)).
-#
-# In:  analysis/data/daily_panel_complete.RDS
-# Out: output/tables/24_fe_robustness.txt
-#      output/figures/24_fe_robustness_coefplot.png
+# ── FE-spec robustness of the primary reduced form ─────────────────────────
+# Compares b1/b3 across year, month-of-year, year+month, quarter-year,
+# month-year (primary), and month-year + dow. NegBin + Poisson, NW(14).
 
 library(tidyverse)
 library(lubridate)
 library(fixest)
 
 BASE_DIR <- here::here()
-MOU_DATE <- as.Date("2017-07-01")
-
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
 cat("============================================================\n")

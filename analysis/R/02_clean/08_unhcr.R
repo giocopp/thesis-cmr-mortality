@@ -1,5 +1,3 @@
-# 05_clean_unhcr.R
-# ================
 # Clean UNHCR daily arrivals data: fill missing dates with zero arrivals.
 #
 # The raw UNHCR CSV drops days with zero arrivals — those days simply

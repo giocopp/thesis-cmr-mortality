@@ -1,5 +1,3 @@
-# 03_clean_iom_mmp.R
-# ==================
 # Clean IOM Missing Migrants Project data and Mediterranean crossings.
 #
 # Replaces the Python script (clean_iom_data.py) with equivalent R logic.

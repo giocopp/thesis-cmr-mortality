@@ -1,41 +1,6 @@
-# 22_rolling_beta.R
-# ==================
-# Rolling-window beta(SWH), aligned with 20_primary_model.R.
-#
-# Motivation: the MoU is unlikely to have produced a discrete June/August
-# 2017 break. Any real structural change should be GRADUAL. A rolling
-# window visualises the smoothness directly, complementing the year-by-
-# year gradient in 05d.
-#
-# Specification (matches 05d's Poisson arm, main effect only — no post_mou):
-#   - Outcome:  n_dead_iom (renamed from n_dead_missing; daily-agg uses
-#               build_iom_daily(), zone variants use the zone panel's
-#               corridor-intersected deaths — both apply the same primary
-#               filter: incident only (split EXCLUDED), drowning + mixed)
-#   - Model:    fepois (Poisson QMLE). fenegbin is not used here because
-#               it's unstable / slow in short windows. QMLE is consistent
-#               under weaker assumptions and matches 05d's Poisson arm.
-#   - Formula:  n_dead_iom ~ swh_prev5days | month_year_fac
-#               (main effect only, NO post_mou, NO interaction — the whole
-#               point of the rolling window is to trace beta over time
-#               without imposing a discrete break).
-#   - SE:       NW(14) per window (same as 05d)
-#   - Sample:   05d primary sample (!is.na(lc_lag14) & !is.na(swh_prev5days))
-#   - Window:   730 days (2 years), week-stepped
-#   - Step:     7 days (weekly)
-#   - Skip:     windows with <30 death-days or <200 total days
-#
-# Flavors (2 panels in the output figure):
-#   (1) Daily-agg — overall corridor-wide series
-#   (2) 2-bloc    — AFR vs EU SAR (two lines)
-#
-# Purpose of each panel:
-#   (1) shows the smooth corridor-wide transition across MoU
-#   (2) shows bloc-level heterogeneity (AFR pooled / EU pooled)
-#
-# Output: output/tables/22_rolling_beta.txt
-#         output/tables/22_rolling_beta.RDS  (full long-format data)
-#         output/figures/22_rolling_beta.png
+# ── Rolling-window beta(SWH) ────────────────────────────────────────────────
+# Poisson QMLE n_dead_iom ~ swh_prev5days | month_year_fac per window, NW(14).
+# 2-year window stepped weekly; corridor-wide + AFR/EU bloc panels.
 
 library(tidyverse)
 library(fixest)
@@ -43,13 +8,12 @@ library(lubridate)
 library(patchwork)
 
 BASE_DIR <- here::here()
-MOU_DATE <- as.Date("2017-07-01")
-STEP_DAYS <- 7
-MIN_DEATH_DAYS <- 30
-MIN_ROWS <- 200
-WINDOW_PRIMARY <- 730
-
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
+
+STEP_DAYS      <- 7
+MIN_DEATH_DAYS <- 30
+MIN_ROWS       <- 200
+WINDOW_PRIMARY <- 730
 
 cat("============================================================\n")
 cat("053  ROLLING-WINDOW BETA(SWH)\n")

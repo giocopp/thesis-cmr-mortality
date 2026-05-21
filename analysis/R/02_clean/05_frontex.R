@@ -1,5 +1,3 @@
-# 04_clean_frontex.R
-# ==================
 # Clean Frontex Themis incident-level data.
 #
 # Reads the raw Excel, parses dates, classifies boat types,

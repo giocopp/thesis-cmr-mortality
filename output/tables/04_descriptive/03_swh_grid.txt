@@ -28,16 +28,9 @@ Number of pairwise cell-cell pairs: 15931
   min    : 0.4518
   10th pct: 0.7547
 
-== Pairwise correlation by great-circle distance bin ==
-# A tibble: 6 × 5
-  dist_bin n_pairs mean_r median_r  min_r
-  <fct>      <int>  <dbl>    <dbl>  <dbl>
-1 0-50         161  0.989    0.993 0.887 
-2 50-100       606  0.975    0.981 0.808 
-3 100-200     2484  0.919    0.933 0.563 
-4 200-400     5744  0.802    0.818 0.361 
-5 400-800     6303  0.626    0.642 0.215 
-6 >800         633  0.406    0.427 0.0657
+== Pairwise correlation vs distance (continuous) ==
+  Pearson r(distance_km, cell-cell correlation) = -0.8987
+  Distance range: 44 - 1101 km (mean 391)
 
 == Incident-density-weighted SWH sanity check ==
   Incidents snapped to polygon cells: 1192

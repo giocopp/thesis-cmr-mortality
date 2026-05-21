@@ -1,5 +1,3 @@
-# 01_temporal_disaggregation.R
-# ============================
 # Temporal disaggregation of monthly LCG/TCG interceptions to daily frequency.
 #
 # Method: Proportional Denton disaggregation (Denton, 1971).

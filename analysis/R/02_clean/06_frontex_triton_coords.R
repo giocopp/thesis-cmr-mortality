@@ -1,5 +1,3 @@
-# 04b_merge_triton_coords.R
-# =========================
 # Merge Triton 2014-2017 coordinates into the pad-194 Themis panel.
 #
 # The pad-194 Themis extract (used in 04_clean_frontex.R) has no coordinates.

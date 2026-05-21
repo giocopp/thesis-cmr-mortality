@@ -1,5 +1,3 @@
-# 11_descriptives_swh.R
-# ======================
 # Pure descriptive (model-free) statistics relating prev-week SWH to the four
 # outcomes of interest, stratified by YEAR (not pre/post MoU), so the
 # evolution across the institutional timeline (Mare Nostrum end 2014-11,

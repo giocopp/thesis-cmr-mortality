@@ -1,5 +1,3 @@
-# 02_clean_acled.R
-# ================
 # Process ACLED weekly aggregated data for Libya and Tunisia.
 # Produces a daily panel where each day carries its week's conflict values.
 #

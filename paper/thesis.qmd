@@ -201,8 +201,7 @@ Word Count: @WORDCOUNT_BODY@
 
 ## Search and rescue as a guardrail at sea
 
-Search-and-rescue (SAR) is an institutionally constituted safeguard against
-death from maritime distress. International law places a duty on states and
+International law places a duty on states and
 shipmasters to assist persons in distress at sea, regardless of nationality
 or legal status. The duty is codified in Article 98 of the UN Convention on
 the Law of the Sea (UNCLOS), which obliges both shipmasters to render

@@ -41,3 +41,6 @@ __pycache__/
 *.fls
 *.fdb_latexmk
 *_files/
+Rplots.pdf
+literature/
+documents/

@@ -1,5 +1,3 @@
-# 02_build_zone_panel.R
-# =====================
 # Build zone-level daily panel by STARTING from analysis/data/daily_panel_complete.RDS
 # (the canonical daily-agg panel built by 01_build_daily_panel.R) and
 # expanding it to (date x country) long format. Each zone row inherits the
@@ -93,20 +91,9 @@ print(st_drop_geometry(zones_in)[, c("country", "zone_area_km2")])
 # ── 3. Load and filter IOM incidents ─────────────────────────
 cat("\n--- 3. Loading and filtering IOM incidents ---\n")
 
-# Filter matches build_iom_daily() defaults: incident only, split incidents
-# excluded; Cause of death in {Drowning, Mixed or unknown} (the cases most
-# directly tied to the act of crossing the sea; see _helpers.R for the rationale).
-# Geographic membership is resolved below by spatial join to the
-# corridor-intersected SAR polygons.
-iom <- readRDS(file.path(BASE_DIR, "data", "processed", "iom_mmp_incidents.RDS")) |>
-  filter(Route == "Central Mediterranean",
-         tolower(`Incident Type`) == "incident",
-         `Cause of death (category)` %in% c("Drowning", "Mixed or unknown")) |>
-  transmute(date         = as.Date(incident_date_clean),
-            dead_missing = pmax(as.numeric(`No. dead/missing`), 0, na.rm = TRUE),
-            lon          = as.numeric(Longitude),
-            lat          = as.numeric(Latitude)) |>
-  drop_na(date, lon, lat) |>
+# Primary IOM filter, no spatial filter (downstream st_join handles geography).
+iom <- iom_incidents(spatial = "all_cmr") |>
+  drop_na(lon, lat) |>
   st_as_sf(coords = c("lon", "lat"), crs = 4326)
 
 cat(sprintf("  IOM CMR incidents (incident only, drowning + mixed): %d\n", nrow(iom)))

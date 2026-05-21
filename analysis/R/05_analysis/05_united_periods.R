@@ -1,46 +1,7 @@
-# 31_united_periods.R
-# ====================
-# SWH-mortality gradient by political/operational period, UNITED primary and
-# IOM comparison. This is the LONG-SPAN sibling of 28: same data construction
-# as 20/28 (corridor-joined IOM via build_iom_daily(); corridor-joined
-# UNITED via build_united_daily()), but estimated on the full ERA5 span
-# (2013-present) WITHOUT the Frontex-bounded crossing control, so the early
-# (Mare Nostrum) and late (Meloni) regimes are not truncated by Frontex
-# coverage. The 2014-2023 Frontex subset (with a CLEAN lag-14 volume
-# control — window [t-14, t-8], strictly before the SWH window [t-5, t-1])
-# is kept as a robustness block. A short overlapping lag (e.g. lag-7,
-# window [t-7, t-1]) would be a descendant of the SWH regressor and is
-# deliberately not used (over-control).
-#
-# Data construction is now IDENTICAL to 20/28 (this was previously NOT the
-# case: 31 used a bespoke UNITED filter with no spatial join and no IOM
-# series at all). Both sources go through the shared _helpers.R builders so
-# the filter cannot drift again.
-#
-# Span caveat: IOM MMP coverage starts in 2014, so 2013 is UNITED-only.
-# The full-span model is therefore UNITED 2013-present. IOM is estimated as a
-# 2014-present comparison rather than zero-filled through 2013.
-#
-# Periods (revised 2026-04-21):
-#   1. Post-Arab Spring:    2013-01-01 to 2017-01-31
-#        (Mare Nostrum + Frontex + NGO SAR operations)
-#   2. MoU + Salvini:       2017-02-01 to 2019-12-31
-#        (Italy-Libya MoU; Minniti-Gentiloni code; Salvini NGO targeting)
-#   3. Partial rollback:    2020-01-01 to 2022-10-21
-#        (narrow humanitarian protection partly restored)
-#   4. Meloni:              2022-10-22 onwards
-#        ("single-rescue" rule on NGOs; restricted humanitarian protection)
-#
-# Boundary 3-4 = 2022-10-22 (Meloni government sworn in).
-# Data before 2013-01-01 is dropped.
-#
-# In:  data/processed/era5_swh_daily.RDS
-#      data/processed/iom_mmp_incidents.RDS    (via build_iom_daily)
-#      data/processed/united_incidents.RDS     (via build_united_daily)
-#      data/processed/core_corridor.RDS        (spatial join, both sources)
-#      analysis/data/daily_panel_complete.RDS  (crossing-control subset)
-# Out: output/figures/31_united_period_gradient.png
-#      output/tables/31_united_periods.txt
+# ── Long-span SWH-mortality gradient by political period ──────────────────
+# UNITED primary 2013-present, IOM comparison 2014-present. Full ERA5 span
+# without Frontex crossing control; 2014-2023 Frontex subset with clean
+# lag-14 control kept as robustness.
 
 library(tidyverse)
 library(fixest)
@@ -50,12 +11,9 @@ library(patchwork)
 BASE_DIR <- here::here()
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
-# Period boundary dates
-DATE_START <- as.Date("2013-01-01")
-IOM_START  <- as.Date("2014-01-01")
-D_12       <- as.Date("2017-01-31")  # end Post-Arab Spring
-D_23       <- as.Date("2019-12-31")  # end MoU + Salvini
-D_34       <- as.Date("2022-10-21")  # end Partial rollback (Meloni sworn 10-22)
+D_12 <- PERIOD_END_1
+D_23 <- PERIOD_END_2
+D_34 <- PERIOD_END_3
 
 # Same corridor-joined construction as 20/28; UNITED is primary.
 SRC <- c(UNITED = "n_dead_united", IOM = "n_dead_iom")

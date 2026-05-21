@@ -1,23 +1,7 @@
-# 20_primary_model.R
-# ===================
-# SWH x post_mou gradient on daily CMR deaths: UNITED primary, IOM comparison.
-#
-# Models estimated (all: month_year FE, NW(14) SEs, panel.id ~unit+date):
-#   count : deaths ~ swh_prev5days + swh_prev5days:post_mou      (NegBin, Poisson)
-#   rate  : count spec + log(crossing_attempts) as a free covariate (Poisson)
-#   + past-window grid, future-window placebos, lagged-crossing controls,
-#     cluster(month_year) SEs.
-# crossing_attempts is the common lower-bound exposure from 01_build_daily_panel.R:
-#   frx_persons + lcg_tcg_pushbacks + n_dead_missing
-# slope_summary(): b_pre, b_shift (=SWH:post_mou), b_post=b_pre+b_shift
-# with delta-method SE.
-# elast_test(): Wald test of the free log(attempts) coef against 1.
-# Mechanism (continuous SAR moderator) is 23_mechanism_interactions.R.
-#
-# In:  analysis/data/daily_panel_complete.RDS
-#      data/processed/{iom_mmp_incidents,united_incidents,core_corridor}.RDS
-# Out: output/tables/20_primary_model.txt
-#      output/tables/20_exposure_sensitivity.csv
+# ── Primary count + rate model: SWH × post_MoU on daily CMR deaths ─────────
+# UNITED primary, IOM comparison. NegBin + Poisson, month_year FE, NW(14).
+# Rate variant adds log(crossing_attempts) as a free covariate.
+# Exposure sensitivity: past (1-5d) windows + future placebos.
 
 library(tidyverse)
 library(lubridate)
@@ -25,10 +9,7 @@ library(fixest)
 library(patchwork)
 library(sf)
 
-BASE_DIR   <- here::here()
-MOU_DATE   <- as.Date("2017-07-01")
-START_DATE <- as.Date("2014-01-01")
-
+BASE_DIR <- here::here()
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
 cat("============================================================\n")

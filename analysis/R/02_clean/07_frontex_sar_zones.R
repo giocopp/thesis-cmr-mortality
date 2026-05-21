@@ -1,5 +1,3 @@
-# 04c_assign_sar_zones.R
-# ======================
 # Assign SAR-zone membership to Frontex incidents.
 #
 # Input:

@@ -1,5 +1,3 @@
-# 32_lag_iom_vs_united.R
-# ======================
 # Primary spec from 20_primary_model.R run across SWH lag windows
 # (1, 2, 3, 4, 5, 7 days) and future placebo windows (1, 3, 5, 7 days),
 # on two death sources: UNITED primary, IOM comparison.

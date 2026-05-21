@@ -1,5 +1,3 @@
-# 01_clean_era5_swh.R
-# ===================
 # Build ERA5 daily SWH panel over the CMR core corridor sea zone.
 # Single series: `swh` = simple spatial mean over all ocean cells in
 # the core-corridor polygon.

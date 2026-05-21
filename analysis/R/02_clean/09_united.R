@@ -1,5 +1,3 @@
-# 06_clean_united.R
-# =================
 # Clean UNITED List of Refugee Deaths dataset.
 #
 # The UNITED dataset records refugee/migrant deaths in and around Europe

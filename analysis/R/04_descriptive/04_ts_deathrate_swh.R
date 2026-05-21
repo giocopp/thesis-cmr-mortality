@@ -1,5 +1,3 @@
-# 13_ts_deathrate_swh.R
-# =====================
 # Extends Camarena et al. (2024, Fig. 2) to the full CMR analysis period
 # (2014-01-01 – 2023-05-31).
 #
