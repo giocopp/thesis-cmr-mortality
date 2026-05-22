@@ -4,10 +4,8 @@
 
 # ── Dates ─────────────────────────────────────────────────────────────────────
 # MOU_DATE drives the analytical `post_mou` indicator built in
-# 03_build/03_daily_panel.R. The signing date (Feb 2017) and the analytical
-# cutoff (Jul 2017, allowing for operational implementation lag) are
-# deliberately distinct; descriptive plot annotations use the signing date.
-MOU_DATE       <- as.Date("2017-07-01")
+# 03_build/03_daily_panel.R. Set to the Italy-Libya MoU signing date.
+MOU_DATE       <- as.Date("2017-02-02")
 MOU_SIGN_DATE  <- as.Date("2017-02-02")
 
 # Long-span analysis (31): political-regime period boundaries.

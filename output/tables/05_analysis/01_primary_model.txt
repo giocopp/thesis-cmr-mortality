@@ -17,53 +17,72 @@ N = estimation N after fixest drops all-zero FE cells.
 Count sample: N = 3424 days.
 
 --- NW(14) SEs ---
-                                   m_nb_u         m_pois_u             m_nb           m_pois
-                                UNITED NB     UNITED Poiss           IOM NB        IOM Poiss
-Dependent Var.:             n_dead_united    n_dead_united       n_dead_iom       n_dead_iom
-                                                                                            
-swh_prev5days                   -2.719***        -1.417**         -2.036***         -1.989**
-                                (0.6270)         (0.4318)         (0.5989)          (0.6929)
-swh_prev5days x post_mou         3.696***         1.970***         2.546***          2.351**
-                                (0.7492)         (0.5152)         (0.7107)          (0.7528)
-Fixed-Effects:              -------------    -------------       ----------       ----------
-month_year_fac                        Yes              Yes              Yes              Yes
-________________________    _____________    _____________       __________       __________
-Family                          Neg. Bin.          Poisson        Neg. Bin.          Poisson
-S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14) New.-West (L=14)
-Observations                        3,197            3,197            3,286            3,286
-Squared Cor.                      0.06011          0.07706          0.03876          0.08654
-Pseudo R2                         0.02105          0.20006          0.03841          0.24405
-BIC                               8,053.7         90,893.8          8,242.2         69,295.9
-Over-dispersion                   0.03987               --          0.05968               --
+                                   m_nb_u         m_pois_u             m_nb
+                                UNITED NB     UNITED Poiss           IOM NB
+Dependent Var.:             n_dead_united    n_dead_united       n_dead_iom
+                                                                           
+swh_prev5days                   -2.829***         -1.383**         -2.108**
+                                (0.7233)          (0.4840)         (0.6936)
+swh_prev5days x post_mou         3.629***          1.632**          2.478**
+                                (0.8197)          (0.5553)         (0.7848)
+Fixed-Effects:              -------------    -------------       ----------
+month_year_fac                        Yes              Yes              Yes
+________________________    _____________    _____________       __________
+Family                          Neg. Bin.          Poisson        Neg. Bin.
+S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                        3,197            3,197            3,286
+Squared Cor.                      0.05666          0.07449          0.03514
+Pseudo R2                         0.02070          0.19530          0.03813
+BIC                               8,056.2         91,429.9          8,244.3
+Over-dispersion                   0.03974               --          0.05954
+
+                                   m_pois
+                                IOM Poiss
+Dependent Var.:                n_dead_iom
+                                         
+swh_prev5days                    -2.028* 
+                                 (0.7896)
+swh_prev5days x post_mou          2.053* 
+                                 (0.8402)
+Fixed-Effects:                 ----------
+month_year_fac                        Yes
+________________________       __________
+Family                            Poisson
+S.E. type                New.-West (L=14)
+Observations                        3,286
+Squared Cor.                      0.08482
+Pseudo R2                         0.24011
+BIC                              69,652.5
+Over-dispersion                        --
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 --- Slope decomposition, NW(14) ---
   source  family        N       b_pre         SE          p     b_shift         SE          p      b_post         SE          p
-  UNITED  NegBin     3197      -2.719      0.627     0.0000      +3.696      0.749     0.0000      +0.977      0.410     0.0171
-  UNITED  Poisson    3197      -1.417      0.432     0.0010      +1.970      0.515     0.0001      +0.553      0.281     0.0491
-  IOM     NegBin     3286      -2.036      0.599     0.0007      +2.546      0.711     0.0003      +0.510      0.382     0.1819
-  IOM     Poisson    3286      -1.989      0.693     0.0041      +2.351      0.753     0.0018      +0.363      0.294     0.2174
+  UNITED  NegBin     3197      -2.829      0.723     0.0001      +3.629      0.820     0.0000      +0.800      0.388     0.0391
+  UNITED  Poisson    3197      -1.383      0.484     0.0043      +1.632      0.555     0.0033      +0.248      0.275     0.3656
+  IOM     NegBin     3286      -2.108      0.694     0.0024      +2.478      0.785     0.0016      +0.370      0.368     0.3148
+  IOM     Poisson    3286      -2.028      0.790     0.0102      +2.053      0.840     0.0145      +0.025      0.292     0.9315
 
 --- Cluster(month_year) SEs ---
                                 m_nb_u      m_pois_u       m_nb     m_pois
                              UNITED NB  UNITED Poiss     IOM NB  IOM Poiss
 Dependent Var.:          n_dead_united n_dead_united n_dead_iom n_dead_iom
                                                                           
-swh_prev5days                -2.719***     -1.417***   -2.036*    -1.989* 
-                             (0.7975)      (0.3784)    (0.7984)   (0.8173)
-swh_prev5days x post_mou      3.696***      1.970***    2.546**    2.351**
-                             (0.9467)      (0.4729)    (0.9228)   (0.8675)
+swh_prev5days                -2.829**       -1.383**   -2.108*    -2.028* 
+                             (0.9356)       (0.4335)   (0.9388)   (0.9363)
+swh_prev5days x post_mou      3.629***       1.632**    2.478*     2.053* 
+                             (1.048)        (0.5093)   (1.037)    (0.9796)
 Fixed-Effects:           ------------- ------------- ---------- ----------
 month_year_fac                     Yes           Yes        Yes        Yes
 ________________________ _____________ _____________ __________ __________
 Family                       Neg. Bin.       Poisson  Neg. Bin.    Poisson
 S.E.: Clustered          by: month_y.. by: month_y.. by: mont.. by: mont..
 Observations                     3,197         3,197      3,286      3,286
-Squared Cor.                   0.06011       0.07706    0.03876    0.08654
-Pseudo R2                      0.02105       0.20006    0.03841    0.24405
-BIC                            8,053.7      90,893.8    8,242.2   69,295.9
-Over-dispersion                0.03987            --    0.05968         --
+Squared Cor.                   0.05666       0.07449    0.03514    0.08482
+Pseudo R2                      0.02070       0.19530    0.03813    0.24011
+BIC                            8,056.2      91,429.9    8,244.3   69,652.5
+Over-dispersion                0.03974            --    0.05954         --
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -78,52 +97,52 @@ Rate sample: N=2125 days (drops 1299 zero-crossing days).
                               UNITED rate         IOM rate
 Dependent Var.:             n_dead_united       n_dead_iom
                                                           
-swh_prev5days                  -1.431**         -1.823*   
-                               (0.4970)         (0.7486)  
-log_crossing_attempts           0.3617***        0.2751***
-                               (0.0689)         (0.0592)  
-swh_prev5days x post_mou        2.378***         2.559**  
-                               (0.5955)         (0.8128)  
+swh_prev5days                  -1.429**         -1.859*   
+                               (0.5474)         (0.8399)  
+log_crossing_attempts           0.3680***        0.2830***
+                               (0.0686)         (0.0598)  
+swh_prev5days x post_mou        2.062**          2.254*   
+                               (0.6383)         (0.9065)  
 Fixed-Effects:              -------------       ----------
 month_year_fac                        Yes              Yes
 ________________________    _____________       __________
 S.E. type                New.-West (L=14) New.-West (L=14)
 Observations                        1,989            2,069
-Squared Cor.                      0.19494          0.16287
-Pseudo R2                         0.30293          0.29851
-BIC                              65,079.0         54,404.5
+Squared Cor.                      0.19139          0.16084
+Pseudo R2                         0.29780          0.29415
+BIC                              65,552.5         54,737.1
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 --- Slope decomposition, NW(14) ---
   source  family        N       b_pre         SE          p     b_shift         SE          p      b_post         SE          p
-  UNITED  Poisson    1989      -1.431      0.497     0.0040      +2.378      0.596     0.0001      +0.947      0.324     0.0035
-  IOM     Poisson    2069      -1.823      0.749     0.0149      +2.559      0.813     0.0016      +0.736      0.310     0.0177
+  UNITED  Poisson    1989      -1.429      0.547     0.0091      +2.062      0.638     0.0012      +0.634      0.320     0.0476
+  IOM     Poisson    2069      -1.859      0.840     0.0268      +2.254      0.907     0.0129      +0.395      0.320     0.2170
 
 --- Elasticity: log(crossing_attempts) vs 1, NW(14) ---
   source    b_exposure         SE     z_vs_1     p_vs_1
-  UNITED        +0.362      0.069      -9.26     0.0000
-  IOM           +0.275      0.059     -12.24     0.0000
+  UNITED        +0.368      0.069      -9.21     0.0000
+  IOM           +0.283      0.060     -11.99     0.0000
 
 --- Cluster(month_year) SEs ---
                               m_rate_u     m_rate
                            UNITED rate   IOM rate
 Dependent Var.:          n_dead_united n_dead_iom
                                                  
-swh_prev5days               -1.431**   -1.823*   
-                            (0.4365)   (0.8206)  
-log_crossing_attempts        0.3617***  0.2751***
-                            (0.0732)   (0.0539)  
-swh_prev5days x post_mou     2.378***   2.559**  
-                            (0.5485)   (0.8803)  
+swh_prev5days               -1.429**   -1.859*   
+                            (0.4855)   (0.9229)  
+log_crossing_attempts        0.3680***  0.2830***
+                            (0.0729)   (0.0553)  
+swh_prev5days x post_mou     2.062***   2.254*   
+                            (0.5869)   (0.9877)  
 Fixed-Effects:           ------------- ----------
 month_year_fac                     Yes        Yes
 ________________________ _____________ __________
 S.E.: Clustered          by: month_y.. by: mont..
 Observations                     1,989      2,069
-Squared Cor.                   0.19494    0.16287
-Pseudo R2                      0.30293    0.29851
-BIC                           65,079.0   54,404.5
+Squared Cor.                   0.19139    0.16084
+Pseudo R2                      0.29780    0.29415
+BIC                           65,552.5   54,737.1
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -135,38 +154,38 @@ Shared sensitivity sample: N = 3417 days (2014-01-15 to 2023-05-24).
 b3 = SWH:post_mou; full coefficients in the CSV.
 
   source  timing         window    family            b3          SE           p
-  UNITED  past           lag 1d    NegBin        +1.083       0.691      0.1170
-  UNITED  past           lag 1d    Poisson       +0.973       0.444      0.0286 *
-  UNITED  past           lag 1-3d  NegBin        +2.759       0.578      0.0000 *
-  UNITED  past           lag 1-3d  Poisson       +1.719       0.486      0.0004 *
-  UNITED  past           lag 1-5d  NegBin        +3.733       0.750      0.0000 *
-  UNITED  past           lag 1-5d  Poisson       +1.995       0.515      0.0001 *
-  UNITED  past           lag 1-7d  NegBin        +3.703       1.071      0.0005 *
-  UNITED  past           lag 1-7d  Poisson       +1.901       0.611      0.0019 *
-  UNITED  future_placebo lead 1d   NegBin        +0.732       0.541      0.1757
-  UNITED  future_placebo lead 1d   Poisson       +0.518       0.768      0.5006
-  UNITED  future_placebo lead 1-3d NegBin        -0.037       0.636      0.9541
-  UNITED  future_placebo lead 1-3d Poisson       -0.154       0.592      0.7944
-  UNITED  future_placebo lead 1-5d NegBin        -0.193       0.728      0.7908
-  UNITED  future_placebo lead 1-5d Poisson       -0.034       0.557      0.9520
-  UNITED  future_placebo lead 1-7d NegBin        -0.398       0.987      0.6867
-  UNITED  future_placebo lead 1-7d Poisson       +0.008       0.544      0.9883
-  IOM     past           lag 1d    NegBin        +0.207       0.470      0.6592
-  IOM     past           lag 1d    Poisson       +1.402       0.476      0.0032 *
-  IOM     past           lag 1-3d  NegBin        +1.482       0.520      0.0044 *
-  IOM     past           lag 1-3d  Poisson       +2.010       0.698      0.0040 *
-  IOM     past           lag 1-5d  NegBin        +2.581       0.709      0.0003 *
-  IOM     past           lag 1-5d  Poisson       +2.381       0.752      0.0015 *
-  IOM     past           lag 1-7d  NegBin        +2.562       0.979      0.0088 *
-  IOM     past           lag 1-7d  Poisson       +2.198       0.830      0.0081 *
-  IOM     future_placebo lead 1d   NegBin        +1.717       0.560      0.0022 *
-  IOM     future_placebo lead 1d   Poisson       +0.266       0.746      0.7219
-  IOM     future_placebo lead 1-3d NegBin        +0.710       0.535      0.1845
-  IOM     future_placebo lead 1-3d Poisson       -0.037       0.452      0.9340
-  IOM     future_placebo lead 1-5d NegBin        +0.123       0.694      0.8598
-  IOM     future_placebo lead 1-5d Poisson       +0.171       0.476      0.7195
-  IOM     future_placebo lead 1-7d NegBin        -0.219       0.862      0.7991
-  IOM     future_placebo lead 1-7d Poisson       +0.030       0.545      0.9560
+  UNITED  past           lag 1d    NegBin        +2.172       0.673      0.0012 *
+  UNITED  past           lag 1d    Poisson       +1.022       0.495      0.0391 *
+  UNITED  past           lag 1-3d  NegBin        +2.876       0.677      0.0000 *
+  UNITED  past           lag 1-3d  Poisson       +1.554       0.539      0.0039 *
+  UNITED  past           lag 1-5d  NegBin        +3.663       0.820      0.0000 *
+  UNITED  past           lag 1-5d  Poisson       +1.651       0.555      0.0029 *
+  UNITED  past           lag 1-7d  NegBin        +3.622       1.085      0.0008 *
+  UNITED  past           lag 1-7d  Poisson       +1.717       0.660      0.0092 *
+  UNITED  future_placebo lead 1d   NegBin        +0.928       0.665      0.1624
+  UNITED  future_placebo lead 1d   Poisson       +0.687       0.925      0.4576
+  UNITED  future_placebo lead 1-3d NegBin        -0.161       0.791      0.8383
+  UNITED  future_placebo lead 1-3d Poisson       -0.140       0.655      0.8303
+  UNITED  future_placebo lead 1-5d NegBin        -0.336       0.867      0.6986
+  UNITED  future_placebo lead 1-5d Poisson       -0.030       0.598      0.9601
+  UNITED  future_placebo lead 1-7d NegBin        -0.436       1.331      0.7429
+  UNITED  future_placebo lead 1-7d Poisson       -0.031       0.577      0.9567
+  IOM     past           lag 1d    NegBin        +0.376       0.626      0.5486
+  IOM     past           lag 1d    Poisson       +1.366       0.542      0.0117 *
+  IOM     past           lag 1-3d  NegBin        +1.378       0.572      0.0160 *
+  IOM     past           lag 1-3d  Poisson       +1.770       0.797      0.0264 *
+  IOM     past           lag 1-5d  NegBin        +2.511       0.783      0.0013 *
+  IOM     past           lag 1-5d  Poisson       +2.077       0.840      0.0134 *
+  IOM     past           lag 1-7d  NegBin        +2.432       1.025      0.0177 *
+  IOM     past           lag 1-7d  Poisson       +1.997       0.916      0.0292 *
+  IOM     future_placebo lead 1d   NegBin        +2.063       0.716      0.0040 *
+  IOM     future_placebo lead 1d   Poisson       +0.370       0.901      0.6817
+  IOM     future_placebo lead 1-3d NegBin        +0.951       0.682      0.1629
+  IOM     future_placebo lead 1-3d Poisson       +0.103       0.517      0.8422
+  IOM     future_placebo lead 1-5d NegBin        +0.228       0.865      0.7920
+  IOM     future_placebo lead 1-5d Poisson       +0.355       0.503      0.4801
+  IOM     future_placebo lead 1-7d NegBin        -0.395       1.069      0.7115
+  IOM     future_placebo lead 1-7d Poisson       +0.086       0.576      0.8812
 
   Full table: /Users/giorgiocoppola/Desktop/Uni/Hertie School/6th Semester/thesis-cmr-mortality/output/tables/05_analysis/01_exposure_sensitivity.csv
 
@@ -178,23 +197,23 @@ UNITED NegBin:
                                No control           Lag 7d          Lag 14d
 Dependent Var.:             n_dead_united    n_dead_united    n_dead_united
                                                                            
-swh_prev5days                   -2.719***        -2.087**         -2.728***
-                                (0.6270)         (0.6762)         (0.6148) 
-swh_prev5days x post_mou         3.696***         3.807***         3.814***
-                                (0.7492)         (0.7497)         (0.7570) 
-log1p_lc_lag7                                     0.3360**                 
-                                                 (0.1254)                  
-log1p_lc_lag14                                                    -0.2392**
-                                                                  (0.0766) 
+swh_prev5days                   -2.829***        -2.224**         -2.801***
+                                (0.7233)         (0.7669)         (0.7201) 
+swh_prev5days x post_mou         3.629***         3.782***         3.684***
+                                (0.8197)         (0.8321)         (0.8255) 
+log1p_lc_lag7                                     0.3403**                 
+                                                 (0.1269)                  
+log1p_lc_lag14                                                    -0.2262**
+                                                                  (0.0757) 
 Fixed-Effects:              -------------    -------------    -------------
 month_year_fac                        Yes              Yes              Yes
 ________________________    _____________    _____________    _____________
 S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
 Observations                        3,197            3,197            3,197
-Squared Cor.                      0.06011          0.05503          0.05394
-Pseudo R2                         0.02105          0.02195          0.02196
-BIC                               8,053.7          8,055.2          8,055.1
-Over-dispersion                   0.03987          0.04017          0.04019
+Squared Cor.                      0.05666          0.05138          0.05211
+Pseudo R2                         0.02070          0.02161          0.02151
+BIC                               8,056.2          8,057.7          8,058.4
+Over-dispersion                   0.03974          0.04004          0.04002
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -203,22 +222,22 @@ UNITED Poisson:
                                No control           Lag 7d          Lag 14d
 Dependent Var.:             n_dead_united    n_dead_united    n_dead_united
                                                                            
-swh_prev5days                   -1.417**         -0.9348*         -1.576** 
-                                (0.4318)         (0.4171)         (0.4823) 
-swh_prev5days x post_mou         1.970***         2.000***         2.157***
-                                (0.5152)         (0.4867)         (0.5631) 
-log1p_lc_lag7                                     0.2328*                  
-                                                 (0.1019)                  
-log1p_lc_lag14                                                    -0.1618* 
-                                                                  (0.0649) 
+swh_prev5days                    -1.383**         -0.9203*         -1.523**
+                                 (0.4840)         (0.4572)         (0.5322)
+swh_prev5days x post_mou          1.632**          1.690**          1.784**
+                                 (0.5553)         (0.5317)         (0.5993)
+log1p_lc_lag7                                      0.2339*                 
+                                                  (0.1013)                 
+log1p_lc_lag14                                                     -0.1532*
+                                                                   (0.0629)
 Fixed-Effects:              -------------    -------------    -------------
 month_year_fac                        Yes              Yes              Yes
 ________________________    _____________    _____________    _____________
 S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
 Observations                        3,197            3,197            3,197
-Squared Cor.                      0.07706          0.08879          0.08166
-Pseudo R2                         0.20006          0.20866          0.20843
-BIC                              90,893.8         89,934.2         89,959.5
+Squared Cor.                      0.07449          0.08649          0.07803
+Pseudo R2                         0.19530          0.20411          0.20298
+BIC                              91,429.9         90,445.7         90,573.1
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -227,23 +246,23 @@ IOM NegBin:
                                No control           Lag 7d          Lag 14d
 Dependent Var.:                n_dead_iom       n_dead_iom       n_dead_iom
                                                                            
-swh_prev5days                   -2.036***        -1.455*          -2.147***
-                                (0.5989)         (0.6862)         (0.5955) 
-swh_prev5days x post_mou         2.546***         2.543***         2.696***
-                                (0.7107)         (0.7225)         (0.7164) 
-log1p_lc_lag7                                     0.3030*                  
-                                                 (0.1295)                  
-log1p_lc_lag14                                                    -0.1308  
-                                                                  (0.0738) 
+swh_prev5days                    -2.108**         -1.558*         -2.217** 
+                                 (0.6936)         (0.7724)        (0.6958) 
+swh_prev5days x post_mou          2.478**          2.535**         2.611***
+                                 (0.7848)         (0.8050)        (0.7914) 
+log1p_lc_lag7                                      0.3135*                 
+                                                  (0.1303)                 
+log1p_lc_lag14                                                    -0.1228  
+                                                                  (0.0734) 
 Fixed-Effects:                 ----------       ----------       ----------
 month_year_fac                        Yes              Yes              Yes
 ________________________       __________       __________       __________
 S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
 Observations                        3,286            3,286            3,286
-Squared Cor.                      0.03876          0.04241          0.03297
-Pseudo R2                         0.03841          0.03947          0.03882
-BIC                               8,242.2          8,242.2          8,247.2
-Over-dispersion                   0.05968          0.06016          0.05985
+Squared Cor.                      0.03514          0.03663          0.02950
+Pseudo R2                         0.03813          0.03925          0.03849
+BIC                               8,244.3          8,243.9          8,249.7
+Over-dispersion                   0.05954          0.06005          0.05969
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -252,37 +271,37 @@ IOM Poisson:
                                No control           Lag 7d          Lag 14d
 Dependent Var.:                n_dead_iom       n_dead_iom       n_dead_iom
                                                                            
-swh_prev5days                    -1.989**        -1.409*           -2.084**
-                                 (0.6929)        (0.6584)          (0.7396)
-swh_prev5days x post_mou          2.351**         2.338***          2.475**
-                                 (0.7528)        (0.7096)          (0.8003)
-log1p_lc_lag7                                     0.2754**                 
-                                                 (0.1009)                  
-log1p_lc_lag14                                                     -0.1078 
-                                                                   (0.0661)
+swh_prev5days                    -2.028*         -1.466*           -2.102* 
+                                 (0.7896)        (0.7404)          (0.8289)
+swh_prev5days x post_mou          2.053*          2.083**           2.138* 
+                                 (0.8402)        (0.7983)          (0.8789)
+log1p_lc_lag7                                     0.2819**                 
+                                                 (0.1014)                  
+log1p_lc_lag14                                                     -0.0967 
+                                                                   (0.0638)
 Fixed-Effects:                 ----------       ----------       ----------
 month_year_fac                        Yes              Yes              Yes
 ________________________       __________       __________       __________
 S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
 Observations                        3,286            3,286            3,286
-Squared Cor.                      0.08654          0.09698          0.09045
-Pseudo R2                         0.24405          0.25396          0.24694
-BIC                              69,295.9         68,407.9         69,042.7
+Squared Cor.                      0.08482          0.09600          0.08789
+Pseudo R2                         0.24011          0.25063          0.24250
+BIC                              69,652.5         68,708.7         69,444.8
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 
 === COUNT SUMMARY: b3 (SWH x post_mou) ===
 
-  UNITED NegBin, no control  b3=+3.696  SE_NW=0.749  p_NW=0.0000  SE_cl=0.947  p_cl=0.0001
-  UNITED NegBin, lag 7d      b3=+3.807  SE_NW=0.750  p_NW=0.0000  SE_cl=0.954  p_cl=0.0001
-  UNITED NegBin, lag 14d     b3=+3.814  SE_NW=0.757  p_NW=0.0000  SE_cl=0.969  p_cl=0.0001
-  UNITED Poisson, no control  b3=+1.970  SE_NW=0.515  p_NW=0.0001  SE_cl=0.473  p_cl=0.0000
-  UNITED Poisson, lag 7d     b3=+2.000  SE_NW=0.487  p_NW=0.0000  SE_cl=0.448  p_cl=0.0000
-  UNITED Poisson, lag 14d    b3=+2.157  SE_NW=0.563  p_NW=0.0001  SE_cl=0.542  p_cl=0.0001
-  IOM NegBin, no control     b3=+2.546  SE_NW=0.711  p_NW=0.0003  SE_cl=0.923  p_cl=0.0058
-  IOM NegBin, lag 7d         b3=+2.543  SE_NW=0.722  p_NW=0.0004  SE_cl=0.943  p_cl=0.0070
-  IOM NegBin, lag 14d        b3=+2.696  SE_NW=0.716  p_NW=0.0002  SE_cl=0.935  p_cl=0.0040
-  IOM Poisson, no control    b3=+2.351  SE_NW=0.753  p_NW=0.0018  SE_cl=0.867  p_cl=0.0067
-  IOM Poisson, lag 7d        b3=+2.338  SE_NW=0.710  p_NW=0.0010  SE_cl=0.815  p_cl=0.0041
-  IOM Poisson, lag 14d       b3=+2.475  SE_NW=0.800  p_NW=0.0020  SE_cl=0.930  p_cl=0.0078
+  UNITED NegBin, no control  b3=+3.629  SE_NW=0.820  p_NW=0.0000  SE_cl=1.048  p_cl=0.0005
+  UNITED NegBin, lag 7d      b3=+3.782  SE_NW=0.832  p_NW=0.0000  SE_cl=1.072  p_cl=0.0004
+  UNITED NegBin, lag 14d     b3=+3.684  SE_NW=0.825  p_NW=0.0000  SE_cl=1.067  p_cl=0.0006
+  UNITED Poisson, no control  b3=+1.632  SE_NW=0.555  p_NW=0.0033  SE_cl=0.509  p_cl=0.0014
+  UNITED Poisson, lag 7d     b3=+1.690  SE_NW=0.532  p_NW=0.0015  SE_cl=0.490  p_cl=0.0006
+  UNITED Poisson, lag 14d    b3=+1.784  SE_NW=0.599  p_NW=0.0029  SE_cl=0.582  p_cl=0.0022
+  IOM NegBin, no control     b3=+2.478  SE_NW=0.785  p_NW=0.0016  SE_cl=1.037  p_cl=0.0169
+  IOM NegBin, lag 7d         b3=+2.535  SE_NW=0.805  p_NW=0.0016  SE_cl=1.069  p_cl=0.0177
+  IOM NegBin, lag 14d        b3=+2.611  SE_NW=0.791  p_NW=0.0010  SE_cl=1.050  p_cl=0.0129
+  IOM Poisson, no control    b3=+2.053  SE_NW=0.840  p_NW=0.0145  SE_cl=0.980  p_cl=0.0361
+  IOM Poisson, lag 7d        b3=+2.083  SE_NW=0.798  p_NW=0.0091  SE_cl=0.927  p_cl=0.0246
+  IOM Poisson, lag 14d       b3=+2.138  SE_NW=0.879  p_NW=0.0150  SE_cl=1.035  p_cl=0.0388

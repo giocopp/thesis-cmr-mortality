@@ -168,11 +168,9 @@ library(grid)
 library(patchwork)
 
 # Shared aesthetics
-comp_order <- c("frontex_persons", "undetected_monthly",
-                "lcg_persons", "tcg_persons", "deaths_missing")
+comp_order <- c("frontex_persons", "lcg_persons", "tcg_persons", "deaths_missing")
 comp_colours <- c(
   "frontex_persons"    = "#1F78B4",
-  "undetected_monthly" = "#A6CEE3",
   "lcg_persons"        = "#333333",
   "tcg_persons"        = "#AAAAAA",
   "deaths_missing"     = "#D32F2F"
@@ -182,23 +180,19 @@ comp_colours <- c(
 build_crossing_long <- function(m, death_label) {
   comp_labels <- c(
     "frontex_persons"    = "Intercepted persons",
-    "undetected_monthly" = "Undetected arrivals",
-    "lcg_persons"        = "LCG pullbacks",
-    "tcg_persons"        = "TCG pullbacks",
+    "lcg_persons"        = "Libyan CG operations",
+    "tcg_persons"        = "Tunisian CG operations",
     "deaths_missing"     = death_label
   )
   m |>
     filter(ym <= PANEL_END) |>
     mutate(
       frontex_persons    = replace_na(frx_persons, 0),
-      undetected_monthly = ifelse(unhcr_days > 0,
-                                   pmax(unhcr_arrivals - frx_persons, 0), 0),
       lcg_persons        = replace_na(lcg, 0),
       tcg_persons        = replace_na(tcg, 0),
       deaths_missing     = n_dead_missing
     ) |>
-    select(ym, frontex_persons, undetected_monthly,
-           lcg_persons, tcg_persons, deaths_missing) |>
+    select(ym, frontex_persons, lcg_persons, tcg_persons, deaths_missing) |>
     pivot_longer(-ym, names_to = "component", values_to = "persons") |>
     mutate(component = factor(component, levels = comp_order,
                               labels = comp_labels[comp_order]))
@@ -242,9 +236,8 @@ build_cross_panel <- function(m, death_label) {
   cross_long <- build_crossing_long(m, death_label)
   comp_labels_vec <- c(
     "frontex_persons"    = "Intercepted persons",
-    "undetected_monthly" = "Undetected arrivals",
-    "lcg_persons"        = "LCG pullbacks",
-    "tcg_persons"        = "TCG pullbacks",
+    "lcg_persons"        = "Libyan CG operations",
+    "tcg_persons"        = "Tunisian CG operations",
     "deaths_missing"     = death_label
   )
   ggplot(cross_long, aes(x = ym, y = persons, fill = component)) +
@@ -283,7 +276,7 @@ build_deaths_panel <- function(m, death_label, shared_sf = NULL) {
     scale_fill_manual(values = setNames("#D32F2F", death_label), name = NULL) +
     scale_colour_manual(values = c("Fatality rate (%)" = "#333333"), name = NULL) +
     scale_y_continuous(
-      name = "Dead and Missing Migrants",
+      name = "Recorded Dead and Missing Migrants",
       sec.axis = sec_axis(~ . / sf, name = "Fatality rate (%)")
     ) +
     geom_vline(xintercept = MOU_DATE, linetype = "dashed", colour = "red", linewidth = 0.5) +
@@ -310,7 +303,7 @@ build_crossings_figure <- function(monthly_data, death_label, deaths_source_labe
     p_cross +
       theme(legend.position = "right") +
       cross_legend_box_theme +
-      guides(fill = guide_legend(ncol = 1, title = "Crossing Outcomes"))
+      guides(fill = guide_legend(ncol = 1, title = "Crossing outcomes"))
   )
   legend_deaths <- cowplot::get_legend(
     p_deaths +
@@ -327,13 +320,12 @@ build_crossings_figure <- function(monthly_data, death_label, deaths_source_labe
     cowplot::draw_grob(legend_deaths, x = 0.05, y = 0.5, hjust = 0, vjust = 0.5)
 
   caption_text <- paste0(
-    "<b>Source:</b> Frontex JORA data (2014-2023), UNHCR sea arrivals to Italy (2014-2023), ",
-    "IOM LCG/TCG pullback figures (2014-2023), ", deaths_source_label, " (2014-2023).<br/>",
-    "<b>Note:</b> 'Persons attempting crossing' = Frontex persons + undetected arrivals (UNHCR sea arrivals minus ",
-    "Frontex persons, floored at zero) + LCG/TCG pullbacks + dead/missing. 'Fatality rate' = dead/missing ÷ ",
-    "persons attempting crossing. Undetected arrivals are available only for months with UNHCR data. The Frontex ",
-    "'Not SAR: Coast Guard' events and IOM LCG/TCG pullbacks likely partially overlap; the overlap cannot be ",
-    "bounded from public data but is reported to be concentrated from 2020 onwards."
+    "<b>Source:</b> Frontex JORA data (2014-2023), IOM Libyan/Tunisian Coast Guard operation figures (2014-2023), ",
+    deaths_source_label, " (2014-2023).<br/>",
+    "<b>Note:</b> 'Persons attempting crossing' = Frontex persons + Libyan/Tunisian Coast Guard (CG) operations + ",
+    "dead/missing; 'fatality rate' = dead/missing ÷ persons attempting crossing. This matches the crossing_attempts ",
+    "definition and excludes UNHCR undetected arrivals. Some Frontex events and IOM Libyan/Tunisian CG figures likely ",
+    "partially overlap; the overlap cannot be bounded cleanly from public data and is reported to be concentrated from 2020 onwards."
   )
   note_grob <- build_note_grob(caption_text)
 
@@ -377,7 +369,7 @@ deaths_sf <- max(
 # IOM figure
 build_crossings_figure(
   monthly_data = monthly,
-  death_label = "Dead and Missing Migrants",
+  death_label = "Recorded Dead and Missing Migrants",
   deaths_source_label = "IOM Missing Migrants Project",
   main_title = "Crossing the Central Mediterranean: Persons Attempting Crossing and Fatal Outcomes per Month",
   output_path = fig_path("04_descriptive", "01_panel_crossings_iom.png"),
@@ -387,7 +379,7 @@ build_crossings_figure(
 # UNITED figure
 build_crossings_figure(
   monthly_data = monthly_united,
-  death_label = "Dead and Missing Migrants",
+  death_label = "Recorded Dead and Missing Migrants",
   deaths_source_label = "UNITED List of Refugee Deaths",
   main_title = "Crossing the Central Mediterranean: Persons Attempting Crossing and Fatal Outcomes",
   output_path = fig_path("04_descriptive", "01_panel_crossings_united.png"),
@@ -404,16 +396,16 @@ library(patchwork)
 # Build event_type label from the cleaned dataset columns.
 # Display spec (11 cats total):
 #   SAR: EU operations       <- interceptor_type == "EU_ops"
-#   SAR: Italian operations  <- interceptor_type == "Ita_ops" (Marina Militare,
+#   SAR: Italian authorities  <- interceptor_type == "Ita_ops" (Marina Militare,
 #                               Mare Sicuro, Mare Nostrum)
 #   SAR: NGO operations      <- interceptor_type == "NGO"
-#   SAR: EU Coast Guard      <- interceptor_type == "EU_Coast_Guard"
+#   SAR: EU members CG      <- interceptor_type == "EU_Coast_Guard"
 #                               (CPV/CPB/OPV — member-state coast-guard vessels)
-#   SAR: Other               <- Commercial + Land_patrol + No_intercept + Other + NA
-#   Not SAR: EU Coast Guard  <- interceptor_type == "EU_Coast_Guard"
+#   SAR: Mare Nostrum and Others               <- Commercial + Land_patrol + No_intercept + Other + NA
+#   Non SAR: EU CG operations  <- interceptor_type == "EU_Coast_Guard"
 #   Not SAR: Land patrol     <- interceptor_type == "Land_patrol"
 #   Not SAR: Self-arrived    <- interceptor_type == "No_intercept"
-#   Not SAR: Other           <- EU_ops + Ita_ops + NGO + Commercial + Other + NA
+#   Not SAR: Mare Nostrum and Others           <- EU_ops + Ita_ops + NGO + Commercial + Other + NA
 #   LCG pullbacks / TCG pullbacks  (IOM monthly data)
 # sar_ops == NA (339 Unknown-SAR rows) is treated as Not-SAR by design.
 frx <- frx |>
@@ -421,51 +413,51 @@ frx <- frx |>
     sar_true = !is.na(sar_ops) & sar_ops,
     event_type = case_when(
       sar_true & interceptor_type == "EU_ops"                  ~ "SAR: EU operations",
-      sar_true & interceptor_type == "Ita_ops"                 ~ "SAR: Italian operations",
+      sar_true & interceptor_type == "Ita_ops"                 ~ "SAR: Italian authorities",
       sar_true & interceptor_type == "NGO"                     ~ "SAR: NGO operations",
-      sar_true & interceptor_type == "EU_Coast_Guard"          ~ "SAR: EU Coast Guard",
-      sar_true                                                 ~ "SAR: Other",
-      interceptor_type == "EU_Coast_Guard"                     ~ "Not SAR: EU Coast Guard",
+      sar_true & interceptor_type == "EU_Coast_Guard"          ~ "SAR: EU CG operations",
+      sar_true                                                 ~ "SAR: Mare Nostrum and Others",
+      interceptor_type == "EU_Coast_Guard"                     ~ "Non SAR: EU CG operations",
       interceptor_type == "Land_patrol"                        ~ "Not SAR: Land patrol",
       interceptor_type %in% c("NA", "No_intercept")            ~ "Not SAR: No intercep. (detection only)",
-      TRUE                                                     ~ "Not SAR: Other"
+      TRUE                                                     ~ "Not SAR: Mare Nostrum and Others"
     )
   ) |>
   select(-sar_true)
 
 etype_order <- c(
   # SAR — darker blue to lighter blue
-  "SAR: Italian operations",       # #08519C (darkest)
+  "SAR: Italian authorities",       # #08519C (darkest)
   "SAR: NGO operations",           # #3182BD
-  "SAR: EU Coast Guard",           # #6BAED6
+  "SAR: EU members CG",           # #6BAED6
   "SAR: EU operations",            # #9ECAE1
-  "SAR: Other",                    # #C6DBEF (lightest)
+  "SAR: Mare Nostrum and Others",                    # #C6DBEF (lightest)
   # Not SAR — darker brown/red to lighter orange
   "Not SAR: No intercep. (detection only)", # #A63603 (darkest)
-  "Not SAR: EU Coast Guard",       # #E6550D
+  "Non SAR: EU CG operations",       # #E6550D
   "Not SAR: Land patrol",          # #FD8D3C
-  "Not SAR: Other",                # #FDBE85 (lightest)
+  "Not SAR: Mare Nostrum and Others",                # #FDBE85 (lightest)
   # IOM — darker to lighter grey
-  "LCG pullbacks",                 # #252525
-  "TCG pullbacks"                  # #969696
+  "Libyan CG operations",          # #252525
+  "Tunisian CG operations"         # #969696
 )
 
 etype_colours <- c(
-  # SAR — original palette. EU Coast Guard takes the slot formerly held by
+  # SAR — original palette. EU members CG takes the slot formerly held by
   # "SAR: Commercial vessels" (#6BAED6) so it is clearly distinct from NGO.
   "SAR: EU operations"            = "#9ECAE1",  # was "SAR: EU operations (IRINI)"
-  "SAR: Italian operations"       = "#08519C",  # was "SAR: Italian authorities"
+  "SAR: Italian authorities"       = "#08519C",  # was "SAR: Italian authorities"
   "SAR: NGO operations"           = "#3182BD",  # was "SAR: NGO"
-  "SAR: EU Coast Guard"           = "#6BAED6",  # was "SAR: Commercial vessels" slot
-  "SAR: Other"                    = "#C6DBEF",  # was "SAR: Other"
+  "SAR: EU members CG"           = "#6BAED6",  # was "SAR: Commercial vessels" slot
+  "SAR: Mare Nostrum and Others"                    = "#C6DBEF",  # was "SAR: Mare Nostrum and Others"
   # Not SAR — original palette
-  "Not SAR: EU Coast Guard"       = "#E6550D",  # was "Not SAR: Coast Guard"
+  "Non SAR: EU CG operations"       = "#E6550D",  # was "Not SAR: Coast Guard"
   "Not SAR: Land patrol"          = "#FD8D3C",  # was "Not SAR: Land patrol"
   "Not SAR: No intercep. (detection only)" = "#A63603",  # was "Not SAR: Self-arrived" slot (darkest)
-  "Not SAR: Other"                = "#FDBE85",  # was "Not SAR: Other"
+  "Not SAR: Mare Nostrum and Others"                = "#FDBE85",  # was "Not SAR: Mare Nostrum and Others"
   # IOM pullbacks — greys
-  "LCG pullbacks"                 = "#252525",
-  "TCG pullbacks"                 = "#969696"
+  "Libyan CG operations"          = "#252525",
+  "Tunisian CG operations"        = "#969696"
 )
 
 # Frontex interceptions/rescues by event type (counts)
@@ -480,12 +472,22 @@ frx_etype_p <- frx |>
   group_by(ym, etype) |>
   summarise(persons = sum(num_persons, na.rm = TRUE), .groups = "drop")
 
+frx_actor_p <- frx |>
+  mutate(
+    ym = floor_date(date, "month"),
+    component = ifelse(grepl("^SAR:", event_type),
+                       "SAR operations recorded by Frontex",
+                       "Non SAR operations recorded by Frontex")
+  ) |>
+  group_by(ym, component) |>
+  summarise(persons = sum(num_persons, na.rm = TRUE), .groups = "drop")
+
 # LCG/TCG pushbacks (persons)
 ic_long <- iom_monthly |>
   filter(!is.na(lcg) | !is.na(tcg)) |>
   pivot_longer(cols = c(lcg, tcg), names_to = "type", values_to = "persons") |>
   filter(!is.na(persons)) |>
-  mutate(etype = ifelse(type == "lcg", "LCG pullbacks", "TCG pullbacks")) |>
+  mutate(etype = ifelse(type == "lcg", "Libyan CG operations", "Tunisian CG operations")) |>
   select(ym, etype, persons)
 
 persons_all <- bind_rows(frx_etype_p, ic_long) |>
@@ -535,21 +537,91 @@ p_etype_n <- ggplot(frx_etype_n, aes(x = ym, y = n, fill = etype)) +
   ) +
   etype_theme_noleg
 
-# 4b. Persons by full event type
-p_etype_p <- ggplot(persons_all, aes(x = ym, y = persons, fill = etype)) +
-  geom_col(position = "stack", width = 25) +
-  scale_fill_manual(values = etype_colours, name = NULL) +
-  mou_vline +
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  coord_cartesian(xlim = PLOT_XLIM, clip = "off") +
-  labs(
-    title = "(a) Number of persons intercepted",
-    subtitle = "Red dashed line marks the signature of the 2017 Italy-Libya Memorandum of Understanding",
-    y = "Number of persons",
-    x = NULL
-  ) +
-  etype_theme_noleg +
-  theme(plot.subtitle = element_text(size = 9, colour = "red3"))
+# 4b. Persons attempting the crossing, by outcome, with mortality overlay
+build_cross_rate_panel <- function(m, death_label) {
+  panel_comp_order <- c(
+    "SAR operations recorded by Frontex",
+    "Non SAR operations recorded by Frontex",
+    "Libyan CG operations",
+    "Tunisian CG operations",
+    death_label
+  )
+  panel_comp_colours <- c(
+    "SAR operations recorded by Frontex"     = "#1F78B4",
+    "Non SAR operations recorded by Frontex" = "#F16913",
+    "Libyan CG operations"              = "#252525",
+    "Tunisian CG operations"            = "#969696",
+    "Recorded Dead and Missing Migrants"         = comp_colours[["deaths_missing"]]
+  )
+
+  cg_and_deaths <- m |>
+    filter(ym <= PANEL_END) |>
+    transmute(
+      ym,
+      `Libyan CG operations` = replace_na(lcg, 0),
+      `Tunisian CG operations` = replace_na(tcg, 0),
+      !!death_label := n_dead_missing
+    ) |>
+    pivot_longer(-ym, names_to = "component", values_to = "persons")
+
+  cross_long <- bind_rows(
+    frx_actor_p |> filter(ym <= PANEL_END),
+    cg_and_deaths
+  ) |>
+    mutate(component = factor(component, levels = panel_comp_order))
+
+  rate_df <- cross_long |>
+    group_by(ym) |>
+    summarise(
+      persons_attempting = sum(persons, na.rm = TRUE),
+      n_dead_missing = sum(persons[component == death_label], na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    mutate(
+      fatality_rate = ifelse(persons_attempting > 0,
+                             n_dead_missing / persons_attempting * 100,
+                             NA_real_)
+    )
+
+  sf <- max(rate_df$persons_attempting, na.rm = TRUE) / 15
+
+  ggplot(cross_long, aes(x = ym, y = persons, fill = component)) +
+    geom_col(position = "stack", width = 25) +
+    geom_line(
+      data = rate_df,
+      aes(x = ym, y = fatality_rate * sf, colour = "Fatality rate (%)"),
+      inherit.aes = FALSE,
+      linewidth = 0.7
+    ) +
+    scale_fill_manual(
+      values = panel_comp_colours,
+      breaks = panel_comp_order,
+      name = NULL
+    ) +
+    scale_colour_manual(values = c("Fatality rate (%)" = "#333333"), name = NULL) +
+    scale_y_continuous(
+      name = "Number of persons",
+      sec.axis = sec_axis(~ . / sf, name = "Fatality rate (%)")
+    ) +
+    mou_vline +
+    scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+    coord_cartesian(xlim = PLOT_XLIM, clip = "off") +
+    labs(
+      title = "(a) Number of persons attempting the crossing, by crossing outcome",
+      subtitle = "Red dashed line marks the signature of the 2017 Italy-Libya Memorandum of Understanding",
+      x = NULL
+    ) +
+    etype_theme_noleg +
+    theme(
+      plot.subtitle = element_text(size = 9, colour = "red3"),
+      plot.margin = margin(t = 16, r = 28, b = 5, l = 5)
+    )
+}
+
+p_cross_rate <- build_cross_rate_panel(
+  monthly_united,
+  death_label = "Recorded Dead and Missing Migrants"
+)
 
 # 4c. 100% stacked area (composition)
 all_months <- seq(
@@ -609,18 +681,18 @@ p_etype_pct <- ggplot(persons_smoothed, aes(x = ym, y = pct_smooth, fill = etype
   ) +
   guides(fill = guide_legend(nrow = 3))
 
-# 4d. Share line plot (aggregate: SAR / Not SAR / LCG / TCG)
+# 4d. Share line plot (aggregate: SAR / Not SAR / Libyan CG / Tunisian CG)
 share_colours <- c(
-  "SAR"           = "#08519C",
-  "Not SAR"       = "#E6550D",
-  "LCG pullbacks" = "#252525",
-  "TCG pullbacks" = "#969696"
+  "SAR operations recorded by Frontex"     = "#1F78B4",
+  "Non SAR operations recorded by Frontex" = "#F16913",
+  "Libyan CG operations"              = "#252525",
+  "Tunisian CG operations"            = "#969696"
 )
 
 share_lines <- persons_complete |>
   mutate(group = case_when(
-    grepl("^SAR:", etype)     ~ "SAR",
-    grepl("^Not SAR:", etype) ~ "Not SAR",
+    grepl("^SAR:", etype)     ~ "SAR operations recorded by Frontex",
+    grepl("^(Not SAR|Non SAR):", etype) ~ "Non SAR operations recorded by Frontex",
     TRUE                      ~ as.character(etype)
   )) |>
   group_by(ym, group) |>
@@ -654,101 +726,111 @@ p_share_lines <- ggplot(share_lines, aes(x = ym, y = share, colour = group)) +
     plot.margin = margin(t = 16, r = 5, b = 5, l = 5)
   )
 
-# Note box
-caption_text <- paste0(
-  "<b>Source:</b> Frontex JORA data (2014-2023), IOM MMP data (2014-2023).<br/>",
-  "<b>Note:</b> The numbers under the Frontex category 'Not SAR: Coast Guard' and the IOM category ",
-  "'LCG and TCG pullback' likely partially overlap. Frontex aerial assets routinely patrol the central ",
-  "Mediterranean and sometimes relay sightings to the Libyan and Tunisian Coast Guards, who then carry out the ",
-  "interception (Border Forensics, 2022; Human Rights Watch, 2022; Lighthouse Reports, 2024). ",
-  "Such operations are recorded both in the Frontex incident database and in the IOM monthly pullback figures, ",
-  "producing some double-counting of persons. The overlap cannot be bounded precisely from public data, but it ",
-  "is unlikely to alter the broader picture. The phenomenon is reported to be concentrated from 2020 onwards."
-)
-
-note_grob <- grid::grobTree(
-  grid::rectGrob(
-    gp = grid::gpar(fill = "grey97", col = "grey55", lwd = 0.6)
-  ),
-  gridtext::textbox_grob(
-    caption_text,
-    x = grid::unit(0.012, "npc"),
-    y = grid::unit(0.99, "npc"),
-    width = grid::unit(0.976, "npc"),
-    height = grid::unit(0.98, "npc"),
-    hjust = 0,
-    vjust = 1,
-    halign = 0,
-    valign = 1,
-    gp = grid::gpar(fontsize = 10, col = "grey20", lineheight = 1.35),
-    box_gp = grid::gpar(col = NA, fill = NA),
-    padding = grid::unit(c(6, 6, 6, 14), "pt"),
-    margin = grid::unit(c(0, 0, 0, 0), "pt")
-  )
-)
-
-# ── Extract boxed side legends ──
-legend_box_theme <- theme(
-  legend.position = "right",
-  legend.background = element_rect(fill = "grey97", colour = "grey80", linewidth = 0.5),
+# ── Panel-level bottom legends ──
+legend_bottom_theme <- theme(
+  legend.position = "bottom",
+  legend.background = element_blank(),
+  legend.box.background = element_rect(fill = "grey97", colour = "grey80", linewidth = 0.5),
+  legend.box.margin = margin(3, 5, 3, 5),
+  legend.box = "vertical",
   legend.key = element_blank(),
-  legend.margin = margin(10, 12, 10, 12),
-  legend.text = element_text(size = 10),
-  legend.key.size = unit(0.5, "cm"),
-  legend.title = element_text(face = "bold", size = 10, margin = margin(b = 4))
+  legend.margin = margin(2, 0, 2, 0),
+  legend.text = element_text(size = 10.5),
+  legend.key.size = unit(0.42, "cm"),
+  legend.title = element_blank(),
+  legend.spacing = unit(0, "cm"),
+  legend.spacing.x = unit(0.12, "cm"),
+  legend.spacing.y = unit(0.04, "cm")
 )
 
-legend_ab <- cowplot::get_legend(
-  p_etype_pct + legend_box_theme +
-    guides(fill = guide_legend(
-      ncol = 1,
-      title = "Actors involved in operations (detailed)"
-    ))
-)
-legend_c <- cowplot::get_legend(
-  p_share_lines + legend_box_theme +
-    guides(colour = guide_legend(
-      ncol = 1,
-      title = "Actor categories involved in operations"
-    ))
+p_cross_united <- build_cross_panel(
+  monthly_united,
+  death_label = "Recorded Dead and Missing Migrants"
 )
 
-# Left-align both legends against the cell's left edge; vertically centre
-legend_ab_wrap <- cowplot::ggdraw() +
-  cowplot::draw_grob(legend_ab, x = 0, y = 0.5, hjust = 0, vjust = 0.5)
-legend_c_wrap <- cowplot::ggdraw() +
-  cowplot::draw_grob(legend_c,  x = 0, y = 0.5, hjust = 0, vjust = 0.5)
+p_deaths_united <- build_deaths_panel(
+  monthly_united,
+  death_label = "Recorded Dead and Missing Migrants",
+  shared_sf = deaths_sf
+)
 
-# Display versions (no inline legends)
-p_etype_pct_noleg    <- p_etype_pct    + theme(legend.position = "none")
-p_share_lines_noleg  <- p_share_lines  + theme(legend.position = "none")
+panel_2x2_theme <- theme(
+  plot.title = element_text(face = "bold", size = 14, lineheight = 0.98),
+  plot.subtitle = element_text(size = 11, colour = "red3"),
+  axis.title = element_text(size = 12),
+  axis.text = element_text(size = 11),
+  plot.margin = margin(t = 9, r = 4, b = 2, l = 4)
+)
 
-# Assemble panel: plots left, legends right (legend_ab spans rows 1-2)
+p_cross_united_2x2 <- p_cross_united +
+  labs(title = "(a) Totals: persons attempting crossing, by outcome") +
+  panel_2x2_theme
+
+p_deaths_united_2x2 <- p_deaths_united +
+  labs(title = "(b) Totals: recorded dead/missing and fatality rate") +
+  panel_2x2_theme +
+  theme(axis.title.y.right = element_blank())
+
+p_etype_pct_2x2 <- p_etype_pct +
+  labs(title = "(c) Shares: detailed composition of interceptions") +
+  panel_2x2_theme
+
+p_share_lines_2x2 <- p_share_lines +
+  labs(title = "(d) Shares: percentage of persons intercepted") +
+  panel_2x2_theme
+
+p_cross_united_display <- p_cross_united_2x2 +
+  legend_bottom_theme +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE, title = NULL))
+
+p_deaths_united_display <- p_deaths_united_2x2 +
+  legend_bottom_theme +
+  guides(
+    fill = guide_legend(nrow = 1, order = 1, title = NULL),
+    colour = guide_legend(nrow = 1, order = 2, title = NULL)
+  )
+
+p_etype_pct_display <- p_etype_pct_2x2 +
+  legend_bottom_theme +
+  guides(fill = guide_legend(
+    ncol = 2,
+    byrow = TRUE,
+    title = NULL
+  ))
+
+p_share_lines_display <- p_share_lines_2x2 +
+  legend_bottom_theme +
+  guides(colour = guide_legend(
+    nrow = 2,
+    byrow = TRUE,
+    title = NULL
+  ))
+
+# Assemble panel: totals on the left, shares on the right.
 layout_design <- "
-AAAAE
-BBBBE
-CCCCF
-DDDDD
+AACC
+AACC
+BBDD
+BBDD
 "
 
 panel_event_type <- (
-  p_etype_p +
-    p_etype_pct_noleg +
-    p_share_lines_noleg +
-    wrap_elements(full = note_grob) +
-    legend_ab_wrap +
-    legend_c_wrap
+  p_cross_united_display +
+    p_deaths_united_display +
+    p_etype_pct_display +
+    p_share_lines_display
 ) +
   plot_layout(
     design = layout_design,
-    heights = c(1, 1, 1, 0.27)
+    heights = c(1, 1, 1, 1),
+    widths = c(1, 1, 1, 1)
   ) +
   plot_annotation(
-    title = "Crossing the Central Mediterranean: Interception of Migrant Boats per Month, by Actor Type",
+    title = "Crossing the Central Mediterranean: Crossing Outcomes, Mortality, and Interception Actors",
     theme = theme(
-      plot.title = element_text(face = "bold", size = 17, hjust = 0.5,
-                                margin = margin(b = 6)),
-      plot.margin = margin(14, 14, 14, 14)
+      plot.title = element_text(face = "bold", size = 21, hjust = 0.5,
+                                margin = margin(b = 4)),
+      plot.margin = margin(10, 10, 10, 10)
     )
   )
 
@@ -761,8 +843,8 @@ panel_event_type_framed <- cowplot::ggdraw(panel_event_type) +
 ggsave(
   fig_path("04_descriptive", "01_panel_event_type.png"),
   panel_event_type_framed,
-  width = 14,
-  height = 14,
+  width = 18.5,
+  height = 13,
   dpi = 300
 )
 # ── 5. Boat type panel (share + avg persons) ───────────

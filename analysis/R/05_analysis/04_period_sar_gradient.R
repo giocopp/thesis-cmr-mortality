@@ -340,7 +340,7 @@ cat("=======================================================\n")
 cat(sprintf("Sample: %s to %s (N = %d days; 20 primary sample)\n",
             min(d$date), max(d$date), nrow(d)))
 cat("UNITED filter = build_united_daily() (corridor join); shared by 20/27/28/31.\n")
-cat("2-period cut: post_mou from 2017-07-01. 4-period: 31 boundaries\n")
+cat("2-period cut: post_mou from 2017-02-02. 4-period: 31 boundaries\n")
 cat("(1->2 at 2017-01-31). Frontex-bounded -> period 1 left-truncated at\n")
 cat("2014, period 4 (Meloni) thin (~7 months). Count/probability regime\n")
 cat("decomposition; offset rate model is in 20 (boat controls in 27).\n")

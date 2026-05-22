@@ -61,7 +61,7 @@ library(lubridate)
 # in sar_zones_in_corridor.RDS by analysis/R/00_define_sea_zones.R.
 
 BASE_DIR <- here::here()
-MOU_DATE <- as.Date("2017-07-01")
+source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
 sf_use_s2(FALSE)  # Italian SRR has self-intersecting edges
 

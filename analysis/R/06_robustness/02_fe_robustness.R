@@ -74,7 +74,7 @@ print(absorbed, n = Inf)
 # For fine FE (month-year, month-year+dow), post_mou is fully absorbed within
 # each FE cell, so it is identified through the interaction only. For coarse
 # FE, post_mou is not fully absorbed — the coarse-FE b3 also picks up any
-# unexplained mean shift at 2017-07-01 those FEs cannot absorb. Known
+# unexplained mean shift at 2017-02-02 those FEs cannot absorb. Known
 # feature of the comparison, not a bug.
 cat("\n--- 3. Fits across FE specs (NegBin + Poisson, NW(14)) ---\n")
 

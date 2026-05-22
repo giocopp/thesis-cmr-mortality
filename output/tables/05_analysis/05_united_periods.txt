@@ -27,12 +27,18 @@ Model: fenegbin(n_dead ~ swh_prev5days:period | month_year), NW(14)
 
 === Period breakdown ===
 # A tibble: 4 × 10
-  period              from       to         n_days_united n_days_iom_observed united_only_days iom_death_days utd_death_days iom_dead utd_dead
-  <fct>               <date>     <date>             <int>               <int>            <int>          <int>          <int>    <dbl>    <dbl>
-1 1. Post-Arab Spring 2013-01-01 2017-01-31          1492                1127              365            135            140     7602    10385
-2 2. MoU + Salvini    2017-02-01 2019-12-31          1064                1064                0            177            149     4269     5625
-3 3. Partial rollback 2020-01-01 2022-10-21          1025                1025                0            242            163     2506     3937
-4 4. Meloni           2022-10-22 2025-12-31          1167                1167                0            317            258     3337     4788
+  period              from       to         n_days_united n_days_iom_observed
+  <fct>               <date>     <date>             <int>               <int>
+1 1. Post-Arab Spring 2013-01-01 2017-01-31          1492                1127
+2 2. MoU + Salvini    2017-02-01 2019-12-31          1064                1064
+3 3. Partial rollback 2020-01-01 2022-10-21          1025                1025
+4 4. Meloni           2022-10-22 2025-12-31          1167                1167
+  united_only_days iom_death_days utd_death_days iom_dead utd_dead
+             <int>          <int>          <int>    <dbl>    <dbl>
+1              365            135            140     7602    10385
+2                0            177            149     4269     5625
+3                0            242            163     2506     3937
+4                0            317            258     3337     4788
 
 2013 UNITED-only days: 365; UNITED deaths: 713; IOM deaths counted: 0
 

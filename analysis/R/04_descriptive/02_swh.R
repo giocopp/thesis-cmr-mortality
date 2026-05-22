@@ -1,7 +1,7 @@
 # Pure descriptive (model-free) statistics relating prev-week SWH to the four
 # outcomes of interest, stratified by YEAR (not pre/post MoU), so the
 # evolution across the institutional timeline (Mare Nostrum end 2014-11,
-# NGO peak 2015-17, MoU + Minniti 2017-07, NGO crackdown 2018-19, LCG/TCG
+# NGO peak 2015-17, MoU 2017-02, NGO crackdown 2018-19, LCG/TCG
 # era 2020+) is visible directly.
 #
 # Outcomes:
@@ -35,13 +35,13 @@ library(tidyverse)
 library(lubridate)
 
 BASE_DIR <- here::here()
-MOU_DATE <- as.Date("2017-07-01")
+MOU_DATE <- as.Date("2017-02-02")
 
 # Institutional reference dates (used for vlines on annual plots).
 INST <- tibble(
-  date  = as.Date(c("2014-11-01", "2017-07-01", "2018-06-01")),
-  year  = c(2014.83, 2017.5, 2018.42),
-  label = c("Mare Nostrum end", "MoU + Minniti", "Salvini crackdown"),
+  date  = as.Date(c("2014-11-01", "2017-02-02", "2018-06-01")),
+  year  = c(2014.83, 2017.09, 2018.42),
+  label = c("Mare Nostrum end", "MoU signing", "Salvini crackdown"),
   col   = c("#1B7837", "#D6604D", "#762A83")
 )
 

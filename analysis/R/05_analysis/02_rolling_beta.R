@@ -333,7 +333,7 @@ p1 <- plot_df |>
     title = "(1) Daily-aggregate rolling beta (2-year window)",
     subtitle = paste("Poisson QMLE, NW(14).",
                      "Long-dashed segments = mean beta over windows fully pre/post MoU.",
-                     "Red dotted = MoU (2017-07-01).", sep = " "),
+                     "Red dotted = MoU (2017-02-02).", sep = " "),
     x = NULL, y = expression(beta(SWH[prevweek]))
   ) +
   theme_minimal(base_size = 10) +

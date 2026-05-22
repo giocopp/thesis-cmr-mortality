@@ -27,7 +27,7 @@ library(fixest)
 library(sf)
 
 BASE_DIR <- here::here()
-MOU_DATE <- as.Date("2017-07-01")
+MOU_DATE <- as.Date("2017-02-02")
 
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 

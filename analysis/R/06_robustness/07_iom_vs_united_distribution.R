@@ -104,7 +104,7 @@ monthly_long <- monthly |>
   mutate(source = if_else(source == "iom_m", "IOM", "UNITED"))
 
 p1 <- ggplot(monthly_long, aes(month, deaths, colour = source)) +
-  geom_vline(xintercept = as.Date("2017-07-01"), linetype = "dotted",
+  geom_vline(xintercept = as.Date("2017-02-02"), linetype = "dotted",
              colour = "#D32F2F", linewidth = 0.6) +
   geom_line(linewidth = 0.6) +
   scale_colour_manual(values = c("IOM" = "#2166AC", "UNITED" = "#B2182B")) +
@@ -123,7 +123,7 @@ cum_df <- daily |>
   pivot_longer(c(IOM, UNITED), names_to = "source", values_to = "cum_deaths")
 
 p2 <- ggplot(cum_df, aes(date, cum_deaths, colour = source)) +
-  geom_vline(xintercept = as.Date("2017-07-01"), linetype = "dotted",
+  geom_vline(xintercept = as.Date("2017-02-02"), linetype = "dotted",
              colour = "#D32F2F", linewidth = 0.6) +
   geom_line(linewidth = 0.7) +
   scale_colour_manual(values = c("IOM" = "#2166AC", "UNITED" = "#B2182B")) +
