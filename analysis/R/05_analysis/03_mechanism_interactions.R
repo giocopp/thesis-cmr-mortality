@@ -53,8 +53,8 @@ panel <- panel |>
 
     # (ii) Absolute-persons moderator: log1p of weekly SAR persons (z-scored).
     #      Drops the share denominator -> immune to mechanical fall when
-    #      LCG/TCG pullbacks rise. Persons rescued is the direct measure
-    #      of rescue capacity deployed.
+    #      non-SAR Frontex events rise. Persons in SAR-classified events are
+    #      the direct absolute-volume proxy for rescue capacity deployed.
     log1p_sar_persons_pw   = log1p(sar_persons_pw),
     log1p_sar_persons_pw_z = (log1p_sar_persons_pw - mean(log1p_sar_persons_pw, na.rm = TRUE)) /
                                 sd(log1p_sar_persons_pw, na.rm = TRUE),
@@ -286,11 +286,11 @@ cat("  is much more pre-treatment than lag 7: r(control, SWH) drops from\n")
 cat("  -0.50 at lag 7 to -0.25 at lag 14.\n\n")
 
 cat("WHY TWO MODERATORS:\n")
-cat("  The share denominator includes LCG/TCG pullbacks and other Not-SAR\n")
-cat("  events. After 2018 those rise sharply, so the share can fall\n")
-cat("  mechanically even if absolute SAR is unchanged. The log-persons\n")
-cat("  variant drops the denominator. Same-sign interactions across the two\n")
-cat("  moderators rule out the share-mechanics critique.\n\n")
+cat("  The share denominator includes all Frontex incidents, including\n")
+cat("  Not-SAR events. When those events rise, the share can fall mechanically\n")
+cat("  even if absolute SAR is unchanged. The log-persons variant drops the\n")
+cat("  denominator. Same-sign interactions across the two moderators address\n")
+cat("  the share-mechanics critique.\n\n")
 
 for (src in c("UNITED", "IOM")) {
   fits <- if (src == "IOM") fits_iom else fits_united

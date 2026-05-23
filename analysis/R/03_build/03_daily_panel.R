@@ -155,17 +155,10 @@ cat(sprintf("  Frontex daily: %d days with activity\n", nrow(frx_daily)))
 # ── 3. Build daily IOM aggregate ──────────────────────────
 cat("\n--- 3. Building daily IOM aggregate (broad/descriptive filter) ---\n")
 
-# Inclusive filter (see header): CMR route + incident/split + CMR countries,
-# no cause or spatial restriction. Matches 04_descriptive_statistics.R.
-# NOTE: this build deliberately KEEPS split incidents (incident_types
-# passed explicitly below) because n_dead_missing here feeds the broad
-# crossing_attempts volume LOWER BOUND, not the IOM death OUTCOME. The
-# analysis death series uses build_iom_daily()'s default, which now
-# EXCLUDES split incidents (date-smearing flattens the SWH gradient and
-# breaks IOM/UNITED comparability — see _helpers.R). These are different
-# variables; the split choice is intentionally opposite for each.
-# Filter is centralised in analysis/R/_helpers.R::build_iom_daily(); change
-# parameters there or in the call below to swap variants for sensitivity.
+# Broad IOM filter (incident + split, no cause/spatial cut) kept for
+# downstream descriptive scripts (output saved as n_dead_missing in the
+# panel). The crossing_attempts denominator no longer uses IOM; it uses
+# analytical UNITED, built in the next step.
 iom_daily <- build_iom_daily(
   incident_types = c("incident", "split incident"),
   spatial        = "all_cmr",
@@ -174,8 +167,21 @@ iom_daily <- build_iom_daily(
   base_dir       = BASE_DIR
 )
 
-cat(sprintf("  IOM daily: %d days, %.0f dead+missing\n",
+cat(sprintf("  IOM daily (broad, descriptive): %d days, %.0f dead+missing\n",
             nrow(iom_daily), sum(iom_daily$n_dead_missing)))
+
+# ── 3b. Build daily UNITED aggregate (analytical filter, feeds C_t) ──
+# UNITED is the primary mortality outcome. Its analytical daily count
+# (corridor polygon, drowning/other-unknown causes) is the death term in
+# C_t. Stored as n_dead_united_for_ct to avoid colliding with the
+# analytical-script joins that introduce their own n_dead_united.
+cat("\n--- 3b. Building daily UNITED aggregate (analytical, feeds C_t) ---\n")
+
+united_for_ct <- build_united_daily() |>
+  dplyr::rename(n_dead_united_for_ct = n_dead_united)
+
+cat(sprintf("  UNITED daily (analytical, for C_t): %d days, %.0f deaths\n",
+            nrow(united_for_ct), sum(united_for_ct$n_dead_united_for_ct)))
 
 # ── 5. Build date spine and merge ─────────────────────────
 cat("\n--- 5. Building integrated panel ---\n")
@@ -225,6 +231,7 @@ panel <- spine |>
   mutate(iso_week = paste0(isoyear(date), "_w", sprintf("%02d", isoweek(date)))) |>
   left_join(frx_daily,     by = "date") |>
   left_join(iom_daily,     by = "date") |>
+  left_join(united_for_ct, by = "date") |>
   left_join(weather,       by = "date") |>
   left_join(acled,         by = "date") |>
   left_join(lcg_tcg_daily, by = "date") |>
@@ -251,7 +258,7 @@ count_cols <- c("frx_incidents", "frx_persons", "frx_n_sar",
                 "frx_n_fibreglass", "frx_persons_fibreglass",
                 "frx_dep_libya", "frx_dep_tunisia", "frx_dep_algeria",
                 "frx_n_in_oparea", "frx_n_multi_actors",
-                "n_dead_missing",
+                "n_dead_missing", "n_dead_united_for_ct",
                 "lcg_pushbacks", "tcg_pushbacks", "lcg_tcg_pushbacks")
 panel <- panel |>
   mutate(across(all_of(count_cols), ~ replace_na(.x, 0L)))
@@ -263,9 +270,11 @@ cat(sprintf("  Panel: %d days (%s to %s)\n",
 cat("\n--- 6. Deriving variables ---\n")
 
 # crossing_attempts components (daily):
-#   1. frx_persons         — persons in Frontex events (arrivals to Europe)
-#   2. lcg_tcg_pushbacks   — LCG + TCG pushbacks to Africa (Denton-disaggregated)
-#   3. n_dead_missing      — deaths and missing (IOM MMP, CMR countries)
+#   1. frx_persons              — persons in Frontex events (arrivals to Europe)
+#   2. lcg_tcg_pushbacks        — LCG + TCG pushbacks to Africa (Denton-disagg)
+#   3. n_dead_united_for_ct     — deaths (UNITED analytical: corridor polygon,
+#                                  drowning/other-unknown). Primary mortality
+#                                  source, so the death term of C_t uses UNITED.
 #
 # NOTE on undetected arrivals:
 #   UNHCR daily arrivals to Italy exceed Frontex daily events by 1-12%
@@ -285,9 +294,9 @@ cat("\n--- 6. Deriving variables ---\n")
 #   The UNHCR daily arrivals column is retained in the panel for reference.
 panel <- panel |>
   mutate(
-    crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing,
+    crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_united_for_ct,
     fatality_rate     = ifelse(crossing_attempts > 0,
-                                n_dead_missing / crossing_attempts, NA_real_),
+                                n_dead_united_for_ct / crossing_attempts, NA_real_),
     post_mou          = as.integer(date >= MOU_DATE),
     year              = year(date),
     month_year        = factor(format(date, "%Y-%m"))

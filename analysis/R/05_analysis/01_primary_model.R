@@ -1,7 +1,5 @@
-# ── Primary count + rate model: SWH × post_MoU on daily CMR deaths ─────────
+# Primary count + volume-controlled model: SWH x post_MoU on daily CMR deaths.
 # UNITED primary, IOM comparison. NegBin + Poisson, month_year FE, NW(14).
-# Rate variant adds log(crossing_attempts) as a free covariate.
-# Exposure sensitivity: past (1-5d) windows + future placebos.
 
 library(tidyverse)
 library(lubridate)
@@ -185,13 +183,7 @@ m_nb_u   <- fenegbin(n_dead_united ~ swh_prev5days + swh_prev5days:post_mou | mo
 m_pois_u <- fepois  (n_dead_united ~ swh_prev5days + swh_prev5days:post_mou | month_year_fac,
                      data = d, vcov = NW(14), panel.id = ~unit + date)
 
-# ── 2b. Rate-like model: Poisson with crossing-volume control ──
-# Uses crossing_attempts from the panel (common denominator for both sources):
-#   crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing
-# Fixes two problems with the old spec:
-#   (i)  source-specific circularity: UNITED deaths were in the UNITED denom
-#   (ii) forced elasticity = 1 (offset): strongly rejected (b_exposure ~ 0.3)
-# log(crossing_attempts) enters as a free covariate; coefficient tested vs 1.
+# ── 2b. Volume-controlled count model: log(crossing_attempts) as free covariate ──
 d_rate <- d |>
   filter(crossing_attempts > 0) |>
   mutate(log_crossing_attempts = log(crossing_attempts))
@@ -206,10 +198,7 @@ m_rate <- fepois(
                log_crossing_attempts | month_year_fac,
   data = d_rate, vcov = NW(14), panel.id = ~unit + date)
 
-# ── 2c. Elasticity check: test log(crossing_attempts) coef against 1 ──
-# b_exposure << 1 => deaths do not scale proportionally with attempts;
-# the rate interpretation requires this assumption, which the data must
-# support (or the model is at best a volume-controlled count model).
+# ── 2c. Elasticity check: Wald test on log(crossing_attempts) vs 1 ──
 
 elast_test <- function(m, xname, label) {
   ct <- coeftable(m, vcov = NW(14))
@@ -319,7 +308,7 @@ print(etable(m_nb_u, m_pois_u, m_nb, m_pois,
 cat("\n  Count, slope decomposition, NW(14):\n")
 print_slope_summary(count_slopes, show_irr = FALSE)
 
-cat("\n  Rate-like model (common denom, free exposure), NW(14):\n")
+cat("\n  Volume-controlled model (free log exposure), NW(14):\n")
 print(etable(m_rate_u, m_rate,
              vcov = NW(14), se.below = TRUE,
              headers = c("UNITED rate", "IOM rate")))
@@ -405,12 +394,10 @@ cat(sprintf("Deaths UNITED (corridor, drowned + other/unknown): %.0f\n",
 cat(sprintf("Deaths IOM    (corridor, drowning + mixed):       %.0f\n",
             sum(d$n_dead_iom)))
 cat("\nModels (month_year FE; NW(14) SEs; UNITED primary, IOM comparison):\n")
-cat("  count : deaths ~ swh_prev5days + swh_prev5days:post_mou   (NegBin, Poisson)\n")
-cat("  rate  : count spec + log(crossing_attempts) free          (Poisson)\n")
-cat("  crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing\n")
-cat("  (common denom; free covariate; tests proportionality assumption)\n")
-cat("Slope decomposition: b_pre, b_shift (=SWH:post_mou),\n")
-cat("  b_post = b_pre + b_shift (delta-method SE).\n")
+cat("  count           : deaths ~ swh_prev5days + swh_prev5days:post_mou (NegBin, Poisson)\n")
+cat("  volume-controlled: count spec + log(crossing_attempts) free       (Poisson)\n")
+cat("  crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_united_for_ct\n")
+cat("Slope decomposition: b_pre, b_shift (=SWH:post_mou), b_post = b_pre + b_shift (delta-method SE).\n")
 cat("N = estimation N after fixest drops all-zero FE cells.\n\n")
 
 cat("=== COUNT MODELS: UNITED PRIMARY, IOM COMPARISON ===\n")
@@ -431,9 +418,8 @@ print(etable(m_nb_u, m_pois_u, m_nb, m_pois,
              headers = c("UNITED NB", "UNITED Poiss",
                          "IOM NB", "IOM Poiss")))
 
-cat("\n\n=== RATE-LIKE MODEL (common denom, free exposure) ===\n")
-cat("crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing\n")
-cat("Common denominator for both sources. Free covariate (not forced offset).\n")
+cat("\n\n=== VOLUME-CONTROLLED MODEL (free log exposure) ===\n")
+cat("crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_united_for_ct\n")
 cat(sprintf(
   "Rate sample: N=%d days (drops %d zero-crossing days).\n\n",
   nrow(d_rate), nrow(d) - nrow(d_rate)))

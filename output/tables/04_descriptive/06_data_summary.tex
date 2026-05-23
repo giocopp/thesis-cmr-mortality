@@ -1,0 +1,43 @@
+\begin{table}[H]
+\centering
+\caption{Data and analytical sample. Central Mediterranean route, 2014--2023.}
+\label{tab:data-summary}
+\small
+\begin{tabular}{@{}l r r@{}}
+\toprule
+\multicolumn{3}{@{}l}{\textit{Sample window}} \\
+\addlinespace[2pt]
+\quad Date range                                        & \multicolumn{2}{r}{2014-01-01 to 2023-05-31} \\
+\quad Calendar days                                     & \multicolumn{2}{r}{3,438} \\
+\quad Regression sample (lagged windows filled)         & \multicolumn{2}{r}{3,424} \\
+\quad Volume-controlled sample (days with $C_t>0$)      & \multicolumn{2}{r}{2,036} \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Mortality outcomes (analysis sample)}} \\
+\addlinespace[2pt]
+                                                         & \emph{UNITED} & \emph{IOM} \\
+\cmidrule(lr){2-3}
+\quad Deaths (total)                                    & 20,368 & 15,285 \\
+\quad Death-days                                        & 503 & 616 \\
+\quad Maximum daily count                               & 1,101 & 1,022 \\
+\addlinespace[2pt]
+\quad Cross-source correlation, daily                   & \multicolumn{2}{r}{0.71} \\
+\quad Cross-source correlation, monthly                 & \multicolumn{2}{r}{0.91} \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Lower-bound crossing-attempt proxy $C_t$}} \\
+\addlinespace[2pt]
+                                                         & \emph{Count} & \emph{Share} \\
+\cmidrule(lr){2-3}
+\quad Persons in Frontex-recorded crossing events       & 819,576 & 75.7\% \\
+\quad Persons pulled back by Libyan/Tunisian coast guards & 242,934 & 22.4\% \\
+\quad Deaths recorded by UNITED                         & 20,368 & 1.9\% \\
+\addlinespace[2pt]
+\quad \textbf{Total lower-bound attempts $C_t$}         & \textbf{1,082,878} & \textbf{100.0\%} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.4em}
+\begin{minipage}{0.95\linewidth}
+\footnotesize\itshape\raggedright
+Notes: Mortality numbers use the analytical filters (analysis polygon; drowning, mixed, or unknown causes; IOM excludes split incidents).
+\end{minipage}
+\end{table}

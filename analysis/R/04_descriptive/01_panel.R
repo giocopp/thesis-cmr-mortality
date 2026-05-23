@@ -1,5 +1,5 @@
-# 10_descriptives_panel.R
-# ===========================
+# 01_panel.R
+# ==========
 # Comprehensive descriptive statistics for the Central Mediterranean Route.
 # Monthly stacked bar panels showing crossings, deaths, composition over time.
 # Annual summary table with key numbers.
@@ -14,12 +14,12 @@
 #   analysis/data/daily_panel_complete.RDS
 #
 # Output:
-#   output/figures/desc_panel_crossings_iom.png     (crossings + deaths, IOM)
-#   output/figures/desc_panel_crossings_united.png  (crossings + deaths, UNITED)
-#   output/figures/desc_panel_event_type.png        (events + persons + composition)
-#   output/figures/desc_boat_type.png               (line plot)
-#   output/tables/desc_annual_summary.html
-#   output/tables/desc_annual_summary.tex
+#   output/figures/04_descriptive/01_panel_crossings_iom.png     (crossings + deaths, IOM)
+#   output/figures/04_descriptive/01_panel_crossings_united.png  (crossings + deaths, UNITED)
+#   output/figures/04_descriptive/01_panel_event_type.png        (events + persons + composition)
+#   output/figures/04_descriptive/01_panel_boat_type.png         (share + avg persons by boat type)
+#   output/tables/04_descriptive/01_annual_summary.html
+#   output/tables/04_descriptive/01_annual_summary.tex
 
 library(tidyverse)
 library(lubridate)
@@ -249,7 +249,7 @@ build_cross_panel <- function(m, death_label) {
     coord_cartesian(xlim = PLOT_XLIM, clip = "off") +
     labs(
       title = "(a) Number of persons attempting the crossing, by crossing outcome",
-      subtitle = "Red dashed line marks the signature of the 2017 Italy-Libya Memorandum of Understanding",
+      subtitle = "Red dashed line marks the signature of the 2017 Italy-Libya MoU",
       y = "Number of persons", x = NULL
     ) +
     theme_minimal(base_size = 11) +
@@ -608,7 +608,7 @@ build_cross_rate_panel <- function(m, death_label) {
     coord_cartesian(xlim = PLOT_XLIM, clip = "off") +
     labs(
       title = "(a) Number of persons attempting the crossing, by crossing outcome",
-      subtitle = "Red dashed line marks the signature of the 2017 Italy-Libya Memorandum of Understanding",
+      subtitle = "Red dashed line marks the signature of the 2017 Italy-Libya MoU",
       x = NULL
     ) +
     etype_theme_noleg +
@@ -735,12 +735,12 @@ legend_bottom_theme <- theme(
   legend.box = "vertical",
   legend.key = element_blank(),
   legend.margin = margin(2, 0, 2, 0),
-  legend.text = element_text(size = 10.5),
-  legend.key.size = unit(0.42, "cm"),
+  legend.text = element_text(size = 14),
+  legend.key.size = unit(0.6, "cm"),
   legend.title = element_blank(),
   legend.spacing = unit(0, "cm"),
-  legend.spacing.x = unit(0.12, "cm"),
-  legend.spacing.y = unit(0.04, "cm")
+  legend.spacing.x = unit(0.15, "cm"),
+  legend.spacing.y = unit(0.05, "cm")
 )
 
 p_cross_united <- build_cross_panel(
@@ -755,10 +755,10 @@ p_deaths_united <- build_deaths_panel(
 )
 
 panel_2x2_theme <- theme(
-  plot.title = element_text(face = "bold", size = 14, lineheight = 0.98),
-  plot.subtitle = element_text(size = 11, colour = "red3"),
-  axis.title = element_text(size = 12),
-  axis.text = element_text(size = 11),
+  plot.title = element_text(face = "bold", size = 20, lineheight = 0.98),
+  plot.subtitle = element_text(size = 15, colour = "red3"),
+  axis.title = element_text(size = 16),
+  axis.text = element_text(size = 15),
   plot.margin = margin(t = 9, r = 4, b = 2, l = 4)
 )
 
@@ -772,7 +772,10 @@ p_deaths_united_2x2 <- p_deaths_united +
   theme(axis.title.y.right = element_blank())
 
 p_etype_pct_2x2 <- p_etype_pct +
-  labs(title = "(c) Shares: detailed composition of interceptions") +
+  labs(
+    title = "(c) Shares: detailed composition of interceptions",
+    subtitle = "Red dashed line marks the signature of the 2017 Italy-Libya MoU"
+  ) +
   panel_2x2_theme
 
 p_share_lines_2x2 <- p_share_lines +
@@ -826,10 +829,7 @@ panel_event_type <- (
     widths = c(1, 1, 1, 1)
   ) +
   plot_annotation(
-    title = "Crossing the Central Mediterranean: Crossing Outcomes, Mortality, and Interception Actors",
     theme = theme(
-      plot.title = element_text(face = "bold", size = 21, hjust = 0.5,
-                                margin = margin(b = 4)),
       plot.margin = margin(10, 10, 10, 10)
     )
   )
@@ -844,7 +844,7 @@ ggsave(
   fig_path("04_descriptive", "01_panel_event_type.png"),
   panel_event_type_framed,
   width = 18.5,
-  height = 13,
+  height = 14.8,
   dpi = 300
 )
 # ── 5. Boat type panel (share + avg persons) ───────────

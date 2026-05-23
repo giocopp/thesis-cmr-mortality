@@ -1,13 +1,20 @@
-# 00_build_sea_zones.R
-# ====================
+# 01_sea_zones.R
+# ==============
 # Define geographic zones for the CMR analysis:
-#   1. Core Corridor — sea zone used ONLY for wave height calculation
+#   1. Area of analysis — sea zone used ONLY for wave height calculation
 #   2. SAR zones — parsed from IMO GISIS GML boundary files
+#   3. Frontex operational areas — Triton (30 NM, 138 NM) and Themis (24 NM)
 #
 # Output:
-#   output/figures/sea_zone_core_map.png
-#   output/figures/sar_zones_map.png
+#   output/figures/03_build/01_sea_zones_iom_incidents_map.png
+#   output/figures/03_build/01_sea_zones_panel_maps.png
+#   output/figures/03_build/01_sea_zones_sar.png
+#   output/figures/03_build/01_sea_zones_united_sar_panel.png
+#   output/figures/03_build/01_sea_zones_united_sar_panel.pdf
+#   data/processed/core_corridor.RDS
 #   data/processed/sar_zones.RDS
+#   data/processed/sar_zones_in_corridor.RDS
+#   data/processed/frontex_op_areas.RDS
 
 Sys.setlocale("LC_TIME", "en_US.UTF-8")
 
@@ -24,12 +31,12 @@ source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 # the Frontex-based daily_panel_complete.RDS, which is the canonical base
 # for the zone analysis.
 FRONTEX_END_DATE <- as.Date("2023-06-09")
-# Map cutoff: align both data sources to the UNITED coverage end (March 2026)
-MAP_END_DATE <- as.Date("2026-03-31")
+# Map cutoff: align both data sources to the analytical sample end date.
+MAP_END_DATE <- as.Date("2023-05-31")
 GML_DIR  <- file.path(BASE_DIR, "data", "raw", "IMO-SAR-boundaries")
 
 cat("============================================================\n")
-cat("DEFINE SEA ZONES (Core Corridor + SAR)\n")
+cat("DEFINE SEA ZONES (area of analysis + SAR)\n")
 cat("============================================================\n\n")
 
 # Disable s2 — the Italian SRR polygon has self-intersecting edges
@@ -67,11 +74,11 @@ cat(sprintf("  Total CMR incidents: %d\n", nrow(df_cmr)))
 cat(sprintf("  Total dead + missing: %.0f\n", sum(df_cmr$dead_missing)))
 
 # ============================================================
-# 1. CORE CORRIDOR SEA ZONE
+# 1. AREA-OF-ANALYSIS SEA ZONE
 # ============================================================
-cat("\n--- 1. Core Corridor zone ---\n")
+cat("\n--- 1. Area-of-analysis zone ---\n")
 
-# Core corridor polygon. Eastern edge is the Calabria-Benghazi diagonal
+# Analysis polygon. Eastern edge is the Calabria-Benghazi diagonal
 coords_core <- matrix(c(
   20.5, 32.0,   # Benghazi
   15.9, 38.2,   # Calabria
@@ -88,7 +95,7 @@ coords_core <- matrix(c(
 core_poly <- st_sfc(st_polygon(list(coords_core)), crs = 4326)
 core_sea  <- st_difference(core_poly, land) |> st_make_valid()
 
-cat("  Core Corridor polygon built\n")
+cat("  Analysis polygon built\n")
 
 # ============================================================
 # 2. SAR ZONES FROM IMO GISIS GML
@@ -170,12 +177,12 @@ zones_sea$zone_label <- c(
 cat(sprintf("\n  Total SAR zones: %d\n", nrow(zones_sea)))
 print(zones_sea |> st_drop_geometry())
 
-# ── 2b. INTERSECT SAR zones with the core corridor ─────────
+# ── 2b. INTERSECT SAR zones with the area of analysis ──────
 # The analysis only cares about CMR-relevant waters. Most of Italy's SRR
-# (Tyrrhenian, Adriatic, northern Med) is outside the CMR corridor. We
+# (Tyrrhenian, Adriatic, northern Med) is outside the area of analysis. We
 # therefore compute SAR ∩ core_sea polygons and use those for the zone
 # panel death assignment.
-cat("\n--- 2b. Intersecting SAR zones with core corridor ---\n")
+cat("\n--- 2b. Intersecting SAR zones with area of analysis ---\n")
 
 zones_in_corridor <- zones_sea
 for (i in seq_len(nrow(zones_sea))) {
@@ -296,7 +303,7 @@ map_theme <- theme_minimal(base_size = 10) +
     plot.margin = margin(5, 5, 5, 5)
   )
 
-# IOM incident point aesthetics: colour by inside/outside the core corridor
+# IOM incident point aesthetics: colour by whether points enter the analysis
 # polygon (the analytical sample for the zone-level model).
 colour_vals <- c("Included" = "#D32F2F",
                  "Excluded" = "grey65")
@@ -307,7 +314,7 @@ country_labels <- data.frame(
   lat   = c(37.5,     35.0,      30.8,    35.7,    35.6,        35.5,      40.1)
 )
 
-# Flag inside/outside the core corridor polygon.
+# Flag whether points fall inside the analysis polygon.
 df_cmr_map <- df_cmr |> filter(date <= MAP_END_DATE)
 iom_sf_map <- st_as_sf(df_cmr_map, coords = c("lon", "lat"), crs = 4326)
 inside_flag <- st_within(iom_sf_map, core_poly, sparse = FALSE)[, 1]
@@ -345,8 +352,9 @@ p_core <- ggplot() +
             colour = "grey40", size = 2.5, fontface = "italic") +
   coord_sf(xlim = MAP_XLIM, ylim = MAP_YLIM, expand = FALSE) +
   labs(title = "IOM Missing Migrants Project",
-       subtitle = sprintf("%s deadly incidents inside corridor (2014–March 2026).",
-                           formatC(n_in_zone, big.mark = ",")),
+       subtitle = sprintf("%s deadly incidents inside the area of analysis (2014–%s).",
+                           formatC(n_in_zone, big.mark = ","),
+                           format(MAP_END_DATE, "%B %Y")),
        x = NULL, y = NULL) +
   map_theme
 
@@ -394,12 +402,13 @@ p_united <- ggplot() +
             colour = "grey40", size = 2.5, fontface = "italic") +
   coord_sf(xlim = MAP_XLIM, ylim = MAP_YLIM, expand = FALSE) +
   labs(title = "UNITED List of Refugee Deaths",
-       subtitle = sprintf("%s deadly incidents inside corridor (2014–March 2026).",
-                           formatC(n_in_united, big.mark = ",")),
+       subtitle = sprintf("%s deadly incidents inside the area of analysis (2014–%s).",
+                           formatC(n_in_united, big.mark = ","),
+                           format(MAP_END_DATE, "%B %Y")),
        x = NULL, y = NULL) +
   map_theme
 
-cat(sprintf("  UNITED: %d inside corridor / %d total (%.1f%%)\n",
+cat(sprintf("  UNITED: %d inside area of analysis / %d total (%.1f%%)\n",
             n_in_united, n_total_united, pct_in_united))
 
 # ── Standalone IOM map (used in the presentation) ───────
@@ -435,6 +444,137 @@ p_sar <- ggplot() +
 
 ggsave(fig_path("03_build", "01_sea_zones_sar.png"),
        p_sar, width = 6, height = 6, dpi = 300)
+
+# ── 4d. UNITED deaths + SAR zones panel ──────────────────
+panel_land_fill <- "#F0F0EC"
+panel_land_line <- "#B9B9B3"
+panel_sea_fill  <- "#F7FBFD"
+panel_corridor  <- "#F08A4B"
+panel_incident_colours <- c("Included" = "#C9342D",
+                            "Excluded" = "#AEB2B5")
+panel_zone_colours <- c(
+  "EU: Italy" = "#4E79A7",
+  "EU: Malta" = "#76B7B2",
+  "North Africa: Libya" = "#E15759",
+  "North Africa: Tunisia" = "#F28E2B"
+)
+
+panel_theme <- theme_void(base_size = 11) +
+  theme(
+    plot.background = element_rect(fill = "white", colour = NA),
+    panel.background = element_rect(fill = panel_sea_fill, colour = NA),
+    panel.border = element_rect(fill = NA, colour = "#D6D6D0",
+                                linewidth = 0.35),
+    plot.title.position = "plot",
+    plot.title = element_text(size = 13, face = "bold",
+                              colour = "#202020",
+                              margin = margin(b = 3)),
+    plot.caption.position = "plot",
+    plot.caption = element_text(size = 8.5, colour = "#666666",
+                                hjust = 0, margin = margin(t = 4)),
+    legend.position = "right",
+    legend.background = element_blank(),
+    legend.box.background = element_rect(
+      fill = scales::alpha("white", 0.96), colour = "#D2D2CC",
+      linewidth = 0.25),
+    legend.box = "vertical",
+    legend.box.just = "center",
+    legend.box.spacing = unit(1.5, "pt"),
+    legend.box.margin = margin(3, 3, 3, 3),
+    legend.key = element_rect(fill = scales::alpha("white", 0), colour = NA),
+    legend.margin = margin(2, 2, 2, 2),
+    legend.text = element_text(size = 9.2, colour = "#2B2B2B"),
+    legend.title = element_text(size = 9.8, face = "bold",
+                                colour = "#2B2B2B"),
+    legend.key.size = unit(0.42, "cm"),
+    plot.margin = margin(2, 2, 2, 2)
+  )
+
+panel_country_labels <- country_labels |>
+  mutate(
+    lon = case_when(
+      label == "Lampedusa" ~ 12.35,
+      label == "Malta" ~ 14.85,
+      TRUE ~ lon
+    ),
+    lat = case_when(
+      label == "Lampedusa" ~ 35.45,
+      label == "Malta" ~ 35.80,
+      TRUE ~ lat
+    )
+  )
+
+label_layer <- shadowtext::geom_shadowtext(
+  data = panel_country_labels,
+  aes(x = lon, y = lat, label = label),
+  colour = "#4F4F4B",
+  bg.colour = "white",
+  size = 3.2,
+  fontface = "bold.italic"
+)
+
+p_united_panel <- ggplot() +
+  geom_sf(data = world, fill = panel_land_fill, colour = panel_land_line,
+          linewidth = 0.18) +
+  geom_sf(data = core_sea, fill = panel_corridor, colour = panel_corridor,
+          alpha = 0.16, linewidth = 0.35) +
+  geom_point(data = df_united_plot,
+             aes(x = longitude, y = latitude, size = n_deaths,
+                 colour = in_corridor),
+             alpha = 0.55, shape = 16) +
+  scale_colour_manual(values = panel_incident_colours,
+                      name = "Shipwrecks") +
+  scale_size_area(max_size = 4.4, name = "Shipwrecks",
+                  breaks = c(1, 10, 50, 200)) +
+  guides(colour = guide_legend(order = 1, title = "Shipwrecks",
+           override.aes = list(size = 3, alpha = 0.9)),
+         size   = guide_legend(order = 2, title = NULL,
+           override.aes = list(colour = "#2B2B2B", alpha = 0.65))) +
+  label_layer +
+  coord_sf(xlim = MAP_XLIM, ylim = MAP_YLIM, expand = FALSE) +
+  labs(
+    title = "(a) Shipwrecks and area of analysis",
+    caption = sprintf("Source: UNITED List of Refugee Deaths, 2014 to %s; Natural Earth base map.",
+                      format(MAP_END_DATE, "%B %Y")),
+    x = NULL, y = NULL
+  ) +
+  panel_theme
+
+p_sar_panel <- ggplot() +
+  geom_sf(data = world, fill = panel_land_fill, colour = panel_land_line,
+          linewidth = 0.18) +
+  geom_sf(data = zones_sea, aes(fill = zone_label), alpha = 0.22,
+          colour = "#2F6FAF", linewidth = 0.32) +
+  scale_fill_manual(
+    values = panel_zone_colours,
+    labels = c("EU: Italy", "EU: Malta",
+               "North Africa:\nLibya", "North Africa:\nTunisia"),
+    name = "SAR zone"
+  ) +
+  label_layer +
+  coord_sf(xlim = MAP_XLIM, ylim = MAP_YLIM, expand = FALSE) +
+  labs(
+    title = "(b) Search-and-rescue responsibility zones",
+    caption = "Source: IMO GISIS Global SAR Plan boundaries; Natural Earth base map.",
+    x = NULL, y = NULL
+  ) +
+  panel_theme
+
+panel_united_sar <- p_united_panel + p_sar_panel +
+  plot_layout(widths = c(1, 1), guides = "keep")
+
+panel_united_sar_boxed <- cowplot::ggdraw(panel_united_sar) +
+  cowplot::draw_grob(grid::rectGrob(
+    gp = grid::gpar(col = "#202020", fill = NA, lwd = 1.2)
+  ))
+
+ggsave(fig_path("03_build", "01_sea_zones_united_sar_panel.png"),
+       panel_united_sar_boxed, width = 11, height = 4.65, dpi = 450,
+       device = ragg::agg_png, bg = "white")
+
+ggsave(fig_path("03_build", "01_sea_zones_united_sar_panel.pdf"),
+       panel_united_sar_boxed, width = 11, height = 4.65,
+       device = grDevices::pdf, bg = "white")
 
 # ============================================================
 # 5. SAVE
