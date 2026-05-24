@@ -250,7 +250,9 @@ build_cross_panel <- function(m, death_label) {
   step <- 10^floor(log10(max_bar / 4))
   cross_step <- ceiling((max_bar / 4) / step) * step
   cross_max <- cross_step * 4
-  cross_breaks <- seq(0, cross_max, by = cross_step)
+  # Drop the 0 break so the y-axis label doesn't overlap with the "2014"
+  # x-axis label at the bottom-left corner (expand = FALSE puts them flush).
+  cross_breaks <- seq(cross_step, cross_max, by = cross_step)
   ggplot(cross_long, aes(x = ym, y = persons, fill = component)) +
     geom_col(position = "stack", width = 25) +
     scale_fill_manual(
@@ -269,7 +271,11 @@ build_cross_panel <- function(m, death_label) {
     geom_vline(xintercept = MOU_DATE, linetype = "dashed", colour = "red", linewidth = 0.5) +
     scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
     scale_y_continuous(breaks = cross_breaks) +
-    coord_cartesian(xlim = PLOT_XLIM, ylim = c(0, cross_max), clip = "off") +
+    # expand = FALSE so the data sits flush against the plot edges (matching
+    # panel b); without this, the 0 and y-max gridlines on panels (a/c/d) sit
+    # ~5% inside the panel and don't align with panel (b)'s 0/1600.
+    coord_cartesian(xlim = PLOT_XLIM, ylim = c(0, cross_max), clip = "off",
+                    expand = FALSE) +
     labs(
       title = "(a) Number of persons attempting the crossing, by crossing outcome",
       subtitle = "Red dashed line marks the signature of the 2017 Italy-Libya MoU",
@@ -297,10 +303,13 @@ build_deaths_panel <- function(m, death_label, shared_sf = NULL) {
   sf <- if (!is.null(shared_sf)) shared_sf else max(dr$n_dead_missing, na.rm = TRUE) / DEATHS_Y2_MAX
 
   # 5 breaks (4 spaces) on both axes so the gridline cell shape matches the
-  # shares panels (c/d) in the 2x2 composite.
+  # shares panels (c/d) in the 2x2 composite. The 0 break is dropped so the
+  # y-axis label doesn't overlap with "2014" at the bottom-left corner.
   primary_max <- sf * DEATHS_Y2_MAX
-  primary_breaks <- seq(0, primary_max, by = primary_max / 4)
-  secondary_breaks <- seq(0, DEATHS_Y2_MAX, by = DEATHS_Y2_MAX / 4)
+  primary_step <- primary_max / 4
+  primary_breaks <- seq(primary_step, primary_max, by = primary_step)
+  secondary_step <- DEATHS_Y2_MAX / 4
+  secondary_breaks <- seq(secondary_step, DEATHS_Y2_MAX, by = secondary_step)
 
   ggplot(dr, aes(x = ym)) +
     geom_col(aes(y = n_dead_missing, fill = death_label), width = 25) +
@@ -714,10 +723,13 @@ persons_smoothed <- persons_complete |>
 p_etype_pct <- ggplot(persons_smoothed, aes(x = ym, y = pct_smooth, fill = etype)) +
   geom_area(position = "stack") +
   scale_fill_manual(values = etype_colours, name = NULL) +
-  scale_y_continuous(name = "% of persons intercepted") +
+  # Drop the 0 break so the y-axis label doesn't overlap with "2014".
+  scale_y_continuous(name = "% of persons intercepted",
+                     breaks = c(25, 50, 75, 100)) +
   mou_vline +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  coord_cartesian(xlim = PLOT_XLIM, clip = "off") +
+  coord_cartesian(xlim = PLOT_XLIM, ylim = c(0, 100), clip = "off",
+                  expand = FALSE) +
   labs(
     title = "(b) Detailed composition of interceptions",
     y = "% of persons intercepted",
@@ -767,7 +779,10 @@ p_share_lines <- ggplot(share_lines, aes(x = ym, y = share, colour = group)) +
   scale_colour_manual(values = share_colours, name = NULL) +
   mou_vline +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  coord_cartesian(xlim = PLOT_XLIM, ylim = c(0, 100), clip = "off") +
+  # Drop the 0 break so the y-axis label doesn't overlap with "2014".
+  scale_y_continuous(breaks = c(25, 50, 75, 100)) +
+  coord_cartesian(xlim = PLOT_XLIM, ylim = c(0, 100), clip = "off",
+                  expand = FALSE) +
   labs(
     title = "(c) Percentage of persons intercepted",
     y = "% of persons intercepted",
@@ -866,29 +881,16 @@ p_share_lines_display <- p_share_lines_2x2 +
   ))
 
 # Assemble panel: totals on the left, shares on the right.
-layout_design <- "
-AACC
-AACC
-BBDD
-BBDD
-"
-
-panel_event_type <- (
-  p_cross_united_display +
-    p_deaths_united_display +
-    p_etype_pct_display +
-    p_share_lines_display
-) +
-  plot_layout(
-    design = layout_design,
-    heights = c(1, 1, 1, 1),
-    widths = c(1, 1, 1, 1)
-  ) +
-  plot_annotation(
-    theme = theme(
-      plot.margin = margin(10, 10, 10, 10)
-    )
-  )
+# Use cowplot::plot_grid with align="hv", axis="tblr" so all four plot areas
+# end up the same size — panel (b)'s dual y-axes would otherwise narrow its
+# plot area relative to (d), making the gridline cells look more elongated.
+panel_event_type <- cowplot::plot_grid(
+  p_cross_united_display,  p_etype_pct_display,
+  p_deaths_united_display, p_share_lines_display,
+  ncol = 2,
+  align = "hv",
+  axis = "tblr"
+)
 
 # Wrap in ggdraw and add an outer black frame around everything (title included)
 panel_event_type_framed <- cowplot::ggdraw(panel_event_type) +
