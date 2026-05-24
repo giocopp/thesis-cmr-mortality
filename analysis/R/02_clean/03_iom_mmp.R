@@ -1,23 +1,4 @@
-# Clean IOM Missing Migrants Project data and Mediterranean crossings.
-#
-# Replaces the Python script (clean_iom_data.py) with equivalent R logic.
-#
-# Fixes applied:
-#   - Dates standardized (imprecise dates preserved in 'incident_date_raw')
-#   - Known coordinate error corrected: 2022.MMP0765 (Khums, Libya)
-#   - Crossings use hardcoded row boundaries (verified against Excel)
-#
-# Known source-data issues NOT fixed here (require IOM confirmation):
-#   - 2021 route-level deaths (EMR/CMR/WMR/WAAR) in crossings file are
-#     byte-for-byte identical to 2014 — likely a data entry error
-#
-# Input:
-#   data/raw/iom/Missing_Migrants_Global_Figures_allData.xlsx
-#   data/raw/iom/ALL MED DATA 2010-2025_12.08.2025.xlsx
-#
-# Output:
-#   data/processed/iom_mmp_incidents.RDS
-#   data/processed/iom_med_crossings_monthly.RDS
+# Clean IOM Missing Migrants Project incidents and Mediterranean crossings.
 
 library(dplyr)
 library(readxl)
@@ -28,34 +9,20 @@ library(tidyr)
 
 BASE_DIR <- here::here()
 
-cat("============================================================\n")
-cat("CLEAN IOM DATA\n")
-cat("============================================================\n\n")
-
-
-# ====================================================================
 # Known coordinate corrections
-# ====================================================================
 COORDINATE_FIXES <- list(
   "2022.MMP0765" = list(lat = 32.6486, lon = 14.2714,
                         reason = "Khums, Libya — original had Qatar coordinates")
 )
 
-
-# ====================================================================
-# Helper: parse a single IOM date value
-# ====================================================================
+# ── Date parser: handles Excel serials, ISO, DMY, ranges, partial dates ─────
 parse_iom_date <- function(raw_date) {
-  # Returns a tibble row: incident_date_clean, incident_date_raw, incident_date_precision
-
-  # NA or NULL
   if (is.null(raw_date) || (length(raw_date) == 1 && is.na(raw_date))) {
     return(tibble(incident_date_clean = as.Date(NA),
                   incident_date_raw = "",
                   incident_date_precision = "unknown"))
   }
 
-  # Already a Date or POSIXct (from Excel reading)
   if (inherits(raw_date, "POSIXct") || inherits(raw_date, "POSIXlt")) {
     d <- as.Date(raw_date)
     return(tibble(incident_date_clean = d,
@@ -70,15 +37,12 @@ parse_iom_date <- function(raw_date) {
 
   s <- str_trim(as.character(raw_date))
 
-  # Unknown or empty
   if (tolower(s) %in% c("unknown", "") || is.na(s)) {
     return(tibble(incident_date_clean = as.Date(NA),
                   incident_date_raw = s,
                   incident_date_precision = "unknown"))
   }
 
-  # Excel serial number (readxl returns these when col_types = "text")
-  # Plausible range: 30000-60000 covers ~1982-2064
   if (grepl("^\\d{5}$", s)) {
     num <- as.numeric(s)
     if (!is.na(num) && num >= 30000 && num <= 60000) {
@@ -89,7 +53,6 @@ parse_iom_date <- function(raw_date) {
     }
   }
 
-  # "YYYY-MM-DD HH:MM:SS" timestamp string
   m <- str_match(s, "^(\\d{4}-\\d{2}-\\d{2})\\s+\\d{2}:\\d{2}:\\d{2}")
   if (!is.na(m[1, 1])) {
     d <- as.Date(m[1, 2])
@@ -98,7 +61,6 @@ parse_iom_date <- function(raw_date) {
                   incident_date_precision = "day"))
   }
 
-  # Plain "YYYY-MM-DD"
   m <- str_match(s, "^(\\d{4})-(\\d{2})-(\\d{2})$")
   if (!is.na(m[1, 1])) {
     d <- tryCatch(as.Date(s), error = function(e) NA)
@@ -107,7 +69,6 @@ parse_iom_date <- function(raw_date) {
                   incident_date_precision = ifelse(is.na(d), "imprecise", "day")))
   }
 
-  # "DD.MM.YYYY" European format
   m <- str_match(s, "^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})$")
   if (!is.na(m[1, 1])) {
     d <- tryCatch(
@@ -119,7 +80,6 @@ parse_iom_date <- function(raw_date) {
                   incident_date_precision = ifelse(is.na(d), "imprecise", "day")))
   }
 
-  # Date ranges like "8-9.03.2023" → take first date
   m <- str_match(s, "^(\\d{1,2})-\\d{1,2}\\.(\\d{1,2})\\.(\\d{4})$")
   if (!is.na(m[1, 1])) {
     d <- tryCatch(
@@ -131,7 +91,6 @@ parse_iom_date <- function(raw_date) {
                   incident_date_precision = "imprecise"))
   }
 
-  # "YYYY-MM-??" or "YYYY-MM-?" (month-only precision)
   m <- str_match(s, "^(\\d{4})-(\\d{2})-\\?+$")
   if (!is.na(m[1, 1])) {
     d <- tryCatch(
@@ -143,7 +102,6 @@ parse_iom_date <- function(raw_date) {
                   incident_date_precision = "month"))
   }
 
-  # "??/MM/YYYY" or "??.MM.YYYY" (day unknown)
   m <- str_match(s, "^\\?\\?[/.](\\d{1,2})[/.](\\d{4})$")
   if (!is.na(m[1, 1])) {
     d <- tryCatch(
@@ -155,7 +113,6 @@ parse_iom_date <- function(raw_date) {
                   incident_date_precision = "month"))
   }
 
-  # Fallback: try lubridate parsing (ymd first, then dmy)
   d <- suppressWarnings(ymd(s, quiet = TRUE))
   if (!is.na(d)) {
     return(tibble(incident_date_clean = d,
@@ -169,29 +126,17 @@ parse_iom_date <- function(raw_date) {
                   incident_date_precision = "day"))
   }
 
-  # Give up
-  return(tibble(incident_date_clean = as.Date(NA),
-                incident_date_raw = s,
-                incident_date_precision = "imprecise"))
+  tibble(incident_date_clean = as.Date(NA),
+         incident_date_raw = s,
+         incident_date_precision = "imprecise")
 }
 
-
-# ====================================================================
-# PART 1: IOM Missing Migrants Project (incident-level)
-# ====================================================================
-cat("--- PART 1: IOM MMP Incidents ---\n\n")
-
+# ── PART 1: IOM MMP incidents ───────────────────────────────────────────────
 mmp_path <- file.path(BASE_DIR, "data", "raw", "iom",
                        "Missing_Migrants_Global_Figures_allData.xlsx")
 
-cat(sprintf("  Reading: %s\n", basename(mmp_path)))
-
-# Single sheet, one row per event. Read as text to avoid ambiguous
-# type coercion; numeric columns are re-cast explicitly below.
 df_raw <- read_excel(mmp_path, sheet = "Worksheet", col_types = "text")
-cat(sprintf("  Raw: %d rows, %d cols\n", nrow(df_raw), ncol(df_raw)))
 
-# ── 1a. Standardise column names and types ──────────────
 df_all <- df_raw |>
   transmute(
     `Main ID`                   = `Main ID`,
@@ -221,95 +166,31 @@ df_all <- df_raw |>
     `Source Quality`            = `Source Quality`,
     Latitude  = suppressWarnings(as.numeric(sub(",.*$",           "", Coordinates))),
     Longitude = suppressWarnings(as.numeric(sub("^[^,]*,[[:space:]]*", "", Coordinates)))
-  )
-
-# Sanity: no Main ID should be NA
-n_null_id <- sum(is.na(df_all$`Main ID`))
-if (n_null_id > 0) {
-  cat(sprintf("  WARNING: %d rows with null Main ID — dropping\n", n_null_id))
-  df_all <- df_all |> filter(!is.na(`Main ID`))
-}
-cat(sprintf("  After renaming: %d rows, %d cols\n", nrow(df_all), ncol(df_all)))
-
-# ── 1b. Standardize dates ────────────────────────────────
-cat("\n  Standardizing dates...\n")
+  ) |>
+  filter(!is.na(`Main ID`))
 
 date_results <- map_dfr(df_all$`Incident date`, parse_iom_date)
 df_all <- bind_cols(df_all, date_results)
 
-precision_counts <- table(df_all$incident_date_precision)
-for (prec in names(precision_counts)) {
-  cat(sprintf("    %s: %d\n", prec, precision_counts[[prec]]))
-}
-
-# ── 1c. Fix coordinates ──────────────────────────────────
-cat("\n  Checking coordinates...\n")
-
-n_fixed <- 0
 for (main_id in names(COORDINATE_FIXES)) {
   fix <- COORDINATE_FIXES[[main_id]]
   idx <- which(df_all$`Main ID` == main_id)
   if (length(idx) > 0) {
-    df_all$Latitude[idx] <- fix$lat
+    df_all$Latitude[idx]  <- fix$lat
     df_all$Longitude[idx] <- fix$lon
-    n_fixed <- n_fixed + length(idx)
-    cat(sprintf("    Fixed coordinates for %s: %s\n", main_id, fix$reason))
   }
 }
-if (n_fixed == 0) cat("    No coordinate fixes needed\n")
 
-# ── 1d. Validation ────────────────────────────────────────
-cat("\n  Validation:\n")
-
-null_ids <- sum(is.na(df_all$`Main ID`))
-dup_ids  <- sum(duplicated(df_all$`Main ID`))
-cat(sprintf("    Null Main IDs: %d\n", null_ids))
-cat(sprintf("    Duplicate Main IDs: %d\n", dup_ids))
-
-required_cols <- c("Incident date", "Latitude", "Longitude",
-                    "No. dead", "No. dead/missing", "Region of Incident", "Route")
-missing_cols <- setdiff(required_cols, names(df_all))
-if (length(missing_cols) > 0) {
-  cat(sprintf("    MISSING COLUMNS: %s\n", paste(missing_cols, collapse = ", ")))
-} else {
-  cat("    All required columns present\n")
-}
-
-null_dates <- sum(is.na(df_all$incident_date_clean))
-cat(sprintf("    Unparseable dates: %d (%.1f%%)\n",
-    null_dates, 100 * null_dates / nrow(df_all)))
-
-n_cmr <- sum(df_all$Route == "Central Mediterranean", na.rm = TRUE)
-n_geocoded <- sum(!is.na(df_all$Latitude))
-cat(sprintf("    Total incidents: %d\n", nrow(df_all)))
-cat(sprintf("    CMR: %d\n", n_cmr))
-cat(sprintf("    Geocoded: %d (%.1f%%)\n", n_geocoded, 100 * n_geocoded / nrow(df_all)))
-
-if (null_ids == 0 && dup_ids == 0 && length(missing_cols) == 0) {
-  cat("    PASSED\n")
-} else {
-  cat("    FAILED — check warnings above\n")
-}
-
-# ── 1e. Save ──────────────────────────────────────────────
 saveRDS(df_all, file.path(BASE_DIR, "data", "processed", "iom_mmp_incidents.RDS"))
-cat(sprintf("\n  Saved: data/processed/iom_mmp_incidents.RDS (%d rows)\n", nrow(df_all)))
 
-
-# ====================================================================
-# PART 2: Mediterranean crossings (monthly time series)
-# ====================================================================
-cat("\n\n--- PART 2: Mediterranean Crossings ---\n\n")
-
+# ── PART 2: Mediterranean crossings (monthly time series) ───────────────────
 crossings_path <- file.path(BASE_DIR, "data", "raw", "iom",
                              "ALL MED DATA 2010-2025_12.08.2025.xlsx")
 
 df_raw <- read_excel(crossings_path,
                      sheet = "Crossings 2014-24 ALL ROUTE",
                      col_names = FALSE)
-cat(sprintf("  Raw shape: %d rows x %d cols\n", nrow(df_raw), ncol(df_raw)))
 
-# Row boundaries per year (1-indexed for R, inclusive)
 year_boundaries <- list(
   "2014" = c(4, 15),   "2015" = c(17, 28),  "2016" = c(30, 41),
   "2017" = c(43, 54),  "2018" = c(56, 67),  "2019" = c(69, 80),
@@ -323,7 +204,6 @@ month_map <- c(
   "September" = 9, "October" = 10, "November" = 11, "December" = 12
 )
 
-# Column mapping (1-indexed for R)
 col_names <- c(
   "3" = "waar", "4" = "wmr_sea_arrivals", "5" = "wmr_land_arrivals",
   "6" = "total_sea_arrivals_waar_wmr", "7" = "sea_arrivals_in_italy",
@@ -359,20 +239,19 @@ for (year_str in names(year_boundaries)) {
     if (is.na(month_name) || grepl("TOTAL", month_name)) next
 
     month_name <- str_trim(month_name)
-    month_num <- month_map[month_name]
+    month_num  <- month_map[month_name]
     if (is.na(month_num)) next
 
     year <- as.integer(year_str)
     record <- tibble(
-      date = sprintf("%d-%02d-01", year, month_num),
-      year = year,
-      month = as.integer(month_num),
+      date       = sprintf("%d-%02d-01", year, month_num),
+      year       = year,
+      month      = as.integer(month_num),
       month_name = month_name
     )
 
-    # Extract data columns
     for (col_idx_str in names(col_names)) {
-      col_idx <- as.integer(col_idx_str)
+      col_idx  <- as.integer(col_idx_str)
       col_name <- col_names[col_idx_str]
       val <- if (col_idx <= ncol(row)) as.numeric(row[[col_idx]]) else NA_real_
       record[[col_name]] <- val
@@ -385,28 +264,5 @@ for (year_str in names(year_boundaries)) {
 df_crossings <- bind_rows(records) |>
   arrange(year, month)
 
-cat(sprintf("  Rows: %d\n", nrow(df_crossings)))
-cat(sprintf("  Years: %d-%d\n", min(df_crossings$year), max(df_crossings$year)))
-
-for (y in sort(unique(df_crossings$year))) {
-  n <- sum(df_crossings$year == y)
-  cat(sprintf("    %d: %d months\n", y, n))
-}
-
-# Validation
-n_dups <- sum(duplicated(df_crossings[, c("year", "month")]))
-if (n_dups > 0) {
-  cat(sprintf("  WARNING: %d duplicate year-month rows\n", n_dups))
-} else {
-  cat("  No duplicates — PASSED\n")
-}
-
 saveRDS(df_crossings, file.path(BASE_DIR, "data", "processed",
                                  "iom_med_crossings_monthly.RDS"))
-cat(sprintf("\n  Saved: data/processed/iom_med_crossings_monthly.RDS (%d rows)\n",
-    nrow(df_crossings)))
-
-
-cat("\n============================================================\n")
-cat("DONE\n")
-cat("============================================================\n")

@@ -1,19 +1,10 @@
-# 05_policy_timeline.R
-# ===========================
-# Timeline of Central Mediterranean policy moments since 2013.
-# Top half: specific policies/programs as dated callouts on the timeline spine.
-# Bottom half: five phase bands showing the era each policy belongs to.
-#
-# Output:
-#   output/figures/04_descriptive/05_policy_timeline.png
+# Policy timeline figure: Mare Nostrum to Piantedosi decree, with phase bands.
 
 library(tidyverse)
 
 BASE_DIR <- here::here()
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
-# The right edge matches the Frontex-bounded analytical panel; the left edge
-# includes Mare Nostrum's pre-panel launch date for policy accuracy.
 panel_dates <- readRDS(file.path(BASE_DIR, "analysis", "data", "daily_panel_complete.RDS")) |>
   summarise(
     start = min(date, na.rm = TRUE),
@@ -298,9 +289,7 @@ p_timeline <- ggplot() +
   )
 
 ggsave(
-  fig_path("04_descriptive", "05_policy_timeline.png"),
+  fig_path("04_descriptive", "fig-policy-timeline.png"),
   p_timeline,
   width = 11.8, height = 5.35, dpi = 300
 )
-
-cat("Saved:", fig_path("04_descriptive", "05_policy_timeline.png"), "\n")

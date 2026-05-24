@@ -1,8 +1,5 @@
-# ── Daily panel: Frontex + IOM + UNHCR + LCG/TCG + ERA5 + ACLED ────────────
-# crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_missing.
-# Daily spine 2014-01-01 to last day of interceptions_daily_disagg.RDS.
-# Broad IOM filter here (incident + split, no cause/spatial cut) is the
-# volume denominator; analytical scripts narrow via build_iom_daily().
+# Integrated daily panel: Frontex + IOM + UNITED + UNHCR + LCG/TCG + ERA5 + ACLED.
+# Daily spine 2014-01-01 to the end of interceptions_daily_disagg.RDS.
 
 library(tidyverse)
 library(lubridate)
@@ -10,43 +7,12 @@ library(lubridate)
 BASE_DIR <- here::here()
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
-cat("============================================================\n")
-cat("BUILD INTEGRATED FRONTEX + IOM DAILY PANEL\n")
-cat("============================================================\n\n")
-
-# ── 1. Load and filter Frontex Themis ─────────────────────
-cat("--- 1. Loading Frontex Themis ---\n")
-
+# ── 1. Frontex Themis (CMR departures only) ─────────────────────────────────
 frx_all <- readRDS(file.path(BASE_DIR, "data", "processed", "frontex_incidents.RDS"))
-
-cat(sprintf("  Total Frontex: %d incidents (%s to %s)\n",
-    nrow(frx_all), min(frx_all$date), max(frx_all$date)))
-
-# Filter to CMR departures
-frx <- frx_all |>
-  filter(country_of_departure %in% CMR_DEPARTURES)
-
+frx     <- frx_all |> filter(country_of_departure %in% CMR_DEPARTURES)
 FRX_END <- max(frx$date)
-cat(sprintf("  After CMR filter (Libya/Tunisia/Algeria): %d incidents\n", nrow(frx)))
-cat(sprintf("  Excluded: %d non-CMR incidents\n", nrow(frx_all) - nrow(frx)))
-cat(sprintf("  Frontex end date: %s\n", FRX_END))
 
-cat("  Boat type distribution:\n")
-print(table(frx$boat_category))
-
-# ── 2. Aggregate Frontex to daily ─────────────────────────
-cat("\n--- 2. Aggregating Frontex to daily ---\n")
-
-# Interception aggregation — full matrix:
-#   frx_n_{sar|notsar}_{interceptor} and frx_persons_{sar|notsar}_{interceptor}
-#   count Frontex events and persons by interceptor_type × SAR status.
-#   SAR bucket: sar_ops == TRUE.
-#   Not-SAR bucket: sar_ops == FALSE OR sar_ops == NA (raw SAR = "N/A" —
-#     mostly pre-2020 land-patrol events; grouped with Not-SAR per design).
-#   Interceptor types (9): NGO, EU_ops, Ita_ops, Commercial, EU_Coast_Guard,
-#                          Land_patrol, No_intercept, Other, NA.
-#   Do NOT confuse with lcg_pushbacks / tcg_pushbacks (LCG/TCG pushbacks
-#   to Africa, separate data source).
+# ── 2. Aggregate Frontex to daily (interceptor × SAR matrix + detection + boat) ─
 frx_daily <- frx |>
   mutate(
     sar_bucket = ifelse(!is.na(sar_ops) & sar_ops, "sar", "notsar"),
@@ -62,7 +28,6 @@ frx_daily <- frx |>
     frx_persons               = sum(num_persons, na.rm = TRUE),
     frx_n_sar                 = sum(sar_bucket == "sar"),
 
-    # Counts: interceptor × SAR matrix (9 × 2 = 18 cells)
     frx_n_sar_ngo        = sum(sar_bucket == "sar"    & int_lab == "ngo"),
     frx_n_sar_eu         = sum(sar_bucket == "sar"    & int_lab == "eu"),
     frx_n_sar_ita        = sum(sar_bucket == "sar"    & int_lab == "ita"),
@@ -82,7 +47,6 @@ frx_daily <- frx |>
     frx_n_notsar_other   = sum(sar_bucket == "notsar" & int_lab == "other"),
     frx_n_notsar_na      = sum(sar_bucket == "notsar" & int_lab == "na"),
 
-    # Persons: same matrix
     frx_persons_sar_ngo      = sum(num_persons[sar_bucket == "sar"    & int_lab == "ngo"],   na.rm = TRUE),
     frx_persons_sar_eu       = sum(num_persons[sar_bucket == "sar"    & int_lab == "eu"],    na.rm = TRUE),
     frx_persons_sar_ita      = sum(num_persons[sar_bucket == "sar"    & int_lab == "ita"],   na.rm = TRUE),
@@ -102,7 +66,6 @@ frx_daily <- frx |>
     frx_persons_notsar_other = sum(num_persons[sar_bucket == "notsar" & int_lab == "other"], na.rm = TRUE),
     frx_persons_notsar_na    = sum(num_persons[sar_bucket == "notsar" & int_lab == "na"],    na.rm = TRUE),
 
-    # Detection method (grepl on raw detected_by — preserves multi-method events)
     frx_n_det_fwa             = sum(grepl("FWA",  detected_by), na.rm = TRUE),
     frx_n_det_helo            = sum(grepl("HELO", detected_by), na.rm = TRUE),
     frx_n_det_rpas            = sum(grepl("RPAS", detected_by), na.rm = TRUE),
@@ -113,7 +76,6 @@ frx_daily <- frx |>
     frx_n_det_cg              = sum(grepl("CPV|CPB|OPV", detected_by), na.rm = TRUE),
     frx_n_det_land            = sum(grepl("Land Patrol", detected_by), na.rm = TRUE),
 
-    # Boat type
     frx_n_inflatable          = sum(boat_category == "Inflatable"),
     frx_persons_inflatable    = sum(num_persons[boat_category == "Inflatable"], na.rm = TRUE),
     frx_n_wooden              = sum(boat_category == "Wooden"),
@@ -121,15 +83,11 @@ frx_daily <- frx |>
     frx_n_fibreglass          = sum(boat_category == "Fibre glass"),
     frx_persons_fibreglass    = sum(num_persons[boat_category == "Fibre glass"], na.rm = TRUE),
 
-    # Departure country
     frx_dep_libya             = sum(country_of_departure == "Libya"),
     frx_dep_tunisia           = sum(country_of_departure == "Tunisia"),
     frx_dep_algeria           = sum(country_of_departure == "Algeria"),
 
-    # Operational area
     frx_n_in_oparea           = sum(in_op_area, na.rm = TRUE),
-
-    # Multi-actor flag (any event with compound actors of multiple categories)
     frx_n_multi_actors        = sum(multi_actors_inv, na.rm = TRUE),
 
     .groups = "drop"
@@ -150,15 +108,7 @@ frx_daily <- frx |>
     frx_in_oparea_share           = frx_n_in_oparea / frx_incidents
   )
 
-cat(sprintf("  Frontex daily: %d days with activity\n", nrow(frx_daily)))
-
-# ── 3. Build daily IOM aggregate ──────────────────────────
-cat("\n--- 3. Building daily IOM aggregate (broad/descriptive filter) ---\n")
-
-# Broad IOM filter (incident + split, no cause/spatial cut) kept for
-# downstream descriptive scripts (output saved as n_dead_missing in the
-# panel). The crossing_attempts denominator no longer uses IOM; it uses
-# analytical UNITED, built in the next step.
+# ── 3. Daily IOM (broad descriptive) and UNITED (analytical, feeds C_t) ─────
 iom_daily <- build_iom_daily(
   incident_types = c("incident", "split incident"),
   spatial        = "all_cmr",
@@ -167,66 +117,33 @@ iom_daily <- build_iom_daily(
   base_dir       = BASE_DIR
 )
 
-cat(sprintf("  IOM daily (broad, descriptive): %d days, %.0f dead+missing\n",
-            nrow(iom_daily), sum(iom_daily$n_dead_missing)))
-
-# ── 3b. Build daily UNITED aggregate (analytical filter, feeds C_t) ──
-# UNITED is the primary mortality outcome. Its analytical daily count
-# (corridor polygon, drowning/other-unknown causes) is the death term in
-# C_t. Stored as n_dead_united_for_ct to avoid colliding with the
-# analytical-script joins that introduce their own n_dead_united.
-cat("\n--- 3b. Building daily UNITED aggregate (analytical, feeds C_t) ---\n")
-
 united_for_ct <- build_united_daily() |>
   dplyr::rename(n_dead_united_for_ct = n_dead_united)
 
-cat(sprintf("  UNITED daily (analytical, for C_t): %d days, %.0f deaths\n",
-            nrow(united_for_ct), sum(united_for_ct$n_dead_united_for_ct)))
-
-# ── 5. Build date spine and merge ─────────────────────────
-cat("\n--- 5. Building integrated panel ---\n")
-
-# Date spine: 2014-01-01 to the last date with COMPLETE coverage of all sources.
-# That is bounded by interceptions_daily_disagg.RDS (built by 01), which
-# truncates at the last full month inside the Frontex window — currently
-# 2023-05-31. Reading the cap from the disagg file rather than hard-coding it
-# means the panel adapts automatically if 01's logic changes.
+# ── 4. Date spine + merge all sources ───────────────────────────────────────
 disagg_path <- file.path(BASE_DIR, "analysis", "data", "interceptions_daily_disagg.RDS")
 if (!file.exists(disagg_path)) {
-  stop("interceptions_daily_disagg.RDS not found — run 01 first.")
+  stop("interceptions_daily_disagg.RDS not found — run 02 first.")
 }
 PANEL_END <- max(readRDS(disagg_path)$date)
-cat(sprintf("  Panel end (from disagg file): %s\n", PANEL_END))
 
 spine <- tibble(date = seq(as.Date("2014-01-01"), PANEL_END, by = "day"))
 
-# Weather from ERA5 clean data (all 16 SWH columns: 1d / 3d / 5d / 7d
-# windows, mean + max, uniform + death-weighted). See
-# data/scripts/01_clean_era5_swh.R for the column definitions.
 weather <- readRDS(file.path(BASE_DIR, "data", "processed", "era5_swh_daily.RDS"))
 
-# ACLED weekly conflict
 acled <- readRDS(file.path(BASE_DIR, "data", "processed", "acled_daily.RDS")) |>
   select(date, week_date,
          libya_conflict, libya_conflict_fatalities,
          libya_battles, libya_expvio, libya_violciv,
          tunisia_conflict, tunisia_conflict_fatalities,
          tunisia_battles, tunisia_expvio, tunisia_violciv)
-cat(sprintf("  ACLED: %d days loaded\n", nrow(acled)))
 
-# Daily LCG/TCG pushbacks (from 01_temporal_disaggregation.R, Denton method).
-# disagg_path/PANEL_END were already verified and read above (Section 5).
 lcg_tcg_daily <- readRDS(disagg_path) |>
   select(date, lcg_pushbacks, tcg_pushbacks, lcg_tcg_pushbacks)
-cat(sprintf("  LCG/TCG pushbacks (Denton disagg): %d days loaded\n", nrow(lcg_tcg_daily)))
 
-# UNHCR daily arrivals (for arrivals not detected during Frontex operations)
 unhcr <- readRDS(file.path(BASE_DIR, "data", "processed",
                             "unhcr_daily_arrivals.RDS"))
-cat(sprintf("  UNHCR arrivals: %d days (%s to %s)\n",
-    nrow(unhcr), min(unhcr$date), max(unhcr$date)))
 
-# Merge everything
 panel <- spine |>
   mutate(iso_week = paste0(isoyear(date), "_w", sprintf("%02d", isoweek(date)))) |>
   left_join(frx_daily,     by = "date") |>
@@ -237,10 +154,6 @@ panel <- spine |>
   left_join(lcg_tcg_daily, by = "date") |>
   left_join(unhcr,         by = "date")
 
-# Replace NA counts with 0 (Frontex and IOM counts).
-# Covers the interceptor × SAR matrix (18 n_* + 18 persons_*), detection
-# method counts, boat-type counts, departure counts, op-area, multi-actor,
-# IOM deaths, and LCG/TCG pushbacks.
 int_types <- c("ngo","eu","ita","comm","cg","land","noint","other","na")
 frx_matrix_cols <- c(
   paste0("frx_n_sar_",       int_types),
@@ -263,35 +176,8 @@ count_cols <- c("frx_incidents", "frx_persons", "frx_n_sar",
 panel <- panel |>
   mutate(across(all_of(count_cols), ~ replace_na(.x, 0L)))
 
-cat(sprintf("  Panel: %d days (%s to %s)\n",
-    nrow(panel), min(panel$date), max(panel$date)))
-
-# ── 6. Derive variables ───────────────────────────────────
-cat("\n--- 6. Deriving variables ---\n")
-
-# crossing_attempts components (daily):
-#   1. frx_persons              — persons in Frontex events (arrivals to Europe)
-#   2. lcg_tcg_pushbacks        — LCG + TCG pushbacks to Africa (Denton-disagg)
-#   3. n_dead_united_for_ct     — deaths (UNITED analytical: corridor polygon,
-#                                  drowning/other-unknown). Primary mortality
-#                                  source, so the death term of C_t uses UNITED.
-#
-# NOTE on undetected arrivals:
-#   UNHCR daily arrivals to Italy exceed Frontex daily events by 1-12%
-#   annually, reflecting arrivals not recorded during Frontex operations.
-#   However, computing undetected_arrivals = max(UNHCR - Frontex, 0) at the
-#   DAILY level inflates this gap 3-27x because of timing mismatches:
-#   UNHCR records arrivals on landing day, Frontex records events on
-#   event day. A rescue on day t may produce a Frontex count on day t
-#   and a UNHCR count on day t+1. The daily pmax captures all "UNHCR-high"
-#   days but discards offsetting "Frontex-high" days.
-#
-#   Example (2017): annual gap = 3,040 persons, but daily pmax sum = 83,435.
-#
-#   We therefore exclude undetected arrivals from the daily crossing formula.
-#   The gap is small at the monthly/annual level (see validation below) and
-#   crossing_attempts should be understood as a LOWER BOUND.
-#   The UNHCR daily arrivals column is retained in the panel for reference.
+# ── 5. Derived variables ────────────────────────────────────────────────────
+# crossing_attempts is a daily lower-bound (frx_persons + LCG/TCG + UNITED deaths).
 panel <- panel |>
   mutate(
     crossing_attempts = frx_persons + lcg_tcg_pushbacks + n_dead_united_for_ct,
@@ -302,59 +188,7 @@ panel <- panel |>
     month_year        = factor(format(date, "%Y-%m"))
   )
 
-# ── 7. Validation diagnostics ─────────────────────────────
-cat("\n--- 7. Validation ---\n")
-
-cat("\n  Annual totals:\n")
-annual <- panel |>
-  group_by(year) |>
-  summarise(
-    frx_persons       = sum(frx_persons),
-    n_dead_missing    = sum(n_dead_missing),
-    crossing_attempts = sum(crossing_attempts),
-    frx_incidents     = sum(frx_incidents),
-    days_with_frx     = sum(frx_incidents > 0),
-    .groups = "drop"
-  )
-print(annual, n = 12)
-
-# Undetected arrivals diagnostic (monthly level, where timing washes out)
-cat("\n  Undetected arrivals (monthly UNHCR - Frontex, for reference):\n")
-monthly_gap <- panel |>
-  filter(!is.na(arrivals)) |>
-  mutate(ym = floor_date(date, "month")) |>
-  group_by(ym) |>
-  summarise(unhcr = sum(arrivals), frx = sum(frx_persons), .groups = "drop") |>
-  mutate(gap = pmax(unhcr - frx, 0))
-cat(sprintf("    Monthly gap total: %.0f persons (%.1f%% of UNHCR)\n",
-    sum(monthly_gap$gap),
-    sum(monthly_gap$gap) / sum(monthly_gap$unhcr) * 100))
-
-excess_days <- panel |>
-  filter(n_dead_missing > frx_persons, n_dead_missing > 0)
-cat(sprintf("\n  Days where dead+missing > Frontex persons: %d\n", nrow(excess_days)))
-
-rate_days <- panel |> filter(!is.na(fatality_rate), crossing_attempts > 0)
-cat(sprintf("\n  Fatality rate (days with crossings, N=%d):\n", nrow(rate_days)))
-cat(sprintf("    Mean:   %.4f (%.2f%%)\n", mean(rate_days$fatality_rate),
-    mean(rate_days$fatality_rate) * 100))
-cat(sprintf("    Pre-MoU mean:  %.4f (%.2f%%)\n",
-    mean(rate_days$fatality_rate[rate_days$post_mou == 0]),
-    mean(rate_days$fatality_rate[rate_days$post_mou == 0]) * 100))
-cat(sprintf("    Post-MoU mean: %.4f (%.2f%%)\n",
-    mean(rate_days$fatality_rate[rate_days$post_mou == 1]),
-    mean(rate_days$fatality_rate[rate_days$post_mou == 1]) * 100))
-
-# ── 8. Save ───────────────────────────────────────────────
-cat("\n--- 8. Saving ---\n")
-
+# ── 6. Save ─────────────────────────────────────────────────────────────────
 out_dir <- file.path(BASE_DIR, "analysis", "data")
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
-
 saveRDS(panel, file.path(out_dir, "daily_panel_complete.RDS"))
-cat(sprintf("Saved: analysis/data/daily_panel_complete.RDS\n"))
-cat(sprintf("  %d rows x %d columns\n", nrow(panel), ncol(panel)))
-
-cat("\n============================================================\n")
-cat("DONE\n")
-cat("============================================================\n")

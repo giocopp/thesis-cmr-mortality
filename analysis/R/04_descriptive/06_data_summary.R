@@ -1,19 +1,4 @@
-# Data and analytical-sample summary table for Methods & Data.
-#
-# Single descriptive table summarizing the 2014-2023 route series across
-# three blocks: (a) sample windows, (b) mortality outcomes (UNITED + IOM,
-# analytical filters), (c) constructed exposure components (full panel,
-# broad IOM filter that feeds C_t). Numbers come from the same panel and
-# shared builders the analytical models use.
-#
-# Output: a clean booktabs LaTeX table written directly (no gt). Italic
-# group headers, indented rows, bolded total, no font-size acrobatics.
-#
-# Input:
-#   analysis/data/daily_panel_complete.RDS
-#   data/processed/{iom_mmp_incidents,united_incidents,core_corridor}.RDS
-# Output:
-#   output/tables/04_descriptive/06_data_summary.tex
+# Paper table: data and analytical-sample summary (tab-data-summary).
 
 library(tidyverse)
 library(lubridate)
@@ -22,11 +7,7 @@ library(zoo)
 BASE_DIR <- here::here()
 source(file.path(BASE_DIR, "analysis", "R", "_helpers.R"))
 
-cat("============================================================\n")
-cat("DATA SUMMARY TABLE (Methods & Data)\n")
-cat("============================================================\n\n")
-
-# ── 1. Load full panel and analytical death series ─────────
+# ── 1. Load panel and analytical death series ───────────────────────────────
 panel <- readRDS(file.path(BASE_DIR, "analysis", "data",
                             "daily_panel_complete.RDS"))
 
@@ -38,8 +19,7 @@ panel <- panel |>
   left_join(united_daily, by = "date") |>
   replace_na(list(n_dead_iom = 0, n_dead_united = 0))
 
-# Build the same lc_lag14 + swh_prev5days filter as the primary model so the
-# regression-sample size matches the count estimator exactly.
+# Match the primary model's regression sample.
 panel <- panel |>
   arrange(date) |>
   mutate(
@@ -50,11 +30,7 @@ panel <- panel |>
 
 d_reg <- panel |> filter(!is.na(lc_lag14), !is.na(swh_prev5days))
 
-cat(sprintf("  Full panel: %d days (%s to %s)\n",
-            nrow(panel), min(panel$date), max(panel$date)))
-cat(sprintf("  Regression sample: %d days\n", nrow(d_reg)))
-
-# ── 2. Compute numbers ─────────────────────────────────────
+# ── 2. Numbers ──────────────────────────────────────────────────────────────
 window_str <- sprintf("%s to %s",
                        format(min(panel$date), "%Y-%m-%d"),
                        format(max(panel$date), "%Y-%m-%d"))
@@ -100,7 +76,7 @@ stopifnot(
   dd_iom     == 616L
 )
 
-# ── 3. Build LaTeX directly (booktabs) ─────────────────────
+# ── 3. LaTeX (booktabs) ─────────────────────────────────────────────────────
 fmt_int <- function(x) formatC(round(x), format = "d", big.mark = ",")
 fmt_r   <- function(x) formatC(x, format = "f", digits = 2)
 fmt_pct <- function(x) sprintf("%.1f\\%%", x)
@@ -161,24 +137,4 @@ add("Notes: Mortality data are filtered by geographic polygonal area and by caus
 add("\\end{minipage}")
 add("\\end{table}")
 
-writeLines(L, tbl_path("04_descriptive", "06_data_summary.tex"))
-
-cat(sprintf("\nSaved: %s\n", tbl_path("04_descriptive", "06_data_summary.tex")))
-
-# Also print the raw values for quick visual check
-cat("\n=== Numbers ===\n")
-cat(sprintf("  Window: %s\n", window_str))
-cat(sprintf("  Calendar days: %s  Regression: %s  Rate: %s\n",
-            fmt_int(N_calendar), fmt_int(N_regress), fmt_int(N_rate)))
-cat(sprintf("  UNITED: %s deaths over %s days (max %s)\n",
-            fmt_int(N_united), fmt_int(dd_united), fmt_int(max_united)))
-cat(sprintf("  IOM:    %s dead/missing over %s days (max %s)\n",
-            fmt_int(N_iom), fmt_int(dd_iom), fmt_int(max_iom)))
-cat(sprintf("  Corr daily=%s monthly=%s\n", fmt_r(r_daily), fmt_r(r_monthly)))
-cat(sprintf("  C_t = %s (Frontex %s | LCG/TCG %s | UNITED %s)\n",
-            fmt_int(Ct_total), fmt_int(frx_total),
-            fmt_int(lcg_tcg_total), fmt_int(united_in_ct_total)))
-
-cat("\n============================================================\n")
-cat("DONE\n")
-cat("============================================================\n")
+writeLines(L, tbl_path("04_descriptive", "tab-data-summary.tex"))

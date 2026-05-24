@@ -1,10 +1,6 @@
-# ── Full pipeline ─────────────────────────────────────────────────────────────
-# Reproduces every figure and table in output/ from raw data in data/raw/.
-# See 01_download/README.md for raw-data acquisition.
+# ── Full pipeline ────────────────────────────────────────────────────────────
 
 renv::restore(prompt = FALSE)
-
-options(width = 300, tibble.print_max = Inf, tibble.width = Inf)
 
 root <- here::here("analysis", "R")
 

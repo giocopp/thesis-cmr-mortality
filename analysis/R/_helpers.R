@@ -1,12 +1,8 @@
-# ── Shared helpers ────────────────────────────────────────────────────────────
-# Builders for IOM/UNITED daily series and small path/spatial utilities.
-# Sourced by every analytical script.
+# ── Shared helpers: builders + path/spatial utilities ────────────────────────
 
 source(here::here("analysis", "R", "_constants.R"))
 
-# ── Output paths ──────────────────────────────────────────────────────────────
-# fig_path("05_analysis", "01_primary.png") returns the full path under
-# output/figures/05_analysis/ and creates the directory if needed.
+# ── Output paths ─────────────────────────────────────────────────────────────
 fig_path <- function(section, file) {
   p <- here::here("output", "figures", section, file)
   dir.create(dirname(p), recursive = TRUE, showWarnings = FALSE)
@@ -19,9 +15,7 @@ tbl_path <- function(section, file) {
   p
 }
 
-# ── Spatial: restrict to core corridor ────────────────────────────────────────
-# Spatial filter to the corridor polygon. Expects non-missing coords; toggles
-# off s2 for robust point-in-polygon on lon/lat.
+# ── Spatial filter: corridor polygon ─────────────────────────────────────────
 filter_corridor <- function(d, coords = c("lon", "lat"),
                             base_dir = here::here()) {
   core_poly <- readRDS(file.path(base_dir, "data", "processed", "core_corridor.RDS"))
@@ -32,10 +26,7 @@ filter_corridor <- function(d, coords = c("lon", "lat"),
   dplyr::filter(d, inside)
 }
 
-# ── IOM raw incidents (filtered) ──────────────────────────────────────────────
-# Filtered incident-level IOM MMP. Returns date, dead_missing, cause_cat,
-# lon, lat (and Route/Country/Incident Type from raw if needed via base_dir).
-# Defaults match the primary analytical spec.
+# ── IOM incidents ────────────────────────────────────────────────────────────
 iom_incidents <- function(
   incident_types = c("incident"),
   spatial        = c("central", "all_cmr"),
@@ -74,7 +65,6 @@ iom_incidents <- function(
   d
 }
 
-# Daily aggregate of dead+missing — wraps iom_incidents().
 build_iom_daily <- function(...) {
   iom_incidents(...) |>
     dplyr::group_by(date) |>
@@ -82,9 +72,7 @@ build_iom_daily <- function(...) {
     dplyr::arrange(date)
 }
 
-# ── UNITED raw incidents (filtered) ───────────────────────────────────────────
-# Same spatial + cause logic as iom_incidents() so the two sources are
-# directly comparable. UNITED records open-sea deaths under "Mediterranean".
+# ── UNITED incidents ─────────────────────────────────────────────────────────
 united_incidents <- function(
   causes    = c("sea", "all"),
   spatial   = c("central", "all_cmr"),
@@ -111,7 +99,6 @@ united_incidents <- function(
   d
 }
 
-# Daily aggregate of UNITED deaths — wraps united_incidents().
 build_united_daily <- function(...) {
   united_incidents(...) |>
     dplyr::group_by(date) |>
@@ -119,10 +106,7 @@ build_united_daily <- function(...) {
     dplyr::arrange(date)
 }
 
-# ── Crossing-exposure columns ─────────────────────────────────────────────────
-# Adds living_crossings (frx_persons + lcg_tcg_pushbacks) and the source-specific
-# attempts_iom / attempts_united denominators. Call after the build_*_daily()
-# joins and the replace_na() step that fills n_dead_{iom,united}.
+# ── Crossing-exposure columns ────────────────────────────────────────────────
 add_crossing_exposure <- function(df) {
   stopifnot(all(c("frx_persons", "lcg_tcg_pushbacks",
                   "n_dead_iom", "n_dead_united") %in% names(df)))

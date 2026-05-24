@@ -19,6 +19,9 @@ _targets/
 # Raw data (large, not tracked — obtain from original sources)
 data/raw/
 
+# Archived orphan scripts and stale outputs
+analysis/archive/
+
 # OS
 .DS_Store
 Thumbs.db
