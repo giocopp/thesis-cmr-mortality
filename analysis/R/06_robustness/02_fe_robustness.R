@@ -324,6 +324,79 @@ print(samp_rows |>
 sink()
 cat(sprintf("Saved: %s\n", sink_file))
 
+# ── 8. LaTeX table (\input'd by paper/thesis.qmd) ─────────────
+cat("\n--- 8. Writing LaTeX table ---\n")
+
+fb  <- function(b) sprintf("$%+.3f$", b)
+fse <- function(s) sprintf("%.3f", s)
+fp  <- function(p) sprintf("%.3f", p)
+
+nb_results  <- results  |> dplyr::filter(family == "NegBin")
+nb_vcov     <- vcov_rows |> dplyr::filter(family == "NegBin")
+
+# FE specs in inline order; script names listed for clarity.
+fe_rows <- list(
+  list(label = "year",                       script = "year"),
+  list(label = "month-of-year",              script = "month-of-year"),
+  list(label = "year + month",               script = "year + month"),
+  list(label = "quarter-year",               script = "quarter-year"),
+  list(label = "month-year (primary)",       script = "month-year (primary/20)"),
+  list(label = "month-year + day-of-week",   script = "month-year + dow")
+)
+# SE variants in inline order (omit iid).
+se_rows <- list(
+  list(label = "Newey-West, lag 7",          script = "NW(7)"),
+  list(label = "Newey-West, lag 14 (primary)", script = "NW(14) [primary]"),
+  list(label = "Newey-West, lag 21",         script = "NW(21)"),
+  list(label = "Cluster by month-year",      script = "cluster: month_year"),
+  list(label = "Cluster by year",            script = "cluster: year")
+)
+# Sample restrictions in inline order (omit drop FE singletons).
+samp_label <- function(s) sprintf("%s, $N=%d$",
+                                   s$label_stub, s$n)
+samp_rows_use <- list(
+  list(label_stub = "Full sample",         script = "full"),
+  list(label_stub = "Drop zero-death days", script = "drop zero-death days"),
+  list(label_stub = "Cap deaths at 100",   script = "cap deaths at 100")
+)
+
+L <- character(); add <- function(...) L <<- c(L, paste0(...))
+add("\\begin{table}[h!]")
+add("\\centering")
+add("\\small")
+add("\\caption{Fixed-effects and inference robustness, IOM NegBin")
+add("$\\beta_3=\\mathrm{SWH}_{t-1:t-5}\\times\\mathrm{Post\\text{-}MoU}$.}")
+add("\\label{tab:appx-fe}")
+add("\\begin{tabular}{lccc}")
+add("\\hline")
+add("Variant & $\\beta_3$ & SE & $p$ \\\\")
+add("\\hline")
+add("\\multicolumn{4}{l}{\\textit{(i) FE specifications (NegBin, NW(14))}} \\\\")
+for (r in fe_rows) {
+  row <- nb_results[nb_results$fe_spec == r$script, ]
+  add(sprintf("%-26s & %-9s & %s & %s \\\\",
+              r$label, fb(row$b3), fse(row$b3_se), fp(row$b3_p)))
+}
+add("\\multicolumn{4}{l}{\\textit{(ii) SE variants on month-year FE}} \\\\")
+for (r in se_rows) {
+  row <- nb_vcov[nb_vcov$variant == r$script, ]
+  add(sprintf("%-26s & %-9s & %s & %s \\\\",
+              r$label, fb(row$b3), fse(row$b3_se), fp(row$b3_p)))
+}
+add("\\multicolumn{4}{l}{\\textit{(iii) Sample restrictions}} \\\\")
+for (r in samp_rows_use) {
+  row <- samp_rows[samp_rows$variant == r$script, ]
+  add(sprintf("%s, $N=%d$  & %-9s & %s & %s \\\\",
+              r$label_stub, row$N, fb(row$b3), fse(row$b3_se), fp(row$b3_p)))
+}
+add("\\hline")
+add("\\multicolumn{4}{l}{\\footnotesize SE column reports the standard error from the variance estimator named in each row.}")
+add("\\end{tabular}")
+add("\\end{table}")
+out_fe <- tbl_path("06_robustness", "02_fe_robustness.tex")
+writeLines(L, out_fe)
+cat(sprintf("  Saved: %s\n", out_fe))
+
 cat("\n============================================================\n")
 cat("DONE\n")
 cat("============================================================\n")

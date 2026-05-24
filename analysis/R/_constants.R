@@ -8,12 +8,21 @@
 MOU_DATE       <- as.Date("2017-02-02")
 MOU_SIGN_DATE  <- as.Date("2017-02-02")
 
-# Long-span analysis (31): political-regime period boundaries.
+# Long-span analysis: 3-period political regime design aligned with the
+# policy timeline (04_descriptive/05_policy_timeline.R).
+#   1. SAR + border control     IOM_START   .. PERIOD_END_1
+#   2. MoU + NGO containment    PERIOD_END_1+1 .. PERIOD_END_2
+#   3. Lamorgese partial rollback PERIOD_END_2+1 .. PERIOD_END_3
 DATE_START     <- as.Date("2013-01-01")
 IOM_START      <- as.Date("2014-01-01")
-PERIOD_END_1   <- as.Date("2017-01-31")  # end of Post-Arab Spring (Mare Nostrum + NGO SAR)
-PERIOD_END_2   <- as.Date("2019-12-31")  # end of MoU + Salvini
-PERIOD_END_3   <- as.Date("2022-10-21")  # end of partial rollback (Meloni sworn 10-22)
+PERIOD_END_1   <- as.Date("2017-02-01")  # last day before Italy-Libya MoU (2017-02-02)
+PERIOD_END_2   <- as.Date("2020-10-20")  # last day before Lamorgese reforms (2020-10-21)
+PERIOD_END_3   <- as.Date("2023-01-01")  # last day before Piantedosi decree (2023-01-02)
+
+# Sub-period boundaries used for the period-1 robustness split
+# (Mare Nostrum 2013-10-18 to 2014-10-31; Triton starts 2014-11-01).
+MARE_NOSTRUM_END <- as.Date("2014-10-31")
+TRITON_START     <- as.Date("2014-11-01")
 
 PANEL_START    <- as.Date("2014-01-01")
 

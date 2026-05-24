@@ -483,8 +483,8 @@ panel_theme <- theme_void(base_size = 11) +
     legend.box.margin = margin(3, 3, 3, 3),
     legend.key = element_rect(fill = scales::alpha("white", 0), colour = NA),
     legend.margin = margin(2, 2, 2, 2),
-    legend.text = element_text(size = 9.2, colour = "#2B2B2B"),
-    legend.title = element_text(size = 9.8, face = "bold",
+    legend.text = element_text(size = 11, colour = "#2B2B2B"),
+    legend.title = element_text(size = 11, face = "bold",
                                 colour = "#2B2B2B"),
     legend.key.size = unit(0.42, "cm"),
     plot.margin = margin(2, 2, 2, 2)

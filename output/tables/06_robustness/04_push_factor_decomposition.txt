@@ -7,7 +7,7 @@ UNITED deaths: 20368 over 503 death-days
 IOM    deaths: 15285 over 616 death-days
 libya_conflict_lag1w: mean=15.31 sd=14.55 median=13 range=[0, 96]
 cor(ACLED_z, swh_prev5days)     = +0.022
-cor(ACLED_z, crossing_attempts) = -0.044
+cor(ACLED_z, crossing_attempts) = -0.043
 cor(ACLED_z, post_mou)          = -0.321
 
 Identification logic:
@@ -208,37 +208,37 @@ Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
                              CrossAttempts NB CrossAttempts Pois
 Dependent Var.:             crossing_attempts  crossing_attempts
                                                                 
-swh_prev5days                         0.3587           0.3760*  
-                                     (0.2368)         (0.1668)  
-libya_conflict_z                      0.0139           0.0591   
-                                     (0.1617)         (0.1231)  
-swh_prev5days x post_mou             -0.6028*         -0.7643***
-                                     (0.2804)         (0.2214)  
-post_mou x libya_conflict_z          -0.1377           0.0283   
-                                     (0.2051)         (0.2053)  
+swh_prev5days                         0.3573           0.3771*  
+                                     (0.2301)         (0.1654)  
+libya_conflict_z                      0.0138           0.0611   
+                                     (0.1590)         (0.1219)  
+swh_prev5days x post_mou             -0.5861*         -0.7578***
+                                     (0.2759)         (0.2206)  
+post_mou x libya_conflict_z          -0.1353           0.0308   
+                                     (0.2035)         (0.2045)  
 Fixed-Effects:              -----------------  -----------------
 month_year_fac                            Yes                Yes
 ___________________________ _________________  _________________
 Family                              Neg. Bin.            Poisson
 S.E. type                   Newey-West (L=14)  Newey-West (L=14)
 Observations                            3,424              3,424
-Squared Cor.                          0.14672            0.14862
-Pseudo R2                             0.01162            0.24303
-BIC                                  35,362.2        2,009,576.4
-Over-dispersion                       0.15993                 --
+Squared Cor.                          0.14594            0.14787
+Pseudo R2                             0.01106            0.24188
+BIC                                  34,989.7        2,015,212.0
+Over-dispersion                       0.15077                 --
 ---
 Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 --- L2 key coefficients ---
   outcome              family          coef          SE           p  term
-  crossing_attempts    NegBin        +0.359       0.237      0.1298  swh_prev5days
-  crossing_attempts    NegBin        -0.603       0.280      0.0316  swh_prev5days:post_mou *
-  crossing_attempts    NegBin        +0.014       0.162      0.9316  libya_conflict_z
-  crossing_attempts    NegBin        -0.138       0.205      0.5019  libya_conflict_z:post_mou
-  crossing_attempts    Poisson       +0.376       0.167      0.0242  swh_prev5days *
-  crossing_attempts    Poisson       -0.764       0.221      0.0006  swh_prev5days:post_mou *
-  crossing_attempts    Poisson       +0.059       0.123      0.6310  libya_conflict_z
-  crossing_attempts    Poisson       +0.028       0.205      0.8906  libya_conflict_z:post_mou
+  crossing_attempts    NegBin        +0.357       0.230      0.1205  swh_prev5days
+  crossing_attempts    NegBin        -0.586       0.276      0.0336  swh_prev5days:post_mou *
+  crossing_attempts    NegBin        +0.014       0.159      0.9310  libya_conflict_z
+  crossing_attempts    NegBin        -0.135       0.204      0.5062  libya_conflict_z:post_mou
+  crossing_attempts    Poisson       +0.377       0.165      0.0226  swh_prev5days *
+  crossing_attempts    Poisson       -0.758       0.221      0.0006  swh_prev5days:post_mou *
+  crossing_attempts    Poisson       +0.061       0.122      0.6162  libya_conflict_z
+  crossing_attempts    Poisson       +0.031       0.205      0.8801  libya_conflict_z:post_mou
 
 
 === LAYER 3: stratified by libya_conflict_lag1w median = 13 ===

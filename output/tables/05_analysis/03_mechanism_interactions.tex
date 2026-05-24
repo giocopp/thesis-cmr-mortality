@@ -1,0 +1,26 @@
+\begin{table}[H]
+\centering
+\small
+\caption{SWH $\times$ SAR-proxy moderator interaction. Coefficients are per one standard deviation of the standardized weekly SAR proxy.}
+\label{tab:mechanism}
+\begin{tabular}{lcccc}
+\hline
+                                 & \multicolumn{2}{c}{UNITED} & \multicolumn{2}{c}{IOM (comparison)} \\
+                                 & NegBin & Poisson & NegBin & Poisson \\
+\hline
+\multicolumn{5}{l}{\textit{(i) SAR-share moderator}} \\
+SWH $\times$ SAR share           & $-1.466^{***}$ & $-0.834^{***}$ & $-0.862^{*}$ & $-0.980^{**}$ \\
+                                 & (0.379) & (0.209) & (0.402) & (0.306) \\
+\multicolumn{5}{l}{\textit{(ii) SAR-persons moderator}} \\
+SWH $\times$ SAR persons         & $-1.177^{*}$ & $-0.687^{**}$ & $-0.853$ & $-1.019^{**}$ \\
+                                 & (0.534) & (0.261) & (0.492) & (0.320) \\
+\hline
+Month--year fixed effects        & Yes            & Yes            & Yes           & Yes           \\
+Newey--West SEs (lag 14)         & Yes            & Yes            & Yes           & Yes           \\
+Observations (days)              & 2,995 & 2,995 & 3,038 & 3,038 \\
+\hline
+\multicolumn{5}{l}{\footnotesize Stars denote two-sided $p$-values: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\
+\multicolumn{5}{l}{\footnotesize Newey--West standard errors in parentheses.} \\
+\multicolumn{5}{l}{\footnotesize SAR share is $\mathrm{sar\_share}_{t-7:t-1}$; SAR persons is $\log(1+\mathrm{sar\_persons}_{t-7:t-1})$.} \\
+\end{tabular}
+\end{table}

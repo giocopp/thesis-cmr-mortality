@@ -1,0 +1,22 @@
+\begin{table}[H]
+\centering
+\small
+\caption{SWH$\times$Post-MoU shift on Frontex daily event counts.}
+\label{tab:appx-frx-events}
+\begin{tabular}{lcccc}
+\hline
+                              & \multicolumn{2}{c}{SAR events} & \multicolumn{2}{c}{Non-SAR (placebo)} \\
+                              & NegBin & Poisson & NegBin & Poisson \\
+\hline
+SWH$_{t-1:t-5}$               & $+0.240$ & $+0.302$ & $-0.391$ & $-0.245$ \\
+                              & (0.183) & (0.158) & (0.206) & (0.207) \\
+SWH $\times$ Post-MoU         & $-0.660^{**}$ & $-0.854^{***}$ & $+0.173$ & $+0.223$ \\
+                              & (0.235) & (0.221) & (0.254) & (0.261) \\
+\hline
+Month-year FE                 & Yes            & Yes             & Yes      & Yes      \\
+Newey-West SEs (lag 14)       & Yes            & Yes             & Yes      & Yes      \\
+Observations (days)           & 3,407 & 3,407 & 3,438 & 3,438 \\
+\hline
+\multicolumn{5}{l}{\footnotesize Newey--West standard errors in parentheses. Stars: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\
+\end{tabular}
+\end{table}

@@ -1,0 +1,26 @@
+\begin{table}[h!]
+\centering
+\small
+\caption{Primary count estimates of the SWH--mortality slope shift around the 2 February 2017 MoU.}
+\label{tab:primary}
+\begin{tabular}{lcccc}
+\hline
+                              & \multicolumn{2}{c}{UNITED} & \multicolumn{2}{c}{IOM (comparison)} \\
+                              & NegBin & Poisson & NegBin & Poisson \\
+\hline
+$\beta_1$: SWH$_{t-1:t-5}$            & $-2.829^{***}$ & $-1.383^{**}$ & $-2.108^{**}$ & $-2.028^{*}$ \\
+                                      & (0.723) & (0.484) & (0.694) & (0.790) \\
+$\beta_3$: SWH$_{t-1:t-5}$ $\times$ Post-MoU & $+3.629^{***}$ & $+1.632^{**}$ & $+2.478^{**}$ & $+2.053^{*}$ \\
+                                      & (0.820) & (0.555) & (0.785) & (0.840) \\
+$\beta_1+\beta_3$: implied post-MoU slope    & $+0.800^{*}$ & $+0.248$ & $+0.370$ & $+0.025$ \\
+                                      & (0.388) & (0.275) & (0.368) & (0.292) \\
+\hline
+Month--year fixed effects             & Yes            & Yes           & Yes            & Yes          \\
+Newey--West SEs (lag 14)              & Yes            & Yes           & Yes            & Yes          \\
+Observations (days)                   & 3,197 & 3,197 & 3,286 & 3,286 \\
+Pseudo $R^{2}$                        & 0.021 & 0.195 & 0.038 & 0.240 \\
+\hline
+\multicolumn{5}{l}{\footnotesize Stars denote two-sided $p$-values: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\
+\multicolumn{5}{l}{\footnotesize Newey--West standard errors in parentheses; delta-method SEs for $\beta_1+\beta_3$.} \\
+\end{tabular}
+\end{table}

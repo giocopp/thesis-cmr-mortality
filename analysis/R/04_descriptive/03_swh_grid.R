@@ -17,10 +17,12 @@
 library(sf)
 library(ncdf4)
 library(dplyr)
+library(tidyr)
 library(ggplot2)
 library(purrr)
 library(rnaturalearth)
 library(patchwork)
+library(fixest)
 
 sf_use_s2(FALSE)
 
@@ -122,9 +124,8 @@ dist_decay <- cor(dist_km, upper, use = "pairwise.complete.obs")
 # Build STATIC weights from the overall spatial distribution of CMR
 # incidents (not day-specific — that would be endogenous). Compute a
 # weighted daily SWH and correlate it against the unweighted polygon
-# mean. If the correlation is very high (>0.97), the polygon mean
-# already represents hotspot weather and the weighted version would
-# not change the analysis. If lower, it's worth switching.
+# mean. Correlation is descriptive; the model check in 6c is the direct
+# test of whether weighted SWH changes the primary estimates.
 cat("\n--- Incident-density-weighted SWH sanity check ---\n")
 
 iom <- iom_incidents(
@@ -196,6 +197,131 @@ cat(sprintf("  cor(polygon-mean SWH, death-count-weighted SWH):    %.4f\n",
 cat(sprintf("  cor(count-weighted, death-weighted):                %.4f\n",
             cor_countw_vs_deathw))
 
+# ── 6c. Re-estimate the primary model with incident-weighted SWH ─────
+# The correlation check above tells us how close the weighted and
+# unweighted SWH series are. This model check asks whether the paper's
+# primary SWH x post-MoU estimates change when the SWH regressor is
+# computed as a static incident-count-weighted cell average instead of
+# a simple polygon mean. We use static all-period IOM incident counts
+# by ERA5 cell as weights; using day-specific weights would condition on
+# realized incidents and be endogenous to the outcome process.
+cat("\n--- Weighted-SWH model check ---\n")
+
+make_prev5 <- function(x) zoo::rollmeanr(dplyr::lag(x, 1), k = 5, fill = NA)
+
+weighted_weather <- tibble(
+  date               = all_dates,
+  swh_polygon_grid   = polygon_avg,
+  swh_weighted_count = swh_weighted_count,
+  swh_weighted_death = swh_weighted_death
+) |>
+  arrange(date) |>
+  mutate(
+    swh_polygon_grid_prev5days   = make_prev5(swh_polygon_grid),
+    swh_weighted_count_prev5days = make_prev5(swh_weighted_count),
+    swh_weighted_death_prev5days = make_prev5(swh_weighted_death)
+  )
+
+main_panel <- readRDS(file.path(BASE_DIR, "analysis", "data",
+                                "daily_panel_complete.RDS"))
+iom_daily_primary    <- build_iom_daily()
+united_daily_primary <- build_united_daily()
+
+model_panel <- main_panel |>
+  left_join(iom_daily_primary |> rename(n_dead_iom = n_dead_missing),
+            by = "date") |>
+  left_join(united_daily_primary, by = "date") |>
+  replace_na(list(n_dead_iom = 0, n_dead_united = 0)) |>
+  add_crossing_exposure() |>
+  arrange(date) |>
+  mutate(
+    lc_lag14 = dplyr::lag(
+      zoo::rollmeanr(living_crossings, k = 7, fill = NA, align = "right"), 8),
+    unit = 1L,
+    month_year_fac = factor(month_year)
+  ) |>
+  left_join(weighted_weather, by = "date") |>
+  filter(!is.na(lc_lag14),
+         !is.na(swh_prev5days),
+         !is.na(swh_weighted_count_prev5days),
+         !is.na(swh_weighted_death_prev5days))
+
+extract_shift <- function(model, x, source, family, series_label) {
+  ct <- coeftable(model, vcov = NW(14))
+  co <- coef(model)
+  V  <- vcov(model, vcov = NW(14))
+  int_name <- grep(paste0("(^", x, ":post_mou$)|(^post_mou:", x, "$)"),
+                   names(co), value = TRUE)
+  if (length(int_name) != 1L) {
+    stop("Could not uniquely identify interaction for ", x, ": ",
+         paste(int_name, collapse = ", "))
+  }
+  b_pre   <- unname(co[x])
+  b_shift <- unname(co[int_name])
+  b_post  <- b_pre + b_shift
+  v_post  <- V[x, x] + V[int_name, int_name] + 2 * V[x, int_name]
+  se_post <- sqrt(v_post)
+  tibble(
+    source = source,
+    family = family,
+    swh_series = series_label,
+    n_obs = nobs(model),
+    b_pre = b_pre,
+    se_pre = ct[x, 2],
+    p_pre = 2 * pnorm(-abs(b_pre / ct[x, 2])),
+    b_shift = b_shift,
+    se_shift = ct[int_name, 2],
+    p_shift = 2 * pnorm(-abs(b_shift / ct[int_name, 2])),
+    b_post = b_post,
+    se_post = se_post,
+    p_post = 2 * pnorm(-abs(b_post / se_post))
+  )
+}
+
+fit_weighted_set <- function(dep, source, x, series_label) {
+  f <- as.formula(sprintf("%s ~ %s + %s:post_mou | month_year_fac",
+                          dep, x, x))
+  nb <- fenegbin(f, data = model_panel, vcov = NW(14),
+                 panel.id = ~unit + date)
+  po <- fepois(f, data = model_panel, vcov = NW(14),
+               panel.id = ~unit + date)
+  bind_rows(
+    extract_shift(nb, x, source, "NegBin", series_label),
+    extract_shift(po, x, source, "Poisson", series_label)
+  )
+}
+
+swh_specs <- tibble(
+  x = c("swh_prev5days",
+        "swh_weighted_count_prev5days",
+        "swh_weighted_death_prev5days"),
+  label = c("Polygon mean",
+            "Incident-count weighted",
+            "Death-count weighted")
+)
+
+weighted_model_tbl <- bind_rows(
+  purrr::pmap_dfr(swh_specs, \(x, label)
+    fit_weighted_set("n_dead_united", "UNITED", x, label)),
+  purrr::pmap_dfr(swh_specs, \(x, label)
+    fit_weighted_set("n_dead_iom", "IOM", x, label))
+)
+
+weighted_delta_tbl <- weighted_model_tbl |>
+  select(source, family, swh_series, n_obs, b_pre, b_shift, b_post) |>
+  group_by(source, family) |>
+  mutate(
+    d_b_pre   = b_pre   - b_pre[swh_series == "Polygon mean"],
+    d_b_shift = b_shift - b_shift[swh_series == "Polygon mean"],
+    d_b_post  = b_post  - b_post[swh_series == "Polygon mean"]
+  ) |>
+  ungroup() |>
+  filter(swh_series != "Polygon mean")
+
+weighted_csv <- tbl_path("04_descriptive", "03_swh_weighted_model.csv")
+write.csv(weighted_model_tbl, weighted_csv, row.names = FALSE)
+cat(sprintf("  Weighted model comparison saved: %s\n", weighted_csv))
+
 # ── 7. Write table ─────────────────────────────────────────
 sink_file <- tbl_path("04_descriptive", "03_swh_grid.txt")
 sink(sink_file)
@@ -252,12 +378,28 @@ cat(sprintf("    polygon-mean vs death-count weighted:    %.4f\n",
 cat(sprintf("    count-weighted vs death-weighted:        %.4f\n",
             cor_countw_vs_deathw))
 cat("\n  Interpretation:\n")
-cat("    r > 0.97 -> polygon-mean already captures hotspot weather;\n")
-cat("                weighted version adds ~nothing\n")
-cat("    0.85 - 0.95 -> weighted version adds meaningful signal;\n")
-cat("                   worth switching to it\n")
-cat("    r < 0.85 -> polygon-mean is a poor proxy for the hotspot\n")
-cat("                weather; definitely switch\n")
+cat("    The weighted series are highly correlated with the polygon mean\n")
+cat("    but not identical, so the next check re-estimates the primary\n")
+cat("    count model using incident- and death-weighted SWH.\n")
+
+cat("\n== Weighted-SWH primary model check ==\n")
+cat("  Static weights are based on all IOM CMR incidents snapped to ERA5 cells.\n")
+cat("  The estimation sample and specification match the primary count model:\n")
+cat("  deaths ~ SWH_{t-1:t-5} + SWH_{t-1:t-5} x post_MoU | month-year FE,\n")
+cat("  estimated by NegBin and Poisson QMLE with NW(14) SEs.\n\n")
+cat(sprintf("  Shared model-check rows before FE drops: %d days\n\n",
+            nrow(model_panel)))
+print(weighted_model_tbl |>
+        mutate(across(c(b_pre, se_pre, p_pre,
+                        b_shift, se_shift, p_shift,
+                        b_post, se_post, p_post), \(x) round(x, 4))),
+      n = Inf, width = Inf)
+cat("\n  Change relative to polygon mean:\n")
+print(weighted_delta_tbl |>
+        mutate(across(c(b_pre, b_shift, b_post,
+                        d_b_pre, d_b_shift, d_b_post), \(x) round(x, 4))),
+      n = Inf, width = Inf)
+cat(sprintf("\n  CSV: %s\n", weighted_csv))
 
 sink()
 cat(sprintf("Saved: %s\n", sink_file))
@@ -305,6 +447,7 @@ iom_overlay <- iom_in |> dplyr::select(lon, lat, dead)
 cell_df   <- data.frame(lon = cell_lon, lat = cell_lat,
                         cor_with_avg = cor_with_avg)
 weight_df <- data.frame(lon = cell_lon, lat = cell_lat,
+                        incidents = weight_count,
                         deaths = weight_death)
 
 base_theme <- theme_minimal(base_size = 10) +
@@ -359,7 +502,7 @@ p_map <- base_layer(
 p_weights <- base_layer(
   ggplot() +
     geom_tile(data = weight_df,
-              aes(x = lon, y = lat, fill = deaths),
+              aes(x = lon, y = lat, fill = incidents),
               width = 0.5, height = 0.5, alpha = 0.85) +
     geom_point(data = iom_overlay,
                aes(x = lon, y = lat, size = dead),
@@ -368,7 +511,7 @@ p_weights <- base_layer(
     scale_fill_viridis_c(
       option = "inferno",
       trans  = "sqrt",
-      name   = "Deaths\nper cell\n(sqrt)",
+      name   = "Incidents\nper cell\n(sqrt)",
       na.value = "transparent"
     ) +
     scale_size_continuous(range = c(0.3, 4.5), name = "Incident\nsize",
@@ -377,9 +520,9 @@ p_weights <- base_layer(
                             list(colour = "grey10", alpha = 0.7)))
 ) +
   labs(
-    title    = "Static incident-density weights (deaths per ERA5 cell)",
-    subtitle = sprintf("Total deaths snapped inside mask: %.0f across %d cells",
-                        sum(weight_death), sum(weight_death > 0)),
+    title    = "Static incident-density weights (incidents per ERA5 cell)",
+    subtitle = sprintf("Total incidents snapped inside mask: %d across %d cells",
+                        nrow(iom_in), sum(weight_count > 0)),
     x = NULL, y = NULL
   )
 
@@ -388,6 +531,54 @@ panel <- p_map + p_weights + plot_layout(ncol = 2)
 fig_panel <- fig_path("04_descriptive", "03_swh_grid_panel.png")
 ggsave(fig_panel, panel, width = 16, height = 7, dpi = 220)
 cat("Saved:", fig_panel, "\n")
+
+# ── 10. LaTeX table for tab:appx-swh-weighted ─────────────────
+cat("\n--- 10. Writing LaTeX table ---\n")
+
+fbse <- function(b, se) sprintf("$%+.3f$ (%.3f)", b, se)
+fdif <- function(d)     sprintf("$%+.3f$", d)
+
+get_row <- function(src, fam, series) {
+  r <- weighted_model_tbl[weighted_model_tbl$source     == src &
+                           weighted_model_tbl$family     == fam &
+                           weighted_model_tbl$swh_series == series, ]
+  list(b = r$b_shift, se = r$se_shift)
+}
+rows <- list(
+  c(src = "UNITED", fam = "NegBin"),
+  c(src = "UNITED", fam = "Poisson"),
+  c(src = "IOM",    fam = "NegBin"),
+  c(src = "IOM",    fam = "Poisson")
+)
+
+L <- character(); add <- function(...) L <<- c(L, paste0(...))
+add("\\begin{table}[h!]")
+add("\\centering")
+add("\\small")
+add("\\caption{Primary slope-shift estimates using polygon-mean and incident-count-weighted SWH.}")
+add("\\label{tab:appx-swh-weighted}")
+add("\\begin{tabular}{llccc}")
+add("\\hline")
+add("Source & Family & Polygon mean $\\beta_3$ & Incident-weighted $\\beta_3$ & Change \\\\")
+add("\\hline")
+for (r in rows) {
+  poly  <- get_row(r["src"], r["fam"], "Polygon mean")
+  inc   <- get_row(r["src"], r["fam"], "Incident-count weighted")
+  delta <- inc$b - poly$b
+  add(sprintf("%-7s & %-8s & %-19s & %-19s & %s \\\\",
+              r["src"], r["fam"],
+              fbse(poly$b, poly$se),
+              fbse(inc$b,  inc$se),
+              fdif(delta)))
+}
+add("\\hline")
+add("\\multicolumn{5}{l}{\\footnotesize Standard errors in parentheses. Month-year fixed effects and Newey-West SEs (lag 14).} \\\\")
+add("\\multicolumn{5}{l}{\\footnotesize Incident weights are fixed over the full sample and do not vary by day.}")
+add("\\end{tabular}")
+add("\\end{table}")
+out_swhw <- tbl_path("04_descriptive", "03_swh_weighted_model.tex")
+writeLines(L, out_swhw)
+cat(sprintf("  Saved: %s\n", out_swhw))
 
 cat("\n============================================================\n")
 cat("DONE\n")

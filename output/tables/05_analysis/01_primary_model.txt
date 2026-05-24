@@ -302,3 +302,238 @@ Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
   IOM Poisson, no control    b3=+2.053  SE_NW=0.840  p_NW=0.0145  SE_cl=0.980  p_cl=0.0361
   IOM Poisson, lag 7d        b3=+2.083  SE_NW=0.798  p_NW=0.0091  SE_cl=0.927  p_cl=0.0246
   IOM Poisson, lag 14d       b3=+2.138  SE_NW=0.879  p_NW=0.0150  SE_cl=1.035  p_cl=0.0388
+
+
+=== CREDIBILITY: FULL CONTROLS (lag-14 + ACLED Libya/Tunisia) ===
+
+UNITED NegBin:
+                                   m_nb_u     m_nb_u_lag14       m_nb_u_ctl
+                               No control          Lag 14d  Lag 14d + ACLED
+Dependent Var.:             n_dead_united    n_dead_united    n_dead_united
+                                                                           
+swh_prev5days                   -2.829***        -2.801***        -2.833***
+                                (0.7233)         (0.7201)         (0.7082) 
+swh_prev5days x post_mou         3.629***         3.684***         3.705***
+                                (0.8197)         (0.8255)         (0.8047) 
+log1p_lc_lag14                                   -0.2262**        -0.2269**
+                                                 (0.0757)         (0.0768) 
+log1p_libya                                                        0.3483  
+                                                                  (0.2508) 
+log1p_tunisia                                                     -0.2851  
+                                                                  (0.2899) 
+Fixed-Effects:              -------------    -------------    -------------
+month_year_fac                        Yes              Yes              Yes
+________________________    _____________    _____________    _____________
+S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                        3,197            3,197            3,197
+Squared Cor.                      0.05666          0.05211          0.04159
+Pseudo R2                         0.02070          0.02151          0.02185
+BIC                               8,056.2          8,058.4          8,072.0
+Over-dispersion                   0.03974          0.04002          0.04014
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+IOM NegBin:
+                                     m_nb       m_nb_lag14         m_nb_ctl
+                               No control          Lag 14d  Lag 14d + ACLED
+Dependent Var.:                n_dead_iom       n_dead_iom       n_dead_iom
+                                                                           
+swh_prev5days                    -2.108**        -2.217**         -2.264** 
+                                 (0.6936)        (0.6958)         (0.6949) 
+swh_prev5days x post_mou          2.478**         2.611***         2.631***
+                                 (0.7848)        (0.7914)         (0.7894) 
+log1p_lc_lag14                                   -0.1228          -0.1231  
+                                                 (0.0734)         (0.0737) 
+log1p_libya                                                       -0.1105  
+                                                                  (0.2256) 
+log1p_tunisia                                                     -0.1393  
+                                                                  (0.2352) 
+Fixed-Effects:                 ----------       ----------       ----------
+month_year_fac                        Yes              Yes              Yes
+________________________       __________       __________       __________
+S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                        3,286            3,286            3,286
+Squared Cor.                      0.03514          0.02950          0.02971
+Pseudo R2                         0.03813          0.03849          0.03855
+BIC                               8,244.3          8,249.7          8,265.4
+Over-dispersion                   0.05954          0.05969          0.05970
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+UNITED Poisson:
+                                 m_pois_u    m_pois_u_..14     m_pois_u_ctl
+                               No control          Lag 14d  Lag 14d + ACLED
+Dependent Var.:             n_dead_united    n_dead_united    n_dead_united
+                                                                           
+swh_prev5days                    -1.383**         -1.523**        -1.502** 
+                                 (0.4840)         (0.5322)        (0.4961) 
+swh_prev5days x post_mou          1.632**          1.784**         1.763** 
+                                 (0.5553)         (0.5993)        (0.5672) 
+log1p_lc_lag14                                    -0.1532*        -0.1608**
+                                                  (0.0629)        (0.0602) 
+log1p_libya                                                        0.1748  
+                                                                  (0.1793) 
+log1p_tunisia                                                     -0.2718  
+                                                                  (0.1873) 
+Fixed-Effects:              -------------    -------------    -------------
+month_year_fac                        Yes              Yes              Yes
+________________________    _____________    _____________    _____________
+S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                        3,197            3,197            3,197
+Squared Cor.                      0.07449          0.07803          0.07972
+Pseudo R2                         0.19530          0.20298          0.20669
+BIC                              91,429.9         90,573.1         90,171.6
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+IOM Poisson:
+                                   m_pois       m_pois..14       m_pois_ctl
+                               No control          Lag 14d  Lag 14d + ACLED
+Dependent Var.:                n_dead_iom       n_dead_iom       n_dead_iom
+                                                                           
+swh_prev5days                    -2.028*          -2.102*          -2.090**
+                                 (0.7896)         (0.8289)         (0.8033)
+swh_prev5days x post_mou          2.053*           2.138*           2.132* 
+                                 (0.8402)         (0.8789)         (0.8589)
+log1p_lc_lag14                                    -0.0967          -0.0990 
+                                                  (0.0638)         (0.0644)
+log1p_libya                                                         0.0940 
+                                                                   (0.2091)
+log1p_tunisia                                                      -0.0359 
+                                                                   (0.1937)
+Fixed-Effects:                 ----------       ----------       ----------
+month_year_fac                        Yes              Yes              Yes
+________________________       __________       __________       __________
+S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                        3,286            3,286            3,286
+Squared Cor.                      0.08482          0.08789          0.08863
+Pseudo R2                         0.24011          0.24250          0.24275
+BIC                              69,652.5         69,444.8         69,437.8
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+
+=== CREDIBILITY: BOUNDARY LEAKAGE (drop +/-30d around 2017-02-02) ===
+
+Sample: N=3363 days (drops 61 days around MoU).
+
+                                   m_nb_u        m_nb_u_bl     m_nb_u_bl_ctl
+                              UNITED full      UNITED -30d UNITED -30d + ctl
+Dependent Var.:             n_dead_united    n_dead_united     n_dead_united
+                                                                            
+swh_prev5days                   -2.829***        -2.606***         -2.620***
+                                (0.7233)         (0.7515)          (0.7456) 
+swh_prev5days x post_mou         3.629***         3.424***          3.517***
+                                (0.8197)         (0.8484)          (0.8428) 
+log1p_lc_lag14                                                     -0.2278**
+                                                                   (0.0804) 
+log1p_libya                                                         0.3709  
+                                                                   (0.2501) 
+log1p_tunisia                                                      -0.2526  
+                                                                   (0.2858) 
+Fixed-Effects:              -------------    -------------     -------------
+month_year_fac                        Yes              Yes               Yes
+________________________    _____________    _____________     _____________
+S.E. type                New.-West (L=14) New.-West (L=14)  New.-West (L=14)
+Observations                        3,197            3,134             3,134
+Squared Cor.                      0.05666          0.06060           0.04724
+Pseudo R2                         0.02070          0.02089           0.02202
+BIC                               8,056.2          7,909.5           7,925.4
+Over-dispersion                   0.03974          0.04004           0.04044
+
+                                     m_nb          m_nb_bl       m_nb_bl_..
+                                 IOM full         IOM -30d   IOM -30d + ctl
+Dependent Var.:                n_dead_iom       n_dead_iom       n_dead_iom
+                                                                           
+swh_prev5days                    -2.108**         -1.949*          -2.128* 
+                                 (0.6936)         (0.8000)         (0.8340)
+swh_prev5days x post_mou          2.478**          2.336**          2.518**
+                                 (0.7848)         (0.8809)         (0.9178)
+log1p_lc_lag14                                                     -0.1212 
+                                                                   (0.0779)
+log1p_libya                                                        -0.0920 
+                                                                   (0.2252)
+log1p_tunisia                                                      -0.1103 
+                                                                   (0.2336)
+Fixed-Effects:                 ----------       ----------       ----------
+month_year_fac                        Yes              Yes              Yes
+________________________       __________       __________       __________
+S.E. type                New.-West (L=14) New.-West (L=14) New.-West (L=14)
+Observations                        3,286            3,225            3,225
+Squared Cor.                      0.03514          0.03962          0.03328
+Pseudo R2                         0.03813          0.03864          0.03901
+BIC                               8,244.3          8,058.2          8,079.7
+Over-dispersion                   0.05954          0.05959          0.05973
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+
+=== CREDIBILITY: MARE NOSTRUM EXCLUSION (date >= 2014-11-01) ===
+
+Sample: N=3134 days (drops 290 MN days).
+
+                                   m_nb_u        m_nb_u_mn        m_nb_u_mn_ctl
+                              UNITED full   UNITED post-MN UNITED post-MN + ctl
+Dependent Var.:             n_dead_united    n_dead_united        n_dead_united
+                                                                               
+swh_prev5days                   -2.829***        -2.782**            -2.799**  
+                                (0.7233)         (0.8587)            (0.8523)  
+swh_prev5days x post_mou         3.629***         3.581***            3.676*** 
+                                (0.8197)         (0.9409)            (0.9306)  
+log1p_lc_lag14                                                       -0.2605***
+                                                                     (0.0769)  
+log1p_libya                                                           0.3190   
+                                                                     (0.2504)  
+log1p_tunisia                                                        -0.3252   
+                                                                     (0.3071)  
+Fixed-Effects:              -------------    -------------        -------------
+month_year_fac                        Yes              Yes                  Yes
+________________________    _____________    _____________        _____________
+S.E. type                New.-West (L=14) New.-West (L=14)     New.-West (L=14)
+Observations                        3,197            2,955                2,955
+Squared Cor.                      0.05666          0.06141              0.04271
+Pseudo R2                         0.02070          0.02062              0.02214
+BIC                               8,056.2          7,490.5              7,504.1
+Over-dispersion                   0.03974          0.04124              0.04179
+
+                                     m_nb          m_nb_mn        m_nb_mn_..
+                                 IOM full      IOM post-MN IOM post-MN + ctl
+Dependent Var.:                n_dead_iom       n_dead_iom        n_dead_iom
+                                                                            
+swh_prev5days                    -2.108**         -2.157**          -2.370**
+                                 (0.6936)         (0.7508)          (0.7489)
+swh_prev5days x post_mou          2.478**          2.525**           2.733**
+                                 (0.7848)         (0.8351)          (0.8367)
+log1p_lc_lag14                                                      -0.1468*
+                                                                    (0.0742)
+log1p_libya                                                         -0.1300 
+                                                                    (0.2276)
+log1p_tunisia                                                       -0.1849 
+                                                                    (0.2482)
+Fixed-Effects:                 ----------       ----------        ----------
+month_year_fac                        Yes              Yes               Yes
+________________________       __________       __________        __________
+S.E. type                New.-West (L=14) New.-West (L=14)  New.-West (L=14)
+Observations                        3,286            3,044             3,044
+Squared Cor.                      0.03514          0.03225           0.02490
+Pseudo R2                         0.03813          0.03903           0.03970
+BIC                               8,244.3          7,649.0           7,668.3
+Over-dispersion                   0.05954          0.06342           0.06368
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+
+=== EXTENDED b3 SUMMARY: credibility checks ===
+
+  UNITED NegBin, lag-14 + ACLED               b3=+3.705  SE_NW=0.805  p_NW=0.0000  SE_cl=1.035  p_cl=0.0003
+  IOM NegBin, lag-14 + ACLED                  b3=+2.631  SE_NW=0.789  p_NW=0.0009  SE_cl=1.046  p_cl=0.0119
+  UNITED Poisson, lag-14 + ACLED              b3=+1.763  SE_NW=0.567  p_NW=0.0019  SE_cl=0.548  p_cl=0.0013
+  IOM Poisson, lag-14 + ACLED                 b3=+2.132  SE_NW=0.859  p_NW=0.0131  SE_cl=1.019  p_cl=0.0364
+  UNITED NegBin, drop +/-30d (no ctl)         b3=+3.424  SE_NW=0.848  p_NW=0.0001  SE_cl=1.106  p_cl=0.0020
+  UNITED NegBin, drop +/-30d + full ctl       b3=+3.517  SE_NW=0.843  p_NW=0.0000  SE_cl=1.106  p_cl=0.0015
+  IOM NegBin, drop +/-30d (no ctl)            b3=+2.336  SE_NW=0.881  p_NW=0.0080  SE_cl=1.180  p_cl=0.0478
+  IOM NegBin, drop +/-30d + full ctl          b3=+2.518  SE_NW=0.918  p_NW=0.0061  SE_cl=1.240  p_cl=0.0423
+  UNITED NegBin, post-MN (no ctl)             b3=+3.581  SE_NW=0.941  p_NW=0.0001  SE_cl=1.229  p_cl=0.0036
+  UNITED NegBin, post-MN + full ctl           b3=+3.676  SE_NW=0.931  p_NW=0.0001  SE_cl=1.218  p_cl=0.0025
+  IOM NegBin, post-MN (no ctl)                b3=+2.525  SE_NW=0.835  p_NW=0.0025  SE_cl=1.121  p_cl=0.0243
+  IOM NegBin, post-MN + full ctl              b3=+2.733  SE_NW=0.837  p_NW=0.0011  SE_cl=1.125  p_cl=0.0151

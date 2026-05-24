@@ -1,0 +1,28 @@
+\begin{table}[h!]
+\centering
+\small
+\caption{Volume-controlled Poisson model with crossing-volume control.}
+\label{tab:rate}
+\begin{tabular}{lcc}
+\hline
+                              & UNITED & IOM (comparison) \\
+\hline
+$\beta_1$: SWH$_{t-1:t-5}$            & $-1.390^{**}$ & $-1.911^{*}$ \\
+                                      & (0.527) & (0.867) \\
+$\beta_3$: SWH$_{t-1:t-5}$ $\times$ Post-MoU & $+1.986^{**}$ & $+2.342^{*}$ \\
+                                      & (0.608) & (0.933) \\
+$\gamma$: $\log C_t$                  & $+0.377^{***}$ & $+0.200^{**}$ \\
+                                      & (0.065) & (0.072) \\
+$\beta_1+\beta_3$: implied post-MoU slope    & $+0.596^{*}$ & $+0.431$ \\
+                                      & (0.293) & (0.326) \\
+\hline
+Wald: $H_{0}: \gamma = 1$, $z$        & $-9.55$ & $-11.10$ \\
+$p$-value                             & $< 0.001$ & $< 0.001$ \\
+Month--year fixed effects             & Yes            & Yes            \\
+Newey--West SEs (lag 14)              & Yes            & Yes            \\
+Observations (days, $C_t>0$)          & 1,933 & 1,949 \\
+\hline
+\multicolumn{3}{l}{\footnotesize Stars denote two-sided $p$-values: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\
+\multicolumn{3}{l}{\footnotesize Newey--West standard errors in parentheses; delta-method SEs for $\beta_1+\beta_3$.} \\
+\end{tabular}
+\end{table}

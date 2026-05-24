@@ -313,7 +313,31 @@ mean_segs <- bind_rows(
               side = "post")
 )
 
-# Panel (1): daily-agg, 2-year rolling beta
+# Shared right-side boxed legend theme (matches the boxed legends used by the
+# descriptive panels in 04_descriptive/01_panel.R for cross-figure coherence).
+boxed_legend_theme <- theme(
+  legend.position       = "right",
+  legend.background     = element_blank(),
+  legend.box.background = element_rect(fill = "grey97", colour = "grey80",
+                                       linewidth = 0.5),
+  legend.box.margin     = margin(3, 5, 3, 5),
+  legend.box            = "vertical",
+  legend.key            = element_blank(),
+  legend.margin         = margin(0, 0, 0, 0),
+  legend.text           = element_text(size = 9.5, lineheight = 0.9),
+  legend.key.size       = unit(0.35, "cm"),
+  legend.key.width      = grid::unit(1, "lines"),
+  legend.title          = element_blank(),
+  legend.spacing        = unit(0, "cm"),
+  legend.spacing.y      = unit(0.15, "cm")
+)
+
+# Panel (a): daily-agg, 2-year rolling beta
+# Violet #6A3D9A reads as a blend of the AFR red and EU blue used in panel (b).
+panel1_col   <- "#6A3D9A"
+# Wrap label so the legend takes less horizontal space.
+panel1_label <- "Mean of all incidents\n(full area)"
+
 p1 <- plot_df |>
   filter(flavor == "daily-agg") |>
   ggplot(aes(x = date_mid, y = beta, group = series_id)) +
@@ -321,52 +345,75 @@ p1 <- plot_df |>
   geom_vline(xintercept = MOU_DATE, linetype = "dotted",
              colour = "#D32F2F", linewidth = 0.6) +
   geom_ribbon(aes(ymin = ci_lo, ymax = ci_hi),
-              alpha = 0.15, fill = "#2166AC", colour = NA) +
-  geom_line(linewidth = 0.7, colour = "#2166AC") +
+              alpha = 0.15, fill = panel1_col, colour = NA) +
+  geom_line(aes(colour = panel1_label), linewidth = 0.7) +
   geom_segment(data = mean_segs,
                aes(x = x, xend = xend, y = y, yend = yend),
-               linewidth = 1.1, linetype = "longdash", colour = "#2166AC",
+               linewidth = 1.1, linetype = "longdash", colour = panel1_col,
                inherit.aes = FALSE) +
+  scale_colour_manual(values = setNames(panel1_col, panel1_label)) +
   scale_x_date(limits = x_lims, date_breaks = "2 years",
                date_labels = "%Y") +
   labs(
-    title = "(1) Daily-aggregate rolling beta (2-year window)",
-    subtitle = paste("Poisson QMLE, NW(14).",
-                     "Long-dashed segments = mean beta over windows fully pre/post MoU.",
-                     "Red dotted = MoU (2017-02-02).", sep = " "),
-    x = NULL, y = expression(beta(SWH[prevweek]))
+    title  = "(a) Daily-aggregate rolling β",
+    x      = NULL, y = expression(beta(SWH[prevweek])),
+    colour = NULL
   ) +
   theme_minimal(base_size = 10) +
-  theme(panel.grid.minor = element_blank(), legend.position = "none")
+  boxed_legend_theme +
+  theme(
+    panel.grid.minor = element_blank(),
+    plot.title       = element_text(face = "bold", size = 11),
+    axis.text.x      = element_blank(),
+    axis.ticks.x     = element_blank(),
+    axis.title.y     = element_text(margin = margin(r = 5)),
+    plot.margin      = margin(3, 4, 1, 4)
+  )
 
-# Panel (2): 2-bloc (AFR, EU)
+# Panel (b): 2-bloc (AFR, EU)
+bloc_levels <- c("AFR", "EU")
+bloc_labels <- c("AFR" = "African SAR zone\n(Libya + Tunisia)",
+                 "EU"  = "European SAR zone\n(Italy + Malta)")
+bloc_colors <- c("AFR" = "#D6604D", "EU" = "#2166AC")
+
 p2 <- plot_df |>
   filter(flavor == "2-bloc") |>
+  mutate(label = factor(label, levels = bloc_levels)) |>
   ggplot(aes(x = date_mid, y = beta, colour = label, fill = label,
              group = series_id)) +
   geom_hline(yintercept = 0, linetype = "dashed", colour = "grey50") +
   geom_vline(xintercept = MOU_DATE, linetype = "dotted",
              colour = "#D32F2F", linewidth = 0.6) +
   geom_ribbon(aes(ymin = ci_lo, ymax = ci_hi),
-              alpha = 0.12, colour = NA) +
+              alpha = 0.15, colour = NA) +
   geom_line(linewidth = 0.7) +
-  scale_colour_manual(values = c("AFR" = "#D6604D", "EU" = "#2166AC")) +
-  scale_fill_manual(values   = c("AFR" = "#D6604D", "EU" = "#2166AC")) +
+  scale_colour_manual(values = bloc_colors, labels = bloc_labels) +
+  scale_fill_manual  (values = bloc_colors, labels = bloc_labels) +
   scale_x_date(limits = x_lims, date_breaks = "2 years",
                date_labels = "%Y") +
   labs(
-    title = "(2) 2-bloc: African SAR vs EU SAR (2y window)",
-    subtitle = "AFR = Libya + Tunisia; EU = Italy + Malta. Raw rolling estimates.",
-    x = NULL, y = expression(beta(SWH[prevweek])),
+    title  = "(b) By SAR responsibility zone",
+    x      = NULL, y = expression(beta(SWH[prevweek])),
     colour = NULL, fill = NULL
   ) +
   theme_minimal(base_size = 10) +
-  theme(panel.grid.minor = element_blank(), legend.position = "top")
+  boxed_legend_theme +
+  theme(
+    panel.grid.minor = element_blank(),
+    plot.title       = element_text(face = "bold", size = 11),
+    axis.title.y     = element_text(margin = margin(r = 5)),
+    plot.margin      = margin(1, 4, 3, 4)
+  )
 
 combined_plot <- p1 / p2
 
+combined_plot_framed <- cowplot::ggdraw(combined_plot) +
+  cowplot::draw_grob(grid::rectGrob(
+    gp = grid::gpar(col = "black", fill = NA, lwd = 2)
+  ))
+
 fig_out <- fig_path("05_analysis", "02_rolling_beta.png")
-ggsave(fig_out, combined_plot, width = 10, height = 8, dpi = 200)
+ggsave(fig_out, combined_plot_framed, width = 10, height = 6.4, dpi = 200)
 cat(sprintf("Saved: %s\n", fig_out))
 
 cat("\n============================================================\n")

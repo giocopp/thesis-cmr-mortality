@@ -378,6 +378,127 @@ cat("\n  IOM Poisson with crossing controls, NW(14):\n")
 print(etable(m_pois, m_pois_lag7, m_pois_lag14, vcov = NW(14), se.below = TRUE,
              headers = c("No control", "Lag 7d", "Lag 14d")))
 
+# ── 3b. Robustness: ACLED Libya/Tunisia conflict + lag-14 ────
+# ACLED columns come from daily_panel_complete.RDS; broadcast weekly, so
+# month_year FE absorbs most monthly variation. Residual weekly variation
+# proxies push-factor shocks orthogonal to weather.
+cat("\n--- 3b. Robustness: ACLED Libya + Tunisia + lag-14 ---\n")
+
+d <- d |>
+  mutate(
+    log1p_libya   = log1p(libya_conflict),
+    log1p_tunisia = log1p(tunisia_conflict)
+  )
+
+m_nb_u_ctl <- fenegbin(
+  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
+                  log1p_lc_lag14 + log1p_libya + log1p_tunisia |
+    month_year_fac, data = d, vcov = NW(14), panel.id = ~unit + date)
+
+m_pois_u_ctl <- fepois(
+  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
+                  log1p_lc_lag14 + log1p_libya + log1p_tunisia |
+    month_year_fac, data = d, vcov = NW(14), panel.id = ~unit + date)
+
+m_nb_ctl <- fenegbin(
+  n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
+               log1p_lc_lag14 + log1p_libya + log1p_tunisia |
+    month_year_fac, data = d, vcov = NW(14), panel.id = ~unit + date)
+
+m_pois_ctl <- fepois(
+  n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
+               log1p_lc_lag14 + log1p_libya + log1p_tunisia |
+    month_year_fac, data = d, vcov = NW(14), panel.id = ~unit + date)
+
+cat("\n  UNITED NegBin with full controls, NW(14):\n")
+print(etable(m_nb_u, m_nb_u_lag14, m_nb_u_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 14d", "Lag 14d + ACLED")))
+
+cat("\n  IOM NegBin with full controls, NW(14):\n")
+print(etable(m_nb, m_nb_lag14, m_nb_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 14d", "Lag 14d + ACLED")))
+
+# ── 3c. Robustness: boundary leakage (drop +/-30d around MoU) ─
+# Policy implementation is gradual; sharp 2017-02-02 cut may attribute
+# leakage windows to the wrong regime. Dropping +/-30 days tests whether
+# the post-MoU shift survives boundary noise.
+cat("\n--- 3c. Robustness: boundary leakage (drop +/-30d around 2017-02-02) ---\n")
+
+drop_window <- 30L
+d_bl <- d |> filter(abs(as.integer(date - MOU_DATE)) > drop_window)
+
+cat(sprintf("  Boundary-leakage sample: N = %d days (drops %d days around MoU)\n",
+            nrow(d_bl), nrow(d) - nrow(d_bl)))
+
+m_nb_u_bl   <- fenegbin(n_dead_united ~ swh_prev5days + swh_prev5days:post_mou |
+                          month_year_fac, data = d_bl, vcov = NW(14),
+                        panel.id = ~unit + date)
+m_pois_u_bl <- fepois  (n_dead_united ~ swh_prev5days + swh_prev5days:post_mou |
+                          month_year_fac, data = d_bl, vcov = NW(14),
+                        panel.id = ~unit + date)
+m_nb_bl     <- fenegbin(n_dead_iom    ~ swh_prev5days + swh_prev5days:post_mou |
+                          month_year_fac, data = d_bl, vcov = NW(14),
+                        panel.id = ~unit + date)
+m_pois_bl   <- fepois  (n_dead_iom    ~ swh_prev5days + swh_prev5days:post_mou |
+                          month_year_fac, data = d_bl, vcov = NW(14),
+                        panel.id = ~unit + date)
+
+m_nb_u_bl_ctl <- fenegbin(
+  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
+                  log1p_lc_lag14 + log1p_libya + log1p_tunisia |
+    month_year_fac, data = d_bl, vcov = NW(14), panel.id = ~unit + date)
+m_nb_bl_ctl <- fenegbin(
+  n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
+               log1p_lc_lag14 + log1p_libya + log1p_tunisia |
+    month_year_fac, data = d_bl, vcov = NW(14), panel.id = ~unit + date)
+
+cat("\n  Boundary leakage (drop +/-30d), NB, NW(14):\n")
+print(etable(m_nb_u, m_nb_u_bl, m_nb_u_bl_ctl, m_nb, m_nb_bl, m_nb_bl_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("UNITED full", "UNITED -30d", "UNITED -30d + ctl",
+                         "IOM full",    "IOM -30d",    "IOM -30d + ctl")))
+
+# ── 3d. Robustness: Mare Nostrum exclusion ────────────────────
+# Period 1 is internally heterogeneous: Mare Nostrum (state-led, very
+# active) ran to 2014-10-31; Triton/Sophia (border-control + NGO SAR)
+# from 2014-11-01. Restricting to date >= TRITON_START tests whether
+# the pre-MoU baseline is an MN artefact.
+cat("\n--- 3d. Robustness: Mare Nostrum exclusion (date >= 2014-11-01) ---\n")
+
+d_post_mn <- d |> filter(date >= TRITON_START)
+cat(sprintf("  Triton-onwards sample: N = %d days (drops %d MN days)\n",
+            nrow(d_post_mn), nrow(d) - nrow(d_post_mn)))
+
+m_nb_u_mn   <- fenegbin(n_dead_united ~ swh_prev5days + swh_prev5days:post_mou |
+                          month_year_fac, data = d_post_mn, vcov = NW(14),
+                        panel.id = ~unit + date)
+m_pois_u_mn <- fepois  (n_dead_united ~ swh_prev5days + swh_prev5days:post_mou |
+                          month_year_fac, data = d_post_mn, vcov = NW(14),
+                        panel.id = ~unit + date)
+m_nb_mn     <- fenegbin(n_dead_iom    ~ swh_prev5days + swh_prev5days:post_mou |
+                          month_year_fac, data = d_post_mn, vcov = NW(14),
+                        panel.id = ~unit + date)
+m_pois_mn   <- fepois  (n_dead_iom    ~ swh_prev5days + swh_prev5days:post_mou |
+                          month_year_fac, data = d_post_mn, vcov = NW(14),
+                        panel.id = ~unit + date)
+
+m_nb_u_mn_ctl <- fenegbin(
+  n_dead_united ~ swh_prev5days + swh_prev5days:post_mou +
+                  log1p_lc_lag14 + log1p_libya + log1p_tunisia |
+    month_year_fac, data = d_post_mn, vcov = NW(14), panel.id = ~unit + date)
+m_nb_mn_ctl <- fenegbin(
+  n_dead_iom ~ swh_prev5days + swh_prev5days:post_mou +
+               log1p_lc_lag14 + log1p_libya + log1p_tunisia |
+    month_year_fac, data = d_post_mn, vcov = NW(14), panel.id = ~unit + date)
+
+cat("\n  Mare Nostrum exclusion (post-MN sample), NB, NW(14):\n")
+print(etable(m_nb_u, m_nb_u_mn, m_nb_u_mn_ctl, m_nb, m_nb_mn, m_nb_mn_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("UNITED full", "UNITED post-MN", "UNITED post-MN + ctl",
+                         "IOM full",    "IOM post-MN",    "IOM post-MN + ctl")))
+
 # ── 4. Save text output ──────────────────────────────────────
 # No year-by-year gradients here; regime cuts are in 31_united_periods.R.
 cat("\n--- 4. Saving results ---\n")
@@ -497,8 +618,231 @@ for (info in list(
               info[[2]], ct[r, 1], ct[r, 2], p, ct_cl[r, 2], p_cl))
 }
 
+cat("\n\n=== CREDIBILITY: FULL CONTROLS (lag-14 + ACLED Libya/Tunisia) ===\n\n")
+cat("UNITED NegBin:\n")
+print(etable(m_nb_u, m_nb_u_lag14, m_nb_u_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 14d", "Lag 14d + ACLED")))
+cat("\nIOM NegBin:\n")
+print(etable(m_nb, m_nb_lag14, m_nb_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 14d", "Lag 14d + ACLED")))
+cat("\nUNITED Poisson:\n")
+print(etable(m_pois_u, m_pois_u_lag14, m_pois_u_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 14d", "Lag 14d + ACLED")))
+cat("\nIOM Poisson:\n")
+print(etable(m_pois, m_pois_lag14, m_pois_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("No control", "Lag 14d", "Lag 14d + ACLED")))
+
+cat("\n\n=== CREDIBILITY: BOUNDARY LEAKAGE (drop +/-30d around 2017-02-02) ===\n\n")
+cat(sprintf("Sample: N=%d days (drops %d days around MoU).\n\n",
+            nrow(d_bl), nrow(d) - nrow(d_bl)))
+print(etable(m_nb_u, m_nb_u_bl, m_nb_u_bl_ctl, m_nb, m_nb_bl, m_nb_bl_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("UNITED full", "UNITED -30d", "UNITED -30d + ctl",
+                         "IOM full",    "IOM -30d",    "IOM -30d + ctl")))
+
+cat("\n\n=== CREDIBILITY: MARE NOSTRUM EXCLUSION (date >= 2014-11-01) ===\n\n")
+cat(sprintf("Sample: N=%d days (drops %d MN days).\n\n",
+            nrow(d_post_mn), nrow(d) - nrow(d_post_mn)))
+print(etable(m_nb_u, m_nb_u_mn, m_nb_u_mn_ctl, m_nb, m_nb_mn, m_nb_mn_ctl,
+             vcov = NW(14), se.below = TRUE,
+             headers = c("UNITED full", "UNITED post-MN", "UNITED post-MN + ctl",
+                         "IOM full",    "IOM post-MN",    "IOM post-MN + ctl")))
+
+cat("\n\n=== EXTENDED b3 SUMMARY: credibility checks ===\n\n")
+for (info in list(
+  list(m_nb_u_ctl,    "UNITED NegBin, lag-14 + ACLED"),
+  list(m_nb_ctl,      "IOM NegBin, lag-14 + ACLED"),
+  list(m_pois_u_ctl,  "UNITED Poisson, lag-14 + ACLED"),
+  list(m_pois_ctl,    "IOM Poisson, lag-14 + ACLED"),
+  list(m_nb_u_bl,     "UNITED NegBin, drop +/-30d (no ctl)"),
+  list(m_nb_u_bl_ctl, "UNITED NegBin, drop +/-30d + full ctl"),
+  list(m_nb_bl,       "IOM NegBin, drop +/-30d (no ctl)"),
+  list(m_nb_bl_ctl,   "IOM NegBin, drop +/-30d + full ctl"),
+  list(m_nb_u_mn,     "UNITED NegBin, post-MN (no ctl)"),
+  list(m_nb_u_mn_ctl, "UNITED NegBin, post-MN + full ctl"),
+  list(m_nb_mn,       "IOM NegBin, post-MN (no ctl)"),
+  list(m_nb_mn_ctl,   "IOM NegBin, post-MN + full ctl")
+)) {
+  ct <- coeftable(info[[1]], vcov = NW(14))
+  r <- grep(":post_mou", rownames(ct))
+  p <- 2 * pnorm(-abs(ct[r, 1] / ct[r, 2]))
+  ct_cl <- coeftable(info[[1]], vcov = ~month_year_fac)
+  p_cl <- 2 * pnorm(-abs(ct_cl[r, 1] / ct_cl[r, 2]))
+  cat(sprintf("  %-42s  b3=%+.3f  SE_NW=%.3f  p_NW=%.4f  SE_cl=%.3f  p_cl=%.4f\n",
+              info[[2]], ct[r, 1], ct[r, 2], p, ct_cl[r, 2], p_cl))
+}
+
 sink()
 cat(sprintf("Saved: %s\n", sink_file))
+
+# ── 5. LaTeX tables (\input'd by paper/thesis.qmd) ───────────
+cat("\n--- 5. Writing LaTeX tables ---\n")
+
+sig_stars <- function(p) {
+  ifelse(p < 0.001, "^{***}",
+  ifelse(p < 0.01,  "^{**}",
+  ifelse(p < 0.05,  "^{*}", "")))
+}
+fcoef <- function(b, p) sprintf("$%+.3f%s$", b, sig_stars(p))
+fse   <- function(se)   sprintf("(%.3f)", se)
+fint  <- function(x)    formatC(round(x), format = "d", big.mark = ",")
+fr3   <- function(x)    formatC(x, format = "f", digits = 3)
+fp    <- function(p)    ifelse(p < 0.001, "$< 0.001$", sprintf("$%.3f$", p))
+
+pr2_nb_u   <- fixest::r2(m_nb_u,   "pr2")
+pr2_pois_u <- fixest::r2(m_pois_u, "pr2")
+pr2_nb     <- fixest::r2(m_nb,     "pr2")
+pr2_pois   <- fixest::r2(m_pois,   "pr2")
+
+# --- tab:primary -----------------------------------------------------
+cs <- count_slopes
+L <- character(); add <- function(...) L <<- c(L, paste0(...))
+add("\\begin{table}[h!]")
+add("\\centering")
+add("\\small")
+add("\\caption{Primary count estimates of the SWH--mortality slope shift around the 2 February 2017 MoU.}")
+add("\\label{tab:primary}")
+add("\\begin{tabular}{lcccc}")
+add("\\hline")
+add("                              & \\multicolumn{2}{c}{UNITED} & \\multicolumn{2}{c}{IOM (comparison)} \\\\")
+add("                              & NegBin & Poisson & NegBin & Poisson \\\\")
+add("\\hline")
+add("$\\beta_1$: SWH$_{t-1:t-5}$            & ",
+    fcoef(cs$b_pre[1],   cs$p_pre[1]),   " & ", fcoef(cs$b_pre[2],   cs$p_pre[2]),   " & ",
+    fcoef(cs$b_pre[3],   cs$p_pre[3]),   " & ", fcoef(cs$b_pre[4],   cs$p_pre[4]),   " \\\\")
+add("                                      & ",
+    fse(cs$se_pre[1]),   " & ", fse(cs$se_pre[2]),   " & ",
+    fse(cs$se_pre[3]),   " & ", fse(cs$se_pre[4]),   " \\\\")
+add("$\\beta_3$: SWH$_{t-1:t-5}$ $\\times$ Post-MoU & ",
+    fcoef(cs$b_shift[1], cs$p_shift[1]), " & ", fcoef(cs$b_shift[2], cs$p_shift[2]), " & ",
+    fcoef(cs$b_shift[3], cs$p_shift[3]), " & ", fcoef(cs$b_shift[4], cs$p_shift[4]), " \\\\")
+add("                                      & ",
+    fse(cs$se_shift[1]), " & ", fse(cs$se_shift[2]), " & ",
+    fse(cs$se_shift[3]), " & ", fse(cs$se_shift[4]), " \\\\")
+add("$\\beta_1+\\beta_3$: implied post-MoU slope    & ",
+    fcoef(cs$b_post[1],  cs$p_post[1]),  " & ", fcoef(cs$b_post[2],  cs$p_post[2]),  " & ",
+    fcoef(cs$b_post[3],  cs$p_post[3]),  " & ", fcoef(cs$b_post[4],  cs$p_post[4]),  " \\\\")
+add("                                      & ",
+    fse(cs$se_post[1]),  " & ", fse(cs$se_post[2]),  " & ",
+    fse(cs$se_post[3]),  " & ", fse(cs$se_post[4]),  " \\\\")
+add("\\hline")
+add("Month--year fixed effects             & Yes            & Yes           & Yes            & Yes          \\\\")
+add("Newey--West SEs (lag 14)              & Yes            & Yes           & Yes            & Yes          \\\\")
+add("Observations (days)                   & ",
+    fint(cs$n_obs[1]), " & ", fint(cs$n_obs[2]), " & ",
+    fint(cs$n_obs[3]), " & ", fint(cs$n_obs[4]), " \\\\")
+add("Pseudo $R^{2}$                        & ",
+    fr3(pr2_nb_u),   " & ", fr3(pr2_pois_u), " & ",
+    fr3(pr2_nb),     " & ", fr3(pr2_pois),   " \\\\")
+add("\\hline")
+add("\\multicolumn{5}{l}{\\footnotesize Stars denote two-sided $p$-values: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\\\")
+add("\\multicolumn{5}{l}{\\footnotesize Newey--West standard errors in parentheses; delta-method SEs for $\\beta_1+\\beta_3$.} \\\\")
+add("\\end{tabular}")
+add("\\end{table}")
+out_primary <- tbl_path("05_analysis", "01_primary_model.tex")
+writeLines(L, out_primary)
+cat(sprintf("  Saved: %s\n", out_primary))
+
+# --- tab:rate --------------------------------------------------------
+rs <- rate_slopes  # 1: UNITED, 2: IOM (Poisson only)
+ct_u <- coeftable(m_rate_u, vcov = NW(14))
+ct_i <- coeftable(m_rate,   vcov = NW(14))
+g_u  <- ct_u["log_crossing_attempts", 1]; g_se_u <- ct_u["log_crossing_attempts", 2]
+g_i  <- ct_i["log_crossing_attempts", 1]; g_se_i <- ct_i["log_crossing_attempts", 2]
+g_p_u <- 2 * pnorm(-abs(g_u  / g_se_u))
+g_p_i <- 2 * pnorm(-abs(g_i  / g_se_i))
+
+L <- character(); add <- function(...) L <<- c(L, paste0(...))
+add("\\begin{table}[h!]")
+add("\\centering")
+add("\\small")
+add("\\caption{Volume-controlled Poisson model with crossing-volume control.}")
+add("\\label{tab:rate}")
+add("\\begin{tabular}{lcc}")
+add("\\hline")
+add("                              & UNITED & IOM (comparison) \\\\")
+add("\\hline")
+add("$\\beta_1$: SWH$_{t-1:t-5}$            & ",
+    fcoef(rs$b_pre[1],   rs$p_pre[1]),   " & ", fcoef(rs$b_pre[2],   rs$p_pre[2]),   " \\\\")
+add("                                      & ",
+    fse(rs$se_pre[1]),   " & ", fse(rs$se_pre[2]),   " \\\\")
+add("$\\beta_3$: SWH$_{t-1:t-5}$ $\\times$ Post-MoU & ",
+    fcoef(rs$b_shift[1], rs$p_shift[1]), " & ", fcoef(rs$b_shift[2], rs$p_shift[2]), " \\\\")
+add("                                      & ",
+    fse(rs$se_shift[1]), " & ", fse(rs$se_shift[2]), " \\\\")
+add("$\\gamma$: $\\log C_t$                  & ",
+    fcoef(g_u, g_p_u), " & ", fcoef(g_i, g_p_i), " \\\\")
+add("                                      & ",
+    fse(g_se_u), " & ", fse(g_se_i), " \\\\")
+add("$\\beta_1+\\beta_3$: implied post-MoU slope    & ",
+    fcoef(rs$b_post[1],  rs$p_post[1]),  " & ", fcoef(rs$b_post[2],  rs$p_post[2]),  " \\\\")
+add("                                      & ",
+    fse(rs$se_post[1]),  " & ", fse(rs$se_post[2]),  " \\\\")
+add("\\hline")
+add("Wald: $H_{0}: \\gamma = 1$, $z$        & ",
+    sprintf("$%+.2f$", elast_tbl$z_vs_1[1]), " & ",
+    sprintf("$%+.2f$", elast_tbl$z_vs_1[2]), " \\\\")
+add("$p$-value                             & ", fp(elast_tbl$p_vs_1[1]),
+    " & ", fp(elast_tbl$p_vs_1[2]), " \\\\")
+add("Month--year fixed effects             & Yes            & Yes            \\\\")
+add("Newey--West SEs (lag 14)              & Yes            & Yes            \\\\")
+add("Observations (days, $C_t>0$)          & ",
+    fint(rs$n_obs[1]), " & ", fint(rs$n_obs[2]), " \\\\")
+add("\\hline")
+add("\\multicolumn{3}{l}{\\footnotesize Stars denote two-sided $p$-values: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\\\")
+add("\\multicolumn{3}{l}{\\footnotesize Newey--West standard errors in parentheses; delta-method SEs for $\\beta_1+\\beta_3$.} \\\\")
+add("\\end{tabular}")
+add("\\end{table}")
+out_rate <- tbl_path("05_analysis", "01_rate_model.tex")
+writeLines(L, out_rate)
+cat(sprintf("  Saved: %s\n", out_rate))
+
+# --- tab:appx-exposure ----------------------------------------------
+window_order <- c("lag 1d", "lag 1-3d", "lag 1-5d", "lag 1-7d",
+                  "lead 1d", "lead 1-3d", "lead 1-5d", "lead 1-7d")
+sens_wide <- sens_tbl |>
+  dplyr::select(source, timing, window, family, b3, se3, p3) |>
+  tidyr::pivot_wider(names_from = family,
+                     values_from = c(b3, se3, p3)) |>
+  dplyr::arrange(source, timing, match(window, window_order))
+
+L <- character(); add <- function(...) L <<- c(L, paste0(...))
+add("\\begin{table}[h!]")
+add("\\centering")
+add("\\small")
+add("\\caption{SWH-window grid: SWH$\\times$Post-MoU shift coefficient ($\\beta_3$).}")
+add("\\label{tab:appx-exposure}")
+add("\\begin{tabular}{llcccc}")
+add("\\hline")
+add("Source & Window      & \\multicolumn{2}{c}{NegBin} & \\multicolumn{2}{c}{Poisson} \\\\")
+add("       &             & $\\beta_3$ & SE    & $\\beta_3$ & SE \\\\")
+add("\\hline")
+write_block <- function(timing_label, header) {
+  add(sprintf("\\multicolumn{6}{l}{\\textit{%s}} \\\\", header))
+  rows <- sens_wide[sens_wide$timing == timing_label, ]
+  for (i in seq_len(nrow(rows))) {
+    r <- rows[i, ]
+    add(sprintf("%-7s & %-11s & %-15s & %.3f & %-15s & %.3f \\\\",
+                as.character(r$source), r$window,
+                fcoef(r$b3_NegBin,  r$p3_NegBin),  r$se3_NegBin,
+                fcoef(r$b3_Poisson, r$p3_Poisson), r$se3_Poisson))
+  }
+}
+write_block("past",           "Past (lagged) windows")
+write_block("future_placebo", "Future (placebo) windows")
+add("\\hline")
+add("\\multicolumn{6}{l}{\\footnotesize SE columns report Newey--West standard errors. Stars: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\\\")
+add(sprintf("\\multicolumn{6}{l}{\\footnotesize Shared sample: %s days.}",
+            fint(nrow(d_sens))))
+add("\\end{tabular}")
+add("\\end{table}")
+out_exposure <- tbl_path("05_analysis", "01_exposure_sensitivity.tex")
+writeLines(L, out_exposure)
+cat(sprintf("  Saved: %s\n", out_exposure))
 
 cat("\n============================================================\n")
 cat("DONE\n")

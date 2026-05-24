@@ -232,6 +232,8 @@ build_note_grob <- function(caption_text) {
 }
 
 # Panel (a): crossings stacked bars
+# Y axis is split into 4 equal intervals (5 breaks) so the gridline cell shape
+# matches the shares panels (c/d) in the 2x2 composite.
 build_cross_panel <- function(m, death_label) {
   cross_long <- build_crossing_long(m, death_label)
   comp_labels_vec <- c(
@@ -240,13 +242,34 @@ build_cross_panel <- function(m, death_label) {
     "tcg_persons"        = "Tunisian CG operations",
     "deaths_missing"     = death_label
   )
+  max_bar <- cross_long |>
+    group_by(ym) |>
+    summarise(total = sum(persons, na.rm = TRUE), .groups = "drop") |>
+    pull(total) |>
+    max(na.rm = TRUE)
+  step <- 10^floor(log10(max_bar / 4))
+  cross_step <- ceiling((max_bar / 4) / step) * step
+  cross_max <- cross_step * 4
+  cross_breaks <- seq(0, cross_max, by = cross_step)
   ggplot(cross_long, aes(x = ym, y = persons, fill = component)) +
     geom_col(position = "stack", width = 25) +
-    scale_fill_manual(values = setNames(comp_colours, comp_labels_vec[names(comp_colours)]),
-                      name = NULL) +
+    scale_fill_manual(
+      values = setNames(comp_colours, comp_labels_vec[names(comp_colours)]),
+      # Reorder the legend so column 1 is (Intercepted, Death) and column 2 is
+      # (LCG, TCG) under guide_legend(byrow = FALSE). Stacking order is
+      # unchanged because the data's factor levels still follow comp_order.
+      breaks = c(
+        "Intercepted persons",
+        death_label,
+        "Libyan CG operations",
+        "Tunisian CG operations"
+      ),
+      name = NULL
+    ) +
     geom_vline(xintercept = MOU_DATE, linetype = "dashed", colour = "red", linewidth = 0.5) +
     scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-    coord_cartesian(xlim = PLOT_XLIM, clip = "off") +
+    scale_y_continuous(breaks = cross_breaks) +
+    coord_cartesian(xlim = PLOT_XLIM, ylim = c(0, cross_max), clip = "off") +
     labs(
       title = "(a) Number of persons attempting the crossing, by crossing outcome",
       subtitle = "Red dashed line marks the signature of the 2017 Italy-Libya MoU",
@@ -262,12 +285,22 @@ build_cross_panel <- function(m, death_label) {
 }
 
 # Panel (b): deaths bars + fatality-rate line (dual axis)
+# DEATHS_Y2_MAX = right-axis cap (%) for fatality rate. 20 gives headroom above
+# the observed max (~16% in UNITED Jan 2019) so the line does not overflow
+# above the panel and collide with the title.
+DEATHS_Y2_MAX <- 20
 build_deaths_panel <- function(m, death_label, shared_sf = NULL) {
   dr <- m |>
     filter(ym <= PANEL_END) |>
     mutate(death_rate = ifelse(crossing_attempts > 0,
                                 n_dead_missing / crossing_attempts * 100, NA_real_))
-  sf <- if (!is.null(shared_sf)) shared_sf else max(dr$n_dead_missing, na.rm = TRUE) / 15
+  sf <- if (!is.null(shared_sf)) shared_sf else max(dr$n_dead_missing, na.rm = TRUE) / DEATHS_Y2_MAX
+
+  # 5 breaks (4 spaces) on both axes so the gridline cell shape matches the
+  # shares panels (c/d) in the 2x2 composite.
+  primary_max <- sf * DEATHS_Y2_MAX
+  primary_breaks <- seq(0, primary_max, by = primary_max / 4)
+  secondary_breaks <- seq(0, DEATHS_Y2_MAX, by = DEATHS_Y2_MAX / 4)
 
   ggplot(dr, aes(x = ym)) +
     geom_col(aes(y = n_dead_missing, fill = death_label), width = 25) +
@@ -277,13 +310,19 @@ build_deaths_panel <- function(m, death_label, shared_sf = NULL) {
     scale_colour_manual(values = c("Fatality rate (%)" = "#333333"), name = NULL) +
     scale_y_continuous(
       name = "Recorded Dead and Missing Migrants",
-      sec.axis = sec_axis(~ . / sf, name = "Fatality rate (%)")
+      breaks = primary_breaks,
+      sec.axis = sec_axis(~ . / sf, name = "Fatality rate (%)",
+                          breaks = secondary_breaks)
     ) +
     geom_vline(xintercept = MOU_DATE, linetype = "dashed", colour = "red", linewidth = 0.5) +
-    scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+    # Tight x-expansion so the secondary y-axis sits flush against the last
+    # bar instead of being pushed ~6 months to the right by default padding.
+    scale_x_date(date_breaks = "1 year", date_labels = "%Y",
+                 expand = expansion(mult = c(0.005, 0.005))) +
     coord_cartesian(xlim = PLOT_XLIM,
-                    ylim = if (!is.null(shared_sf)) c(0, shared_sf * 15) else NULL,
-                    clip = "off") +
+                    ylim = if (!is.null(shared_sf)) c(0, shared_sf * DEATHS_Y2_MAX) else NULL,
+                    clip = "off",
+                    expand = FALSE) +
     labs(title = "(b) Number of persons dead and missing while attempting the crossing", x = NULL) +
     theme_minimal(base_size = 11) +
     theme(
@@ -360,11 +399,17 @@ CCCCCC
   cat("Saved:", output_path, "\n")
 }
 
-# Shared y-scale so the IOM and UNITED deaths panels are visually comparable
-deaths_sf <- max(
+# Shared y-scale so the IOM and UNITED deaths panels are visually comparable.
+# Round the max up to a clean 4-step boundary so the primary y-axis breaks land
+# on round numbers (e.g. 0/400/800/1200/1600) and match panel (d)'s geometry.
+deaths_max_raw <- max(
   max(monthly$n_dead_missing[monthly$ym <= PANEL_END], na.rm = TRUE),
   max(monthly_united$n_dead_missing[monthly_united$ym <= PANEL_END], na.rm = TRUE)
-) / 15
+)
+deaths_step_base <- 10^floor(log10(deaths_max_raw / 4))
+deaths_y_step <- ceiling((deaths_max_raw / 4) / deaths_step_base) * deaths_step_base
+deaths_y_max <- deaths_y_step * 4
+deaths_sf <- deaths_y_max / DEATHS_Y2_MAX
 
 # IOM figure
 build_crossings_figure(
@@ -415,7 +460,7 @@ frx <- frx |>
       sar_true & interceptor_type == "EU_ops"                  ~ "SAR: EU operations",
       sar_true & interceptor_type == "Ita_ops"                 ~ "SAR: Italian authorities",
       sar_true & interceptor_type == "NGO"                     ~ "SAR: NGO operations",
-      sar_true & interceptor_type == "EU_Coast_Guard"          ~ "SAR: EU CG operations",
+      sar_true & interceptor_type == "EU_Coast_Guard"          ~ "SAR: EU members CG",
       sar_true                                                 ~ "SAR: Mare Nostrum and Others",
       interceptor_type == "EU_Coast_Guard"                     ~ "Non SAR: EU CG operations",
       interceptor_type == "Land_patrol"                        ~ "Not SAR: Land patrol",
@@ -426,35 +471,43 @@ frx <- frx |>
   select(-sar_true)
 
 etype_order <- c(
-  # SAR — darker blue to lighter blue
+  # SAR — darker blue to lighter blue (left column of the panel-c legend)
   "SAR: Italian authorities",       # #08519C (darkest)
   "SAR: NGO operations",           # #3182BD
   "SAR: EU members CG",           # #6BAED6
   "SAR: EU operations",            # #9ECAE1
   "SAR: Mare Nostrum and Others",                    # #C6DBEF (lightest)
-  # Not SAR — darker brown/red to lighter orange
+  # Transparent phantom — used only to push the next 6 entries to the right
+  # column of the panel-c legend so SAR (5) sits left and Non-SAR + CG (6)
+  # sits right. Persons = 0 for this level, so it contributes no stacked area.
+  " ",
+  # Not SAR — darker brown/red to lighter orange (right column, top)
   "Not SAR: No intercep. (detection only)", # #A63603 (darkest)
   "Non SAR: EU CG operations",       # #E6550D
   "Not SAR: Land patrol",          # #FD8D3C
   "Not SAR: Mare Nostrum and Others",                # #FDBE85 (lightest)
-  # IOM — darker to lighter grey
+  # IOM — darker to lighter grey (right column, bottom)
   "Libyan CG operations",          # #252525
   "Tunisian CG operations"         # #969696
 )
 
 etype_colours <- c(
-  # SAR — original palette. EU members CG takes the slot formerly held by
-  # "SAR: Commercial vessels" (#6BAED6) so it is clearly distinct from NGO.
-  "SAR: EU operations"            = "#9ECAE1",  # was "SAR: EU operations (IRINI)"
-  "SAR: Italian authorities"       = "#08519C",  # was "SAR: Italian authorities"
-  "SAR: NGO operations"           = "#3182BD",  # was "SAR: NGO"
-  "SAR: EU members CG"           = "#6BAED6",  # was "SAR: Commercial vessels" slot
-  "SAR: Mare Nostrum and Others"                    = "#C6DBEF",  # was "SAR: Mare Nostrum and Others"
-  # Not SAR — original palette
-  "Non SAR: EU CG operations"       = "#E6550D",  # was "Not SAR: Coast Guard"
-  "Not SAR: Land patrol"          = "#FD8D3C",  # was "Not SAR: Land patrol"
-  "Not SAR: No intercep. (detection only)" = "#A63603",  # was "Not SAR: Self-arrived" slot (darkest)
-  "Not SAR: Mare Nostrum and Others"                = "#FDBE85",  # was "Not SAR: Mare Nostrum and Others"
+  # SAR palette — original ColorBrewer Blues. The earlier "only 4 colours
+  # visible" issue was a label mismatch ("SAR: EU CG operations" vs
+  # "SAR: EU members CG"), now fixed in the case_when above. Adjacent shades
+  # are kept readable by the thin black geom_area outline below.
+  "SAR: Italian authorities"       = "#08519C",  # darkest
+  "SAR: NGO operations"           = "#3182BD",
+  "SAR: EU members CG"           = "#6BAED6",
+  "SAR: EU operations"            = "#9ECAE1",
+  "SAR: Mare Nostrum and Others"                    = "#C6DBEF",  # lightest
+  # Transparent phantom (legend column-break spacer; never drawn)
+  " "                              = "#FFFFFF00",
+  # Not SAR — original Oranges palette
+  "Non SAR: EU CG operations"       = "#E6550D",
+  "Not SAR: Land patrol"          = "#FD8D3C",
+  "Not SAR: No intercep. (detection only)" = "#A63603",
+  "Not SAR: Mare Nostrum and Others"                = "#FDBE85",
   # IOM pullbacks — greys
   "Libyan CG operations"          = "#252525",
   "Tunisian CG operations"        = "#969696"
@@ -690,6 +743,9 @@ share_colours <- c(
 )
 
 share_lines <- persons_complete |>
+  # The " " level is the panel-c legend spacer (0 persons) and is not a
+  # real category; drop it here so it does not leak into panel d's legend.
+  filter(etype != " ") |>
   mutate(group = case_when(
     grepl("^SAR:", etype)     ~ "SAR operations recorded by Frontex",
     grepl("^(Not SAR|Non SAR):", etype) ~ "Non SAR operations recorded by Frontex",
@@ -755,10 +811,10 @@ p_deaths_united <- build_deaths_panel(
 )
 
 panel_2x2_theme <- theme(
-  plot.title = element_text(face = "bold", size = 20, lineheight = 0.98),
-  plot.subtitle = element_text(size = 15, colour = "red3"),
-  axis.title = element_text(size = 16),
-  axis.text = element_text(size = 15),
+  plot.title = element_text(face = "bold", size = 22, lineheight = 0.98),
+  plot.subtitle = element_text(size = 16, colour = "red3"),
+  axis.title = element_text(size = 18),
+  axis.text = element_text(size = 16),
   plot.margin = margin(t = 9, r = 4, b = 2, l = 4)
 )
 
@@ -784,7 +840,7 @@ p_share_lines_2x2 <- p_share_lines +
 
 p_cross_united_display <- p_cross_united_2x2 +
   legend_bottom_theme +
-  guides(fill = guide_legend(nrow = 2, byrow = TRUE, title = NULL))
+  guides(fill = guide_legend(nrow = 2, byrow = FALSE, title = NULL))
 
 p_deaths_united_display <- p_deaths_united_2x2 +
   legend_bottom_theme +
@@ -797,7 +853,7 @@ p_etype_pct_display <- p_etype_pct_2x2 +
   legend_bottom_theme +
   guides(fill = guide_legend(
     ncol = 2,
-    byrow = TRUE,
+    byrow = FALSE,
     title = NULL
   ))
 
@@ -805,7 +861,7 @@ p_share_lines_display <- p_share_lines_2x2 +
   legend_bottom_theme +
   guides(colour = guide_legend(
     nrow = 2,
-    byrow = TRUE,
+    byrow = FALSE,
     title = NULL
   ))
 
@@ -844,7 +900,7 @@ ggsave(
   fig_path("04_descriptive", "01_panel_event_type.png"),
   panel_event_type_framed,
   width = 18.5,
-  height = 14.8,
+  height = 16,
   dpi = 300
 )
 # ── 5. Boat type panel (share + avg persons) ───────────

@@ -564,6 +564,73 @@ for (i in seq_len(nrow(l3_tbl))) {
 sink()
 cat(sprintf("Saved: %s\n", sink_file))
 
+# ── 9. LaTeX table (\input'd by paper/thesis.qmd) ─────────────
+cat("\n--- 9. Writing LaTeX table ---\n")
+
+sig_stars <- function(p) {
+  ifelse(p < 0.001, "^{***}",
+  ifelse(p < 0.01,  "^{**}",
+  ifelse(p < 0.05,  "^{*}", "")))
+}
+fcoef <- function(b, p) sprintf("$%+.3f%s$", b, sig_stars(p))
+fse   <- function(se)   sprintf("(%.3f)", se)
+fint  <- function(x)    formatC(round(x), format = "d", big.mark = ",")
+
+# Extract from L1 fits.
+models <- list(l1$united_nb, l1$united_po, l1$iom_nb, l1$iom_po)
+get_named <- function(m, name) {
+  r <- extract_coef(m, name)
+  list(b = unname(r["coef"]), se = unname(r["se"]), p = unname(r["p"]))
+}
+b1 <- lapply(models, get_named, name = "swh_prev5days")
+b3 <- lapply(models, get_named, name = "swh_prev5days:post_mou")
+bt <- lapply(models, get_named, name = triple_term)
+Ns <- sapply(models, nobs)
+
+L <- character(); add <- function(...) L <<- c(L, paste0(...))
+add("\\begin{table}[H]")
+add("\\centering")
+add("\\small")
+add("\\caption{Triple interaction SWH$\\times$Post-MoU$\\times$Libya conflict.}")
+add("\\label{tab:appx-pushfactor}")
+add("\\begin{tabular}{lcccc}")
+add("\\hline")
+add("                                          & \\multicolumn{2}{c}{UNITED}    & \\multicolumn{2}{c}{IOM} \\\\")
+add("                                          & NegBin & Poisson & NegBin & Poisson \\\\")
+add("\\hline")
+add("SWH$_{t-1:t-5}$                           & ",
+    fcoef(b1[[1]]$b, b1[[1]]$p), " & ", fcoef(b1[[2]]$b, b1[[2]]$p), " & ",
+    fcoef(b1[[3]]$b, b1[[3]]$p), " & ", fcoef(b1[[4]]$b, b1[[4]]$p), " \\\\")
+add("                                          & ",
+    fse(b1[[1]]$se), " & ", fse(b1[[2]]$se), " & ",
+    fse(b1[[3]]$se), " & ", fse(b1[[4]]$se), " \\\\")
+add("SWH $\\times$ Post-MoU                     & ",
+    fcoef(b3[[1]]$b, b3[[1]]$p), " & ", fcoef(b3[[2]]$b, b3[[2]]$p), " & ",
+    fcoef(b3[[3]]$b, b3[[3]]$p), " & ", fcoef(b3[[4]]$b, b3[[4]]$p), " \\\\")
+add("                                          & ",
+    fse(b3[[1]]$se), " & ", fse(b3[[2]]$se), " & ",
+    fse(b3[[3]]$se), " & ", fse(b3[[4]]$se), " \\\\")
+add("SWH $\\times$ Post-MoU $\\times$ Libya conflict & ",
+    fcoef(bt[[1]]$b, bt[[1]]$p), " & ", fcoef(bt[[2]]$b, bt[[2]]$p), " & ",
+    fcoef(bt[[3]]$b, bt[[3]]$p), " & ", fcoef(bt[[4]]$b, bt[[4]]$p), " \\\\")
+add("                                              & ",
+    fse(bt[[1]]$se), " & ", fse(bt[[2]]$se), " & ",
+    fse(bt[[3]]$se), " & ", fse(bt[[4]]$se), " \\\\")
+add("\\hline")
+add("Month-year FE                             & Yes            & Yes           & Yes            & Yes           \\\\")
+add("Newey-West SEs (lag 14)                   & Yes            & Yes           & Yes            & Yes           \\\\")
+add("Observations (days)                       & ",
+    fint(Ns[1]), " & ", fint(Ns[2]), " & ", fint(Ns[3]), " & ", fint(Ns[4]), " \\\\")
+add("\\hline")
+add("\\multicolumn{5}{l}{\\footnotesize Libya conflict is the standardized")
+add("one-week lag of ACLED battles + explosions + VAC.} \\\\")
+add("\\multicolumn{5}{l}{\\footnotesize Newey--West standard errors in parentheses. Stars: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\\\")
+add("\\end{tabular}")
+add("\\end{table}")
+out_push <- tbl_path("06_robustness", "04_push_factor_decomposition.tex")
+writeLines(L, out_push)
+cat(sprintf("  Saved: %s\n", out_push))
+
 cat("\n============================================================\n")
 cat("DONE\n")
 cat("============================================================\n")

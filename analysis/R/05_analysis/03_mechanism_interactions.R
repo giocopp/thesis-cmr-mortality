@@ -335,6 +335,77 @@ for (src in c("UNITED", "IOM")) {
 sink()
 cat(sprintf("Saved: %s\n", sink_file))
 
+# ── 6. LaTeX table (\input'd by paper/thesis.qmd) ─────────────
+cat("\n--- 6. Writing LaTeX table ---\n")
+
+sig_stars <- function(p) {
+  ifelse(p < 0.001, "^{***}",
+  ifelse(p < 0.01,  "^{**}",
+  ifelse(p < 0.05,  "^{*}", "")))
+}
+fcoef <- function(b, p) sprintf("$%+.3f%s$", b, sig_stars(p))
+fse   <- function(se)   sprintf("(%.3f)", se)
+fint  <- function(x)    formatC(round(x), format = "d", big.mark = ",")
+
+get_int <- function(m, moderator) {
+  ct  <- coeftable(m, vcov = NW(14))
+  pat <- paste0("swh_prev5days:", moderator)
+  r   <- grep(pat, rownames(ct), fixed = TRUE)
+  list(b = ct[r, 1], se = ct[r, 2],
+       p = 2 * pnorm(-abs(ct[r, 1] / ct[r, 2])),
+       n = nobs(m))
+}
+
+share_u_nb <- get_int(fits_united$my_sar_nb, "sar_share_pw_z")
+share_u_po <- get_int(fits_united$my_sar_po, "sar_share_pw_z")
+share_i_nb <- get_int(fits_iom$my_sar_nb,    "sar_share_pw_z")
+share_i_po <- get_int(fits_iom$my_sar_po,    "sar_share_pw_z")
+pers_u_nb  <- get_int(fits_united$my_per_nb, "log1p_sar_persons_pw_z")
+pers_u_po  <- get_int(fits_united$my_per_po, "log1p_sar_persons_pw_z")
+pers_i_nb  <- get_int(fits_iom$my_per_nb,    "log1p_sar_persons_pw_z")
+pers_i_po  <- get_int(fits_iom$my_per_po,    "log1p_sar_persons_pw_z")
+
+L <- character(); add <- function(...) L <<- c(L, paste0(...))
+add("\\begin{table}[H]")
+add("\\centering")
+add("\\small")
+add("\\caption{SWH $\\times$ SAR-proxy moderator interaction. Coefficients are per one standard deviation of the standardized weekly SAR proxy.}")
+add("\\label{tab:mechanism}")
+add("\\begin{tabular}{lcccc}")
+add("\\hline")
+add("                                 & \\multicolumn{2}{c}{UNITED} & \\multicolumn{2}{c}{IOM (comparison)} \\\\")
+add("                                 & NegBin & Poisson & NegBin & Poisson \\\\")
+add("\\hline")
+add("\\multicolumn{5}{l}{\\textit{(i) SAR-share moderator}} \\\\")
+add("SWH $\\times$ SAR share           & ",
+    fcoef(share_u_nb$b, share_u_nb$p), " & ", fcoef(share_u_po$b, share_u_po$p), " & ",
+    fcoef(share_i_nb$b, share_i_nb$p), " & ", fcoef(share_i_po$b, share_i_po$p), " \\\\")
+add("                                 & ",
+    fse(share_u_nb$se), " & ", fse(share_u_po$se), " & ",
+    fse(share_i_nb$se), " & ", fse(share_i_po$se), " \\\\")
+add("\\multicolumn{5}{l}{\\textit{(ii) SAR-persons moderator}} \\\\")
+add("SWH $\\times$ SAR persons         & ",
+    fcoef(pers_u_nb$b,  pers_u_nb$p),  " & ", fcoef(pers_u_po$b,  pers_u_po$p),  " & ",
+    fcoef(pers_i_nb$b,  pers_i_nb$p),  " & ", fcoef(pers_i_po$b,  pers_i_po$p),  " \\\\")
+add("                                 & ",
+    fse(pers_u_nb$se),  " & ", fse(pers_u_po$se),  " & ",
+    fse(pers_i_nb$se),  " & ", fse(pers_i_po$se),  " \\\\")
+add("\\hline")
+add("Month--year fixed effects        & Yes            & Yes            & Yes           & Yes           \\\\")
+add("Newey--West SEs (lag 14)         & Yes            & Yes            & Yes           & Yes           \\\\")
+add("Observations (days)              & ",
+    fint(share_u_nb$n), " & ", fint(share_u_po$n), " & ",
+    fint(share_i_nb$n), " & ", fint(share_i_po$n), " \\\\")
+add("\\hline")
+add("\\multicolumn{5}{l}{\\footnotesize Stars denote two-sided $p$-values: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\\\")
+add("\\multicolumn{5}{l}{\\footnotesize Newey--West standard errors in parentheses.} \\\\")
+add("\\multicolumn{5}{l}{\\footnotesize SAR share is $\\mathrm{sar\\_share}_{t-7:t-1}$; SAR persons is $\\log(1+\\mathrm{sar\\_persons}_{t-7:t-1})$.} \\\\")
+add("\\end{tabular}")
+add("\\end{table}")
+out_mech <- tbl_path("05_analysis", "03_mechanism_interactions.tex")
+writeLines(L, out_mech)
+cat(sprintf("  Saved: %s\n", out_mech))
+
 cat("\n============================================================\n")
 cat("DONE\n")
 cat("============================================================\n")

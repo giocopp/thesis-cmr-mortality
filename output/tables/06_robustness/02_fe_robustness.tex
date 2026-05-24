@@ -1,0 +1,31 @@
+\begin{table}[h!]
+\centering
+\small
+\caption{Fixed-effects and inference robustness, IOM NegBin
+$\beta_3=\mathrm{SWH}_{t-1:t-5}\times\mathrm{Post\text{-}MoU}$.}
+\label{tab:appx-fe}
+\begin{tabular}{lccc}
+\hline
+Variant & $\beta_3$ & SE & $p$ \\
+\hline
+\multicolumn{4}{l}{\textit{(i) FE specifications (NegBin, NW(14))}} \\
+year                       & $+0.873$  & 0.404 & 0.031 \\
+month-of-year              & $-0.473$  & 0.210 & 0.024 \\
+year + month               & $+0.790$  & 0.415 & 0.057 \\
+quarter-year               & $+1.213$  & 0.443 & 0.006 \\
+month-year (primary)       & $+2.478$  & 0.785 & 0.002 \\
+month-year + day-of-week   & $+2.390$  & 0.793 & 0.003 \\
+\multicolumn{4}{l}{\textit{(ii) SE variants on month-year FE}} \\
+Newey-West, lag 7          & $+2.478$  & 0.687 & 0.000 \\
+Newey-West, lag 14 (primary) & $+2.478$  & 0.785 & 0.002 \\
+Newey-West, lag 21         & $+2.478$  & 0.851 & 0.004 \\
+Cluster by month-year      & $+2.478$  & 1.037 & 0.017 \\
+Cluster by year            & $+2.478$  & 1.277 & 0.052 \\
+\multicolumn{4}{l}{\textit{(iii) Sample restrictions}} \\
+Full sample, $N=3286$  & $+2.478$  & 0.785 & 0.002 \\
+Drop zero-death days, $N=601$  & $+1.067$  & 0.896 & 0.234 \\
+Cap deaths at 100, $N=3197$  & $+1.933$  & 0.577 & 0.001 \\
+\hline
+\multicolumn{4}{l}{\footnotesize SE column reports the standard error from the variance estimator named in each row.}
+\end{tabular}
+\end{table}

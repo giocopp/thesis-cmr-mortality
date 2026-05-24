@@ -299,6 +299,75 @@ for (i in seq_len(nrow(v3_inflatable))) {
 sink()
 cat(sprintf("Saved: %s\n", sink_file))
 
+# ── 7. LaTeX table (\input'd by paper/thesis.qmd) ─────────────
+cat("\n--- 7. Writing LaTeX table ---\n")
+
+sig_stars <- function(p) {
+  ifelse(p < 0.001, "^{***}",
+  ifelse(p < 0.01,  "^{**}",
+  ifelse(p < 0.05,  "^{*}", "")))
+}
+fcoef <- function(b, p) sprintf("$%+.3f%s$", b, sig_stars(p))
+fse   <- function(se)   sprintf("(%.3f)", se)
+fint  <- function(x)    formatC(round(x), format = "d", big.mark = ",")
+
+get_coef <- function(m, name) {
+  ct <- coeftable(m, vcov = NW(14))
+  if (!(name %in% rownames(ct))) return(list(present = FALSE))
+  r <- ct[name, ]
+  list(present = TRUE, b = r[1], se = r[2],
+       p = 2 * pnorm(-abs(r[1] / r[2])))
+}
+
+# Sample sizes after fixest drops all-zero FE cells.
+N_utd <- nobs(v1_united)
+N_iom <- nobs(v1_iom)
+
+# Helper to render one (b, p)+(se) row pair for a triple V1/V2/V3.
+row_triple <- function(label, models, name) {
+  cs <- lapply(models, get_coef, name = name)
+  bs <- sapply(cs, function(c) if (c$present) fcoef(c$b, c$p) else "")
+  ss <- sapply(cs, function(c) if (c$present) fse(c$se)     else "")
+  list(
+    sprintf("%-31s & %-14s & %-14s & %-14s \\\\", label, bs[1], bs[2], bs[3]),
+    sprintf("%-31s & %-14s & %-14s & %-14s \\\\", "",    ss[1], ss[2], ss[3])
+  )
+}
+
+L <- character(); add <- function(...) L <<- c(L, paste0(...))
+add("\\begin{table}[H]")
+add("\\centering")
+add("\\small")
+add("\\caption{Volume-controlled Poisson with boat-composition controls. Boat-observable")
+add(sprintf("sample: %s days (UNITED), %s days (IOM).}", fint(N_utd), fint(N_iom)))
+add("\\label{tab:appx-boat}")
+add("\\begin{tabular}{lccc}")
+add("\\hline")
+add("                                & V1: baseline & V2: + boat shares & V3: + boat $\\times$ SWH \\\\")
+add("\\hline")
+add("\\multicolumn{4}{l}{\\textit{UNITED}} \\\\")
+models_u <- list(v1_united, v2_united, v3_united)
+for (line in row_triple("SWH$_{t-1:t-5}$",                models_u, "swh_prev5days"))            add(line)
+for (line in row_triple("SWH $\\times$ Post-MoU",         models_u, "swh_prev5days:post_mou"))   add(line)
+for (line in row_triple("$\\log C_t$",                     models_u, "log_crossing_attempts"))    add(line)
+for (line in row_triple("SWH $\\times$ inflatable share", models_u, "swh_prev5days:frx_inflatable_share")) add(line)
+add("\\multicolumn{4}{l}{\\textit{IOM (comparison)}} \\\\")
+models_i <- list(v1_iom, v2_iom, v3_iom)
+for (line in row_triple("SWH$_{t-1:t-5}$",                models_i, "swh_prev5days"))            add(line)
+for (line in row_triple("SWH $\\times$ Post-MoU",         models_i, "swh_prev5days:post_mou"))   add(line)
+for (line in row_triple("$\\log C_t$",                     models_i, "log_crossing_attempts"))    add(line)
+for (line in row_triple("SWH $\\times$ inflatable share", models_i, "swh_prev5days:frx_inflatable_share")) add(line)
+add("\\hline")
+add("Month-year FE                   & Yes            & Yes            & Yes            \\\\")
+add("Newey-West SEs (lag 14)         & Yes            & Yes            & Yes            \\\\")
+add("\\hline")
+add("\\multicolumn{4}{l}{\\footnotesize Newey--West standard errors in parentheses. Stars: $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$.} \\\\")
+add("\\end{tabular}")
+add("\\end{table}")
+out_boat <- tbl_path("06_robustness", "05_rate_with_boat_controls.tex")
+writeLines(L, out_boat)
+cat(sprintf("  Saved: %s\n", out_boat))
+
 cat("\n============================================================\n")
 cat("DONE\n")
 cat("============================================================\n")
