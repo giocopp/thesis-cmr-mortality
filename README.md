@@ -24,7 +24,7 @@ The Central Mediterranean is the world's deadliest migration route, yet quantita
 │       ├── README.md         # pipeline notes
 │       └── run_all.R         # end-to-end entry point
 ├── data/
-│   ├── raw/                  # ACLED, IMO SAR, UNHCR, migrant files tracked;
+│   ├── raw/                  # ACLED, IMO SAR, UNHCR tracked;
 │   │                         # ERA5, UNITED, IOM, Frontex available on request
 │   └── processed/            # intermediate RDS files used by analysis scripts
 ├── output/
@@ -43,14 +43,14 @@ The Central Mediterranean is the world's deadliest migration route, yet quantita
 
 ## Data availability
 
-`data/processed/` is tracked and contains all intermediate files the analysis scripts read. Inside `data/raw/`, the ACLED, IMO GISIS SAR boundaries, UNHCR daily arrivals, and migrant-files inputs are tracked; ERA5 sea-state files are not tracked because of their size, and UNITED, IOM MMP, and Frontex PAD-194 are not redistributed in line with each provider's terms. These four sources are available from the author on request: coppola.giorgio99@gmail.com.
+`data/processed/` is tracked and contains all intermediate files the analysis scripts read. Inside `data/raw/`, the ACLED, IMO GISIS SAR boundaries, and UNHCR daily arrivals inputs are tracked; ERA5 sea-state files are not tracked because of their size, and UNITED, IOM MMP, and Frontex PAD-194 are not redistributed in line with each provider's terms. These four sources are available from the author on request: coppola.giorgio99@gmail.com.
 
 ## Reproducing the results
 
 Requirements: R 4.5 or newer, the `renv` package, and a working Quarto + LuaLaTeX install for rendering the PDF.
 
 1. Clone the repository and open `Thesis-MDS.Rproj` (or set the repo root as the working directory).
-2. Request the ERA5, UNITED, IOM, and Frontex files from the author and place them under `data/raw/era5/`, `data/raw/united/`, `data/raw/iom/`, and `data/raw/frontex/` respectively. The other raw sources (ACLED, IMO SAR boundaries, UNHCR, migrant files) ship with the repository.
+2. Request the ERA5, UNITED, IOM, and Frontex files from the author and place them under `data/raw/era5/`, `data/raw/united/`, `data/raw/iom/`, and `data/raw/frontex/` respectively. The other raw sources (ACLED, IMO SAR boundaries, UNHCR) ship with the repository.
 3. Restore the R environment and run the full pipeline:
    ```r
    source("analysis/R/run_all.R")

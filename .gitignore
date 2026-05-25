@@ -18,11 +18,13 @@ _targets/
 
 # Raw data: ERA5 (too large) and confidential sources (UNITED, IOM, Frontex)
 # are not tracked and are available from the author on request.
-# ACLED, IMO SAR boundaries, UNHCR daily arrivals, and migrant files remain tracked.
+# Migrant files is an unused legacy source. ACLED, IMO SAR boundaries,
+# and UNHCR daily arrivals remain tracked.
 data/raw/era5/
 data/raw/united/
 data/raw/iom/
 data/raw/frontex/
+data/raw/migrant files/
 
 # Archived orphan scripts, stale outputs, and superseded processed data
 analysis/archive/
