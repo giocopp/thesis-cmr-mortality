@@ -1,4 +1,4 @@
-# Rolling-window β(SWH): 2-year Poisson fits stepped weekly, on IOM deaths,
+# Rolling-window β(SWH): 2-year Poisson fits stepped weekly, on UNITED deaths,
 # corridor-wide + AFR/EU SAR-bloc panels. Produces fig-rolling-beta.png.
 
 library(tidyverse)
@@ -17,11 +17,11 @@ WINDOW_PRIMARY <- 730
 # ── 1. Load panels and replicate primary-sample filter ──────────────────────
 panel_daily <- readRDS(file.path(BASE_DIR, "analysis", "data",
                                    "daily_panel_complete.RDS"))
-iom_daily <- build_iom_daily()
+united_daily <- build_united_daily()
 
 panel_daily <- panel_daily |>
-  left_join(iom_daily |> rename(n_dead_iom = n_dead_missing), by = "date") |>
-  replace_na(list(n_dead_iom = 0)) |>
+  left_join(united_daily, by = "date") |>
+  replace_na(list(n_dead_united = 0)) |>
   mutate(
     living_crossings = frx_persons + lcg_tcg_pushbacks,
     lc_lag14 = dplyr::lag(zoo::rollmeanr(living_crossings, k = 7,
@@ -40,12 +40,11 @@ da <- panel_daily |>
 
 zp <- readRDS(file.path(BASE_DIR, "analysis", "data",
                           "daily_panel_zone.RDS")) |>
-  filter(date %in% sample_dates) |>
-  rename(n_dead_iom = n_dead_missing)
+  filter(date %in% sample_dates)
 
 bloc <- zp |>
   group_by(date, sar_bloc) |>
-  summarise(n_dead_iom    = sum(n_dead_iom),
+  summarise(n_dead_united = sum(n_dead_united),
             swh_prev5days = first(swh_prev5days),
             .groups = "drop") |>
   mutate(year = year(date))
@@ -55,12 +54,12 @@ dim(bloc$date) <- NULL
 run_rolling <- function(df, wind = WINDOW_PRIMARY, step = STEP_DAYS) {
   fit_one <- function(sub, mid_date) {
     if (nrow(sub) < MIN_ROWS) return(NULL)
-    if (sum(sub$n_dead_iom > 0) < MIN_DEATH_DAYS) return(NULL)
+    if (sum(sub$n_dead_united > 0) < MIN_DEATH_DAYS) return(NULL)
     sub$unit <- 1L
     if (length(unique(sub$month_year_fac)) < 2) return(NULL)
 
     m <- tryCatch(
-      fepois(n_dead_iom ~ swh_prev5days | month_year_fac,
+      fepois(n_dead_united ~ swh_prev5days | month_year_fac,
              data = sub, vcov = NW(14), panel.id = ~unit + date),
       error = function(e) NULL
     )
@@ -73,7 +72,7 @@ run_rolling <- function(df, wind = WINDOW_PRIMARY, step = STEP_DAYS) {
            beta         = ct[row, 1],
            se           = ct[row, 2],
            n_obs        = nrow(sub),
-           n_death_days = sum(sub$n_dead_iom > 0))
+           n_death_days = sum(sub$n_dead_united > 0))
   }
 
   dates_all  <- sort(unique(df$date))
