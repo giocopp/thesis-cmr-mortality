@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?><!--// GML data generated from GISIS COMSAR module //
+RCC: MRCC Tunis
+Date: 2026-04-07 14:16:39
+--><gml:MultiSurface xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd" gml:id="RCCAreas" xmlns:gml="http://www.opengis.net/gml/3.2"><gml:surfaceMembers><gml:Polygon gml:id="6757"><gml:description>Canal de Sicile</gml:description><gml:exterior><gml:LinearRing><gml:posList>8.6333 36.9333 8.1000 38.6167 8.8500 38.6167 11.5000 37.5000 11.5000 36.5000 12.2333 35.2500 11.7167 33.3167 11.5500 33.1667 8.6333 36.9333</gml:posList></gml:LinearRing></gml:exterior></gml:Polygon></gml:surfaceMembers></gml:MultiSurface>

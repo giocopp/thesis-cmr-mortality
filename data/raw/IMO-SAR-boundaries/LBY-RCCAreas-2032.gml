@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?><!--// GML data generated from GISIS COMSAR module //
+RCC: RCC-Libya
+Date: 2026-04-07 14:17:21
+--><gml:MultiSurface xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd" gml:id="RCCAreas" xmlns:gml="http://www.opengis.net/gml/3.2"><gml:surfaceMembers><gml:Polygon gml:id="1"><gml:description>Maritime SAR Region of Libyan</gml:description><gml:exterior><gml:LinearRing><gml:posList>11.5000 32.3667 11.5000 34.3333 23.5833 34.3333 24.1667 34.0000 25.1667 31.6667 19.0833 30.2667 11.5000 32.3667</gml:posList></gml:LinearRing></gml:exterior></gml:Polygon></gml:surfaceMembers></gml:MultiSurface>

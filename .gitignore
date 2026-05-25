@@ -16,11 +16,17 @@ renv/python/
 # targets cache
 _targets/
 
-# Raw data (large, not tracked — obtain from original sources)
-data/raw/
+# Raw data: ERA5 (too large) and confidential sources (UNITED, IOM, Frontex)
+# are not tracked and are available from the author on request.
+# ACLED, IMO SAR boundaries, UNHCR daily arrivals, and migrant files remain tracked.
+data/raw/era5/
+data/raw/united/
+data/raw/iom/
+data/raw/frontex/
 
-# Archived orphan scripts and stale outputs
+# Archived orphan scripts, stale outputs, and superseded processed data
 analysis/archive/
+data/processed/archive/
 
 # OS
 .DS_Store

@@ -254,4 +254,4 @@ combined_plot_framed <- cowplot::ggdraw(combined_plot) +
   ))
 
 ggsave(fig_path("05_analysis", "fig-rolling-beta.png"),
-       combined_plot_framed, width = 10, height = 6.4, dpi = 200)
+       combined_plot_framed, width = 10, height = 6.0, dpi = 200)

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?><!--// GML data generated from GISIS COMSAR module //
+RCC: Malta
+Date: 2026-04-07 14:17:43
+--><gml:MultiSurface xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd" gml:id="RCCAreas" xmlns:gml="http://www.opengis.net/gml/3.2"><gml:surfaceMembers><gml:Polygon gml:id="1"><gml:description>Malta SRR</gml:description><gml:exterior><gml:LinearRing><gml:posList>11.5000 36.5000 19.0000 36.5000 23.5833 34.3333 11.5000 34.3333 11.5000 36.5000</gml:posList></gml:LinearRing></gml:exterior></gml:Polygon></gml:surfaceMembers></gml:MultiSurface>

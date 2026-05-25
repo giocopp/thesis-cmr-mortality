@@ -179,7 +179,7 @@ $$ {#eq-slope-decomp}
 
 Differentiating @eq-slope-decomp with respect to $R$ shows that the *shift* in this slope across rescue regimes is itself a sum of three cross-derivatives, only one of which (the lethality term $\partial^{2} \log m / \partial s \, \partial R$) is the theoretical estimand.
 
-Recovering the theoretical estimand from the observed shift therefore requires assumptions on the recording and exposure cross-derivatives. If both are zero, the observed shift identifies the lethality shift exactly; if they move opposite to lethality, it is a lower bound. The moral-hazard response documented by @deiana2024 implies such an opposite-signed exposure shift: the post-MoU contraction of rescue makes departures more sensitive to rough weather. Recording plausibly moves the same way, because rough-weather shipwrecks are least likely to leave survivors or a recoverable wreck, so reduced rescue should degrade recording more in rough weather than in calm. Overstatement would require recording or exposure sensitivity to steepen in the same direction as lethality after 2017. The constructed-exposure control introduced below, the boat-composition checks in Appendix E, and two independently collected mortality sources discipline that case.
+Recovering the theoretical estimand from the observed shift therefore requires assumptions on the recording and exposure cross-derivatives. If both are zero, the observed shift identifies the lethality shift exactly; if they move opposite to lethality, it is a lower bound. The moral-hazard response documented by @deiana2024 implies such an opposite-signed exposure shift: the post-MoU contraction of rescue makes departures more sensitive to rough weather. Recording plausibly moves the same way, because rough-weather shipwrecks are least likely to leave survivors or a recoverable wreck, so reduced rescue should degrade recording more in rough weather than in calm. Overstatement would require recording or exposure sensitivity to steepen in the same direction as lethality after 2017. The constructed-exposure control introduced below, the boat-composition checks in Appendix F, and two independently collected mortality sources discipline that case.
 
 ## From theoretical to empirical estimand
 
@@ -219,7 +219,7 @@ The analysis uses a daily panel for the Central Mediterranean Route, with weathe
 
 ![Area of analysis, UNITED deadly incidents, and search-and-rescue responsibility zones. Source: own elaboration. Data: UNITED List of Refugee Deaths, January 2014 to May 2023; IMO GISIS Global SAR Plan boundaries; Natural Earth base map.](../output/figures/03_build/fig-sea-zones-united-sar-panel.png){#fig-sea-zones-united-sar-panel width=100%}
 
-Using one corridor-level SWH series is therefore a spatial aggregation choice. Appendix A checks this choice directly by comparing the daily SWH series of all ERA5 ocean cells inside the polygon and by re-estimating the primary count model with SWH weighted toward cells containing more recorded incidents. The average cell has a correlation of 0.863 with the polygon mean, and the primary UNITED slope-shift estimate is nearly unchanged when incident-count weights are used.
+Using one corridor-level SWH series is therefore a spatial aggregation choice. Appendix B checks this choice directly by comparing the daily SWH series of all ERA5 ocean cells inside the polygon and by re-estimating the primary count model with SWH weighted toward cells containing more recorded incidents. The average cell has a correlation of 0.863 with the polygon mean, and the primary UNITED slope-shift estimate is nearly unchanged when incident-count weights are used.
 
 The series runs from 1 January 2014 to 31 May 2023, the last complete month with Frontex coverage used to disaggregate Libyan and Tunisian coast-guard pullbacks to daily frequency. The regression sample begins on 15 January 2014, once the lagged crossing window has filled.
 
@@ -233,7 +233,7 @@ The data used in the models are summarized in Table&nbsp;\ref{tab:data-summary}.
 
 \input{../output/tables/04_descriptive/tab-data-summary.tex}
 
-*Sea state.* Daily SWH is the ERA5 spatial mean [@hersbach2020] over sea cells in the analysis polygon. The primary regressor is the lagged five-day mean $SWH_{t-1:t-5}$. A five-day window covers the sea state relevant to a day-$t$ recorded death: pre-departure conditions that shape smuggler launch decisions, in-voyage conditions on a crossing that can last from a day to several days, and the delay between an incident and its appearance in either registry. Daily SWH is also strongly autocorrelated (lag-1 $\rho \approx 0.73$), so the five-day mean summarizes persistent maritime hazard rather than smoothing out independent shocks. One-, three-, and seven-day lagged means are used for window-sensitivity checks in Appendix B; all return positive and significant slope shifts on UNITED (Table&nbsp;\ref{tab:appx-exposure}), so the choice of window does not drive the result. All exclude day-$t$ weather.
+*Sea state.* Daily SWH is the ERA5 spatial mean [@hersbach2020] over sea cells in the analysis polygon. The primary regressor is the lagged five-day mean $SWH_{t-1:t-5}$. A five-day window covers the sea state relevant to a day-$t$ recorded death: pre-departure conditions that shape smuggler launch decisions, in-voyage conditions on a crossing that can last from a day to several days, and the delay between an incident and its appearance in either registry. Daily SWH is also strongly autocorrelated (lag-1 $\rho \approx 0.73$), so the five-day mean summarizes persistent maritime hazard rather than smoothing out independent shocks. One-, three-, and seven-day lagged means are used for window-sensitivity checks in Appendix C; all return positive and significant slope shifts on UNITED (Table&nbsp;\ref{tab:appx-exposure}), so the choice of window does not drive the result. All exclude day-$t$ weather.
 
 *Mortality.* Recorded deaths come from the UNITED *List of Refugee Deaths* and the IOM Missing Migrants Project [@rodriguezsanchez2023; @poole2020]. UNITED records are restricted to the analysis polygon, the five Central Mediterranean incident countries plus open-sea records coded as Mediterranean, and deaths by drowning or other/unknown causes. IOM records are restricted to the Central Mediterranean route, the same five countries, incident-type records inside the polygon, and drowning or mixed/unknown causes; split incidents are excluded. UNITED is the primary outcome and IOM a robustness check.
 
@@ -314,7 +314,7 @@ $$ {#eq-mechanism}
 
 where $R_{t-1:t-7}$ is a standardized weekly lagged SAR measure. Two versions are used: the previous-week share of Frontex incidents classified as SAR, whose monthly evolution is visible in the SAR-share line of panel (d) in Figure \ref{fig:panel-event-type}, and the log of one plus persons recorded in Frontex SAR events over the same week. Both proxies are endogenous to crossings, distress and operational choices, so they are mechanism checks rather than alternative identification strategies for the regime effect.
 
-Robustness checks target the main threats: spatial aggregation of sea state (Appendix A), past and future SWH windows (Appendix B), the UNITED--IOM cross-source comparison (Appendix C), fixed-effect and inference variants (Appendix D), boat-composition controls (Appendix E), Frontex SAR versus non-SAR event placebos (Appendix F), and ACLED push-factor decompositions (Appendix G). Section 5 also reports period and rolling-window specifications. These checks do not make the design experimental; they discipline the interpretation of $\beta_3$ against specific alternatives.
+Robustness checks target the main threats: spatial aggregation of sea state (Appendix B), past and future SWH windows (Appendix C), the UNITED--IOM cross-source comparison (Appendix D), fixed-effect and inference variants (Appendix E), boat-composition controls (Appendix F), Frontex SAR versus non-SAR event placebos (Appendix G), and ACLED push-factor decompositions (Appendix H). Section 5 also reports period and rolling-window specifications. These checks do not make the design experimental; they discipline the interpretation of $\beta_3$ against specific alternatives.
 
 # Analysis and Results
 
@@ -338,7 +338,7 @@ The IOM comparison shows the same sign pattern: pre-MoU slopes are negative and 
 
 The two estimators answer the same mean-model question under different distributional assumptions: the negative binomial allows overdispersion in the sparse daily-death series, while the Poisson QMLE relies only on the conditional mean. Both deliver the same conclusion: the SWH--mortality slope shifts upward around the post-MoU interception regime.
 
-UNITED is the more stable daily series. The sources correlate tightly at monthly frequency but less so day by day (Appendix C); IOM records fewer total deaths over more nonzero days and produces one significant future-weather placebo in Appendix B, where UNITED placebos are uniformly null. This isolated leakage is consistent with strong SWH autocorrelation (lag-1 $\rho \approx 0.73$): the next day's sea state shares signal with the lagged five-day window. The looser daily alignment also reflects IOM's case-based recording, which aggregates heterogeneous sources and indexes entries by reporting date rather than incident date [@poole2020]. IOM therefore plays a corroborating role in what follows.
+UNITED is the more stable daily series. The sources correlate tightly at monthly frequency but less so day by day (Appendix D); IOM records fewer total deaths over more nonzero days and produces one significant future-weather placebo in Appendix C, where UNITED placebos are uniformly null. This isolated leakage is consistent with strong SWH autocorrelation (lag-1 $\rho \approx 0.73$): the next day's sea state shares signal with the lagged five-day window. The looser daily alignment also reflects IOM's case-based recording, which aggregates heterogeneous sources and indexes entries by reporting date rather than incident date [@poole2020]. IOM therefore plays a corroborating role in what follows.
 
 ## Exposure and composition controls
 
@@ -377,20 +377,16 @@ The first re-estimates @eq-count with the SWH slope interacted with three policy
 
 \input{../output/tables/05_analysis/tab-period.tex}
 
-The pre-MoU slope is consistently and significantly negative across both sources. During the MoU plus NGO-containment period, the slope turns positive in both sources, with UNITED significant and IOM at the conventional threshold. During the Lamorgese rollback period, the estimates lie close to zero. The Wald tests reject equality of the three slopes.
+The pre-MoU slope is consistently and significantly negative across both sources. During the MoU plus NGO-containment period, the slope turns positive in both sources, with UNITED significant and IOM at the conventional threshold. During the Lamorgese rollback period, the estimates lie close to zero. The Wald tests reject equality of the three slopes. Within the pre-MoU regime, separating the Mare Nostrum sub-period from the subsequent Triton/Sophia phase produces gradients of nearly identical magnitude in UNITED; for IOM the Triton/Sophia phase carries the signal alone (Mare Nostrum is too thin on the Frontex-bounded sample).
 
-Inside the pre-MoU regime, separating the Mare Nostrum sub-period from the subsequent Triton/Sophia phase produces gradients of nearly identical magnitude in UNITED; for IOM the Triton/Sophia phase carries the signal alone (Mare Nostrum is too thin on the Frontex-bounded sample). The negative pre-MoU slope is therefore not a Mare Nostrum artifact.
-
-Sharp policy boundaries do not drive the period structure either: dropping the windows around the main regime cutoffs preserves the same slope pattern and the same rejection of equal period gradients.
-
-Figure&nbsp;\ref{fig:rolling-beta} confirms the same picture from a time-varying angle. Panel (a), a 730-day rolling Poisson estimate of the unconditional SWH slope on UNITED deaths across the full corridor, transitions from values around $-2$ pre-MoU to close to $+1$ during the MoU and NGO-containment period — with the cross-over spread across 2017--2018 rather than concentrated at the signing date — and softens back toward zero during the Lamorgese rollback.
-
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{../output/figures/05_analysis/fig-rolling-beta.png}
-\caption{Rolling-window SWH--mortality gradients on UNITED deaths (730-day windows, weekly step, Poisson QMLE with month--year fixed effects and Newey--West standard errors with a 14-day bandwidth). Panel (a) plots the daily-aggregate route series across all incidents in the full corridor; the long-dashed horizontal segments mark the unweighted mean across windows fully pre- (left) and fully post-MoU (right). Panel (b) decomposes the rolling estimate by SAR responsibility zone: the African bloc combines Libyan and Tunisian waters, the European bloc combines Italian and Maltese waters. The red dotted vertical marks the MoU signing date (2 February 2017). Source: own elaboration.}
+\caption{Rolling-window SWH--mortality gradients on UNITED deaths (730-day windows, weekly step, Poisson QMLE with month--year fixed effects and Newey--West standard errors with a 14-day bandwidth). Panel (a) plots the daily-aggregate route series across all incidents; the long-dashed horizontal segments mark the unweighted mean across windows fully pre- (left) and fully post-MoU (right). Panel (b) decomposes the rolling estimate by SAR responsibility zone: the African bloc combines Libyan and Tunisian waters, the European bloc combines Italian and Maltese waters. The red dotted vertical marks the MoU signing date (2 February 2017). Source: own elaboration.}
 \label{fig:rolling-beta}
 \end{figure}
+
+Figure&nbsp;\ref{fig:rolling-beta} confirms the same picture from a time-varying angle. Panel (a), a 730-day rolling Poisson estimate of the unconditional SWH slope on UNITED deaths across the full corridor, transitions from values around $-2$ pre-MoU to close to $+1$ during the MoU and NGO-containment period — with the cross-over spread across 2017--2018 rather than concentrated at the signing date — and softens back toward zero during the Lamorgese rollback.
 
 Panel (b) decomposes the same rolling estimate by SAR responsibility zone. The European zone (Italian plus Maltese waters) shows the larger shift: a strongly negative pre-MoU gradient near $-4$ moves close to zero by 2019. The African zone (Libyan plus Tunisian waters), where the MoU reassigned rescue responsibility to the LCG and TCG, also rises across the regime change, from values near $-1$ pre-MoU to slightly positive during the MoU and NGO-containment period. Rolling-window standard errors are wider than the full-sample estimates; short-run wiggles inside the shaded bands should be read as descriptive.
 
@@ -435,7 +431,11 @@ Finally, future work should develop a stronger identification strategy for the p
 \setcounter{table}{0}
 \setcounter{figure}{0}
 
-## A. Spatial aggregation of sea state {.unnumbered}
+## A. Code, data, and replication package {.unnumbered}
+
+The full replication package is publicly available at \url{https://github.com/giocopp/thesis-cmr-mortality}. The repository contains the R analysis pipeline under `analysis/R/`, organised in stages (`01_download/` through `06_robustness/`) that build the daily panel, estimate the count models, and produce every figure and table cited in this thesis. Processed data files used by the regression and robustness scripts are tracked under `data/processed/`. Among the raw inputs, ACLED, IMO GISIS SAR boundaries, UNHCR daily arrivals, and the migrant-files extract are tracked under `data/raw/`; ERA5 sea-state files are not tracked because of their size, and UNITED, IOM MMP, and Frontex PAD-194 are not redistributed in line with each provider's terms. These four sources are documented in `analysis/R/01_download/` and are available from the author on request. The top-level `analysis/R/run_all.R` script restores the pinned R-package environment from `renv.lock` and runs the pipeline end to end.
+
+## B. Spatial aggregation of sea state {.unnumbered}
 
 The primary regressor is the simple spatial mean of SWH over all ocean cells inside the analysis polygon. This choice aggregates corridor-wide sea conditions rather than weather at any single incident location. The aggregation is checked in two ways: first by measuring how closely cell-level daily SWH series move with the polygon mean, and second by re-estimating the primary model after weighting SWH toward cells with more recorded incidents.
 
@@ -454,37 +454,37 @@ Table&nbsp;\ref{tab:appx-swh-weighted} re-estimates the primary count specificat
 
 \input{../output/tables/04_descriptive/tab-appx-swh-weighted.tex}
 
-## B. Exposure-window sensitivity {.unnumbered}
+## C. Exposure-window sensitivity {.unnumbered}
 
 Table&nbsp;\ref{tab:appx-exposure} reports the SWH$\times$Post-MoU shift coefficient across past and future exposure windows on a shared sample of 3,417 days (15 January 2014 to 24 May 2023). All specifications include month-year fixed effects and Newey-West (lag 14) standard errors. Past windows of 1, 3, 5, and 7 days return positive and significant shifts for UNITED in both negative binomial and Poisson families. Future-window placebos on UNITED are uniformly indistinguishable from zero. Among the IOM future placebos, the one-day lead under negative binomial is the single significant cell; the remaining seven IOM future-window coefficients are not. The choice of past window therefore does not drive the result, and the only future-window leakage is confined to IOM and to a one-day lead that overlaps with the primary five-day window through the strong day-to-day autocorrelation of SWH.
 
 \input{../output/tables/05_analysis/tab-appx-exposure.tex}
 
-## C. Cross-source comparison {.unnumbered}
+## D. Cross-source comparison {.unnumbered}
 
 UNITED and IOM are independently collected, so their cross-source agreement is a check on whether the slope shift is a feature of either registry's recording channel. The daily and monthly distributions of route-sample deaths are tightly correlated at monthly frequency ($r = 0.91$) but only moderately correlated day by day ($r = 0.71$) over 2014--2023. The mean daily count is 5.92 for UNITED and 4.45 for IOM, with comparable right tails (95th percentiles at 31.1 and 20; daily maxima at 1,101 and 1,022).
 
 The gap between daily and monthly alignment matters because the empirical design uses daily weather variation. IOM records fewer total deaths than UNITED in the route sample but spreads them over more nonzero death days, so its daily series is more diffuse and source-specific differences in event inclusion or event dating matter more for the estimated SWH gradient. A record-level cross-check also shows that the two registries are not duplicates: many events appear in only one source under the matching rule used here. This is why the IOM estimates are reported as a corroborating comparison rather than as the primary source.
 
-## D. Fixed-effects and inference robustness {.unnumbered}
+## E. Fixed-effects and inference robustness {.unnumbered}
 
 Table&nbsp;\ref{tab:appx-fe} reports the IOM negative binomial primary specification under alternative fixed-effects and variance choices. The month-year FE specification absorbs 51.1\% of SWH variance, the highest of the six FE grids tested; coarser FE deliver smaller and less stable $\beta_3$ estimates. The point estimate is invariant to the choice of Newey-West bandwidth between 7 and 21 days and to clustering by month-year or by year. Sample restrictions (dropping zero-death days or capping at 100 deaths) attenuate the magnitude but preserve the sign.
 
 \input{../output/tables/06_robustness/tab-appx-fe.tex}
 
-## E. Boat composition controls {.unnumbered}
+## F. Boat composition controls {.unnumbered}
 
 Table&nbsp;\ref{tab:appx-boat} extends the volume-controlled Poisson specification with inflatable and wooden boat shares (Frontex-observed), plus a SWH$\times$inflatable-share interaction in the spirit of @deiana2024. The boat-observable sample is smaller than the main panel (1,732 UNITED days, 1,729 IOM days), because boat-type coding is incomplete in Frontex JORA. The slope shift is unchanged in sign and magnitude when boat composition enters as an additive control; the SWH$\times$inflatable-share interaction itself is not separately identified.
 
 \input{../output/tables/06_robustness/tab-appx-boat.tex}
 
-## F. Frontex SAR vs non-SAR event placebo {.unnumbered}
+## G. Frontex SAR vs non-SAR event placebo {.unnumbered}
 
 Table&nbsp;\ref{tab:appx-frx-events} reports a behavioral cross-check on the SAR channel. Re-estimating the primary specification with the daily number of Frontex SAR events as the outcome yields a strongly negative SWH$\times$Post-MoU coefficient, while the same specification on non-SAR events as a placebo channel is indistinguishable from zero. The contrast locates the post-MoU moderation pattern in SAR activity rather than in a general contraction of Frontex-recorded events.
 
 \input{../output/tables/06_robustness/tab-appx-frx-events.tex}
 
-## G. Push-factor decomposition {.unnumbered}
+## H. Push-factor decomposition {.unnumbered}
 
 Table&nbsp;\ref{tab:appx-pushfactor} reports the SWH$\times$Post-MoU shift under a triple-interaction specification with the one-week-lagged Libya conflict composite (ACLED battles, explosions, and violence against civilians, standardized). The shift coefficient remains positive and significant across all four model-source pairs. The triple interaction itself is positive in all four pairs, though significant only for the IOM negative binomial estimate, suggesting that the slope shift is, if anything, amplified rather than absorbed by Libyan conflict pressure.
 

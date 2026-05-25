@@ -1,0 +1,22 @@
+<GMLFeatureClassList>
+  <GMLFeatureClass>
+    <Name>Polygon</Name>
+    <ElementPath>Polygon</ElementPath>
+    <GeometryType>100</GeometryType>
+    <DatasetSpecificInfo>
+      <FeatureCount>1</FeatureCount>
+    </DatasetSpecificInfo>
+    <PropertyDefn>
+      <Name>description</Name>
+      <ElementPath>description</ElementPath>
+      <Type>String</Type>
+      <Width>9</Width>
+    </PropertyDefn>
+    <PropertyDefn>
+      <Name>posList</Name>
+      <ElementPath>exterior|LinearRing|posList</ElementPath>
+      <Type>String</Type>
+      <Width>613</Width>
+    </PropertyDefn>
+  </GMLFeatureClass>
+</GMLFeatureClassList>
