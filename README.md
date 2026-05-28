@@ -4,8 +4,7 @@ Master's thesis, MDS in Public Policy, Hertie School, Class of 2026.
 
 Author: Giorgio Coppola. Supervisor: Prof. Dr. Asya Magazinnik.
 
-<strong>Read the thesis</strong>
-<a href="paper/thesis.pdf" target="_blank" rel="noopener">in <strong>PDF</strong></a>
+<a href="paper/thesis.pdf" target="_blank" rel="noopener"> <strong>Read the PDF here</strong></a>
 
 ## Abstract
 
