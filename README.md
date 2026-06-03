@@ -4,9 +4,9 @@ Master's thesis, MDS in Public Policy, Hertie School, Class of 2026.
 
 Author: Giorgio Coppola. Supervisor: Prof. Dr. Asya Magazinnik.
 
-📝 <a href="paper/thesis.pdf" target="_blank" rel="noopener"> <strong>Read the PDF here</strong></a>
+📝 <a href="https://raw.githack.com/giocopp/thesis-cmr-mortality/main/paper/thesis.pdf" target="_blank" rel="noopener"> <strong>Read the PDF here</strong></a>
 
-🖼️ <a href="paper/poster/poster.pdf" target="_blank" rel="noopener"> <strong>View the poster here</strong></a>
+🖼️ <a href="https://raw.githack.com/giocopp/thesis-cmr-mortality/main/paper/poster/poster.pdf" target="_blank" rel="noopener"> <strong>View the poster here</strong></a>
 
 ## Abstract
 
