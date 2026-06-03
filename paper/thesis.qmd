@@ -248,7 +248,7 @@ The data used in the models are summarized in Table&nbsp;\ref{tab:data-summary}.
 
 Figure \ref{fig:panel-event-type} summarizes monthly crossing outcomes and interception composition over 2014--2023. The post-2017 compositional shift motivates keeping Frontex SAR, Frontex non-SAR, and LCG/TCG categories separate in the panel and combining them only in the lower-bound crossing-attempt series $C_t$ defined in @eq-exposure.
 
-\begin{figure}[!htbp]
+\begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{../output/figures/04_descriptive/fig-panel-event-type.png}
 \caption{Observed crossing outcomes and interception composition, 2014--2023. Source: own elaboration.}
@@ -264,6 +264,8 @@ $$
 $$ {#eq-estimand}
 
 Section 3 predicts $\beta_3 > 0$ if the post-MoU regime weakened the buffer between rough seas and death. Because $\beta_3$ identifies a regime-level moderation parameter rather than the effect of any single component, Section 4.5 returns to the identification threats this raises and Section 4.6 to the robustness checks that discipline them.
+
+\newpage
 
 ## Empirical specification
 
