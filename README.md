@@ -6,6 +6,8 @@ Author: Giorgio Coppola. Supervisor: Prof. Dr. Asya Magazinnik.
 
 📝 <a href="paper/thesis.pdf" target="_blank" rel="noopener"> <strong>Read the PDF here</strong></a>
 
+🖼️ <a href="paper/poster/poster.pdf" target="_blank" rel="noopener"> <strong>View the poster here</strong></a>
+
 ## Abstract
 
 The Central Mediterranean is the world's deadliest migration route, yet quantitative evidence on how the post-2017 EU migration policy regime changed the risk faced by migrants attempting the journey from North Africa to Europe remains limited. This thesis asks whether the same sea-state conditions are associated with more recorded migrant deaths on the Central Mediterranean after the 2 February 2017 Italy–Libya Memorandum of Understanding (MoU) than before, using a Central Mediterranean route-level panel from January 2014 to May 2023. In the primary negative-binomial model with month–year fixed effects, a one-metre rise in the lagged five-day mean of significant wave height (SWH) corresponds to a roughly 94% decrease in expected recorded deaths before the MoU but more than doubles them after (pre-MoU slope −2.829, post-MoU shift +3.629); the shift survives controls for crossing volume, boat composition, and conflicts in Libya and Tunisia. Mechanism checks point to search-and-rescue availability: in weeks with higher recorded SAR activity rough seas predict fewer additional deaths, and the post-MoU gap returns toward zero during the Lamorgese partial rollback. The findings reframe assessment of post-2017 sea-border policy: after the regime change the same sea conditions are associated with substantially more recorded deaths, and SAR availability buffers that association.
