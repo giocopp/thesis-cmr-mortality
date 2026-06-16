@@ -106,7 +106,7 @@ The empirical strategy uses daily variation in significant wave height (SWH) as 
 
 The weather–mortality gradient shifts sharply upward around the MoU. In the primary UNITED negative-binomial model, the pre-MoU SWH slope is $-2.829$ (SE $0.723$) and the post-MoU shift is $+3.629$ (SE $0.820$): rough seas predicted fewer recorded deaths before the MoU, but more recorded deaths after it. The IOM series reproduces the same pattern, and the shift survives controls for crossing volume, boat composition, and a Libya conflict composite. Mechanism checks point in the same direction: weeks with more recorded Frontex SAR activity show a flatter SWH–mortality slope. After the MoU, rough seas became more lethal in the recorded data, while greater rescue availability appears to have buffered that relationship.
 
-The remainder of the paper reviews the literature, develops the estimand, describes the data and identification strategy, reports the main and mechanism results, and concludes.
+The remainder of the paper reviews the literature, sets out the theoretical framework and hypotheses, describes the data, develops the identification and empirical strategy, reports the main and mechanism results, and concludes.
 
 # Literature Review
 
@@ -122,7 +122,7 @@ Quantitative studies of migrant mortality at sea are few. One remaining gap is h
 
 This thesis fills that gap by treating the slope linking sea state to recorded deaths as the estimand. The main analysis estimates how the whole post-MoU interception regime changed this slope. It then tests whether one mechanism modified by that regime, SAR availability, moves the slope in the direction predicted by the risk-reduction account.
 
-# Theoretical Framework and Empirical Strategy
+# Theoretical Framework {#sec-theory}
 
 ## Externalized border control and the reconfiguration of search-and-rescue
 
@@ -140,7 +140,7 @@ European state-led rescue availability receded in parallel. Operation Sophia's n
 
 @moreno-lax2018 describes the resulting EU paradigm as one of “rescue-through-interdiction / rescue-without-protection”: humanitarian language is used to legitimize interception, while rescue is reduced to keeping migrants alive long enough for them to be intercepted and taken back to Libya, rather than brought to a place where they can claim protection. The MoU operationalized this paradigm by financing and equipping the actor that performs the interception, thereby displacing the practical enforcement of non-refoulement obligations onto a third party.
 
-## Weather, SAR, and per-crossing risk
+## Weather, SAR, and per-crossing risk {#sec-weather-sar}
 
 SAR does not eliminate the hazards of the crossing --- precarious boats, overcrowding, and prolonged exposure at sea --- but it can prevent those hazards from escalating into shipwrecks and deaths [@cusumano2020; @cusumano2023; @kosmas2022]. As European state-led SAR assets withdrew from international waters off Libya, and as NGO rescue operations became increasingly constrained, the risk-reduction effect of SAR is expected to have weakened.
 
@@ -152,67 +152,19 @@ The MoU moderates this second channel primarily through rescue availability—th
 
 SWH is plausibly exogenous to the migration-control regime. This is why weather provides a useful bridge between the theory and the empirical strategy. Within a policy regime, daily variation in lagged SWH traces how sensitive recorded mortality is to sea hazard under the prevailing rescue configuration. Across regimes, the change in that sensitivity, a shift in the slope linking sea state to recorded mortality, is the analytical target.
 
-## Theoretical estimand
-
-Following @lundberg2021, defining the theoretical estimand---the target quantity implied by the research question, before any choice of estimator---clarifies what the empirical strategy can and cannot deliver.
-
-Let $D_t$ denote recorded deaths on day $t$, $s_t \equiv SWH_{t-1:t-5}$ the lagged five-day mean of SWH, and $R_t$ rescue availability. The expected recorded count factors into three terms, each a function of sea state and rescue availability:
-
-$$
-\mathbb{E}[D_t \mid s_t, R_t]
-\;=\;
-q(s_t,R_t) \, A(s_t,R_t) \, m(s_t,R_t).
-$$ {#eq-decomp}
-
-$q(s_t,R_t)$ is *recording*: the probability that a death is captured in the mortality data. $A(s_t,R_t)$ is *exposure*: the expected number of crossing attempts that day, counted per person, so that one migrant's departure is one attempt. $m(s_t,R_t)$ is *per-attempt lethality*: the latent probability that a crossing attempt ends in death, conditional on departure. Exposure and lethality are the two behavioral channels of the preceding subsection; recording is a distinct measurement channel, present because the outcome is *recorded* rather than actual deaths. The product $A\,m$ is the expected number of actual deaths, and $q\,A\,m$ the expected number of recorded deaths.^[@eq-decomp is an identity, not a probabilistic factorization: $A(s_t,R_t)$ is expected attempts, and $m$ and $q$ are the conditional ratios of expected actual deaths to expected attempts and of expected recorded deaths to expected actual deaths.]
-
-The theoretical estimand is the cross-partial $\partial^{2} \log m / \partial s \, \partial R$, which measures how rescue availability moderates the slope linking rough seas to lethality. The risk-reduction hypothesis predicts that this quantity is negative: greater rescue availability flattens the SWH--lethality slope. Because rescue availability contracts after the MoU, a negative cross-partial implies that the lethality slope steepens across the regime change.
-
-This estimand is not directly observed, because $q$, $A$, and $m$ are not separately identified from recorded deaths alone. The observable object is the reduced-form slope of recorded deaths on sea state, the term-by-term logarithmic derivative of @eq-decomp:
-
-$$
-\frac{\partial \log \mathbb{E}[D_t \mid s_t, R_t]}{\partial s_t}
-\;=\;
-\underbrace{\frac{\partial \log q}{\partial s_t}}_{\text{recording}}
-\;+\;
-\underbrace{\frac{\partial \log A}{\partial s_t}}_{\text{exposure}}
-\;+\;
-\underbrace{\frac{\partial \log m}{\partial s_t}}_{\text{lethality}}.
-$$ {#eq-slope-decomp}
-
-Differentiating @eq-slope-decomp with respect to $R$ shows that the *shift* in this slope across rescue regimes is itself a sum of three cross-derivatives, only one of which (the lethality term $\partial^{2} \log m / \partial s \, \partial R$) is the theoretical estimand.
-
-Recovering the theoretical estimand from the observed shift therefore requires assumptions on the recording and exposure cross-derivatives. If both are zero, the observed shift identifies the lethality shift exactly; if they move opposite to lethality, it is a lower bound. The moral-hazard response documented by @deiana2024 implies such an opposite-signed exposure shift: the post-MoU contraction of rescue makes departures more sensitive to rough weather. Recording plausibly moves the same way, because rough-weather shipwrecks are least likely to leave survivors or a recoverable wreck, so reduced rescue should degrade recording more in rough weather than in calm. Overstatement would require recording or exposure sensitivity to steepen in the same direction as lethality after 2017. The constructed-exposure control introduced below, the boat-composition checks in Appendix F, and two independently collected mortality sources discipline that case.
-
-## From theoretical to empirical estimand
-
-The reduced-form slope shift derived above is the observable counterpart that can be estimated with the available data. Operationally, the empirical estimand is the change in the SWH-recorded-death slope around the post-MoU regime:
-
-$$
-\beta_3 \;=\; \beta_{\text{post}} \;-\; \beta_{\text{pre}},
-$$ {#eq-shift}
-
-where $\beta_{\text{pre}}$ and $\beta_{\text{post}}$ are the slopes of log expected deaths on the lagged five-day mean of SWH before and after 2 February 2017. For example, negative pre-period slopes are consistent with rough seas limiting departures when rescue availability is greater.
-
-The $\beta_3$ term is a pre/post difference in the conditional SWH gradient. It is algebraically analogous to the interaction term in a continuous-regressor DiD, but without an untreated comparison unit it is not a standard DiD treatment effect. It identifies a within-route change in the conditional SWH-recorded-mortality slope: a policy-regime moderation parameter for the whole post-MoU regime.
-
-A causal interpretation of this regime-level estimate would require a credible counterfactual for how the same route's SWH--mortality gradient would have evolved absent the regime; the design observes only one route before and after the policy shift. The estimate is not a count of deaths prevented by SAR, nor a direct estimate of the causal effect of SAR availability on mortality, which would require otherwise similar crossings that differ exogenously in rescue availability. The post-MoU regime bundled changes in rescue availability, interceptions, NGO operations, smuggler incentives, and recording conditions; this bundling is part of the regime being estimated, but it limits attribution to any single component.
-
-Moreover, rescue availability $R_t$ is latent: no public dataset measures the stock of rescue assets at sea. The empirical strategy first estimates the regime-level slope shift, then uses weekly Frontex SAR measures to test whether a SAR-related mechanism is consistent with it. These proxies capture recorded rescue activity, not random assignment of rescue capacity.
-
-## Research question and hypotheses
+## Research question and hypotheses {#sec-hypotheses}
 
 This framing yields a single empirical question:
 
 > How does the marginal association between sea state and recorded deaths change across the pre- and post-MoU policy regimes?
 
-The estimand for this question is the post-MoU slope shift $\beta_3$. The main thesis statement is that the post-MoU interception regime should make the SWH-mortality slope less negative or more positive if it weakened the buffer between rough seas and death. The prediction tested below is therefore $\beta_3 > 0$. A second, mechanism-level prediction is that higher observed SAR activity should flatten the SWH-mortality slope.
+The main thesis statement is that the post-MoU interception regime should make the SWH--mortality slope less negative or more positive if it weakened the buffer between rough seas and death. The central prediction is therefore that the slope rises across the regime change. A second, mechanism-level prediction is that higher observed SAR activity should flatten the SWH--mortality slope. @sec-strategy formalizes this slope shift as the empirical estimand and sets out how it is identified and estimated.
 
-The literature documents several behavioral responses to the post-2017 reconfiguration—shifts in crossing volume, boat composition, departure timing, and route choice. The channel this thesis examines, the *per-crossing risk* of dying given a crossing in given sea conditions, is distinct from these but cannot be separated from them without assumptions. The prediction $\beta_3 > 0$ corresponds to a movement in this channel.
+The literature documents several behavioral responses to the post-2017 reconfiguration---shifts in crossing volume, boat composition, departure timing, and route choice. The channel this thesis examines, the *per-crossing risk* of dying given a crossing in given sea conditions, is distinct from these but cannot be separated from them without assumptions. The predicted rise in the slope corresponds to a movement in this channel.
 
-If $\beta_3$ is absorbed once exposure is controlled, the change is consistent with the volume and diversion channels alone. If it is absorbed once boat composition is controlled, the change is consistent with moral hazard alone. The prediction is that $\beta_3$ persists under both; if it does, the per-crossing-risk channel has moved in addition to whatever else has changed.
+If the slope shift is absorbed once exposure is controlled, the change is consistent with the volume and diversion channels alone. If it is absorbed once boat composition is controlled, the change is consistent with moral hazard alone. The prediction is that it persists under both; if it does, the per-crossing-risk channel has moved in addition to whatever else has changed.
 
-# Methods and Data
+# Data {#sec-data}
 
 ## Setting and sample
 
@@ -255,27 +207,75 @@ Figure \ref{fig:panel-event-type} summarizes monthly crossing outcomes and inter
 \label{fig:panel-event-type}
 \end{figure}
 
-## Outcome and estimand
+\newpage
 
-The outcome is the daily count of recorded deaths in source $j$, $D^j_t$, with $j \in \{\text{UNITED}, \text{IOM}\}$. The empirical estimand is the post-MoU slope shift $\beta_3$:
+# Identification and Empirical Strategy {#sec-strategy}
+
+## Estimand, decomposition, and identification {#sec-identification}
+
+Following @lundberg2021, defining the theoretical estimand---the target quantity implied by the research question, before any choice of estimator---clarifies what the empirical strategy can and cannot deliver.
+
+Let $D_t$ denote recorded deaths on day $t$, $s_t \equiv SWH_{t-1:t-5}$ the lagged five-day mean of SWH, and $R_t$ rescue availability. The expected recorded count factors into three terms, each a function of sea state and rescue availability:
 
 $$
-\beta_3 = \frac{\partial \log \mathbb{E}[D^j_t \mid SWH_{t-1:t-5}, Post_t=1]}{\partial SWH_{t-1:t-5}} - \frac{\partial \log \mathbb{E}[D^j_t \mid SWH_{t-1:t-5}, Post_t=0]}{\partial SWH_{t-1:t-5}}.
-$$ {#eq-estimand}
+\mathbb{E}[D_t \mid s_t, R_t]
+\;=\;
+q(s_t,R_t) \, A(s_t,R_t) \, m(s_t,R_t).
+$$ {#eq-decomp}
 
-Section 3 predicts $\beta_3 > 0$ if the post-MoU regime weakened the buffer between rough seas and death. Because $\beta_3$ identifies a regime-level moderation parameter rather than the effect of any single component, Section 4.5 returns to the identification threats this raises and Section 4.6 to the robustness checks that discipline them.
+$q(s_t,R_t)$ is *recording*: the probability that a death is captured in the mortality data. $A(s_t,R_t)$ is *exposure*: the expected number of crossing attempts that day, counted per person, so that one migrant's departure is one attempt. $m(s_t,R_t)$ is *per-attempt lethality*: the latent probability that a crossing attempt ends in death, conditional on departure. Exposure and lethality are the two behavioral channels set out in @sec-weather-sar; recording is a distinct measurement channel, present because the outcome is *recorded* rather than actual deaths. The product $A\,m$ is the expected number of actual deaths, and $q\,A\,m$ the expected number of recorded deaths.^[@eq-decomp is an identity, not a probabilistic factorization: $A(s_t,R_t)$ is expected attempts, and $m$ and $q$ are the conditional ratios of expected actual deaths to expected attempts and of expected recorded deaths to expected actual deaths.]
+
+The theoretical estimand is the cross-partial $\partial^{2} \log m / \partial s \, \partial R$, which measures how rescue availability moderates the slope linking rough seas to lethality. The risk-reduction hypothesis predicts that this quantity is negative: greater rescue availability flattens the SWH--lethality slope. Because rescue availability contracts after the MoU, a negative cross-partial implies that the lethality slope steepens across the regime change.
+
+This estimand is not directly observed, because $q$, $A$, and $m$ are not separately identified from recorded deaths alone. The observable object is the reduced-form slope of recorded deaths on sea state, the term-by-term logarithmic derivative of @eq-decomp:
+
+$$
+\frac{\partial \log \mathbb{E}[D_t \mid s_t, R_t]}{\partial s_t}
+\;=\;
+\underbrace{\frac{\partial \log q}{\partial s_t}}_{\text{recording}}
+\;+\;
+\underbrace{\frac{\partial \log A}{\partial s_t}}_{\text{exposure}}
+\;+\;
+\underbrace{\frac{\partial \log m}{\partial s_t}}_{\text{lethality}}.
+$$ {#eq-slope-decomp}
+
+Differentiating @eq-slope-decomp with respect to $R$ shows that the *shift* in this slope across rescue regimes is itself a sum of three cross-derivatives, only one of which (the lethality term $\partial^{2} \log m / \partial s \, \partial R$) is the theoretical estimand.
+
+Recovering the theoretical estimand from the observed shift therefore requires assumptions on the recording and exposure cross-derivatives. If both are zero, the observed shift identifies the lethality shift exactly; if they move opposite to lethality, it is a lower bound. The moral-hazard response documented by @deiana2024 implies such an opposite-signed exposure shift: the post-MoU contraction of rescue makes departures more sensitive to rough weather. Recording plausibly moves the same way, because rough-weather shipwrecks are least likely to leave survivors or a recoverable wreck, so reduced rescue should degrade recording more in rough weather than in calm. Overstatement would require recording or exposure sensitivity to steepen in the same direction as lethality after 2017. The constructed-exposure control introduced in @sec-specification, the boat-composition checks in Appendix F, and two independently collected mortality sources discipline that case.
+
+The reduced-form slope shift derived above is the observable counterpart that can be estimated with the available data. Operationally, the empirical estimand is the change in the SWH-recorded-death slope around the post-MoU regime:
+
+$$
+\beta_3 \;=\; \beta_{\text{post}} \;-\; \beta_{\text{pre}},
+$$ {#eq-shift}
+
+where $\beta_{\text{pre}}$ and $\beta_{\text{post}}$ are the slopes of log expected deaths on the lagged five-day mean of SWH before and after 2 February 2017, defined formally as the coefficients of the count regression in @sec-specification. For example, negative pre-period slopes are consistent with rough seas limiting departures when rescue availability is greater.
+
+The $\beta_3$ term is a pre/post difference in the conditional SWH gradient. It is algebraically analogous to the interaction term in a continuous-regressor DiD, but without an untreated comparison unit it is not a standard DiD treatment effect. It identifies a within-route change in the conditional SWH-recorded-mortality slope: a policy-regime moderation parameter for the whole post-MoU regime.
+
+A causal interpretation of this regime-level estimate would require a credible counterfactual for how the same route's SWH--mortality gradient would have evolved absent the regime; the design observes only one route before and after the policy shift. The estimate is not a count of deaths prevented by SAR, nor a direct estimate of the causal effect of SAR availability on mortality, which would require otherwise similar crossings that differ exogenously in rescue availability. The post-MoU regime bundled changes in rescue availability, interceptions, NGO operations, smuggler incentives, and recording conditions; this bundling is part of the regime being estimated, but it limits attribution to any single component.
+
+Moreover, rescue availability $R_t$ is latent: no public dataset measures the stock of rescue assets at sea. The empirical strategy first estimates the regime-level slope shift, then uses weekly Frontex SAR measures to test whether a SAR-related mechanism is consistent with it. These proxies capture recorded rescue activity, not random assignment of rescue capacity.
+
+The identifying argument behind $\beta_3$ has two layers. First, conditional on month-year fixed effects, day-to-day variation in lagged SWH is as-good-as random with respect to other determinants of recorded mortality. Second, the policy variable must be interpreted as the wider interception regime initiated by the MoU—expanded Libyan interceptions, NGO restrictions, and later Italian legal and administrative measures—not the legal memorandum alone. The main counterfactual problem is that the design does not observe how the same route's weather--mortality gradient would have evolved absent that regime.
+
+The sharpest omitted-variable threat is that the composition of crossings exposed to a given SWH may change endogenously across regimes. Let $B_t$ collect unobserved behavioral variables such as departure timing, route choice, boat quality, overcrowding, and choices around when to make a distress call. If $B_t$ is correlated with $SWH_{t-1:t-5} \times Post_t$ and also affects recorded deaths, $\beta_3$ mixes the SAR risk-reduction channel with behavioral adaptation. For the broad policy-regime estimand, such adaptation is part of the total regime response. For a narrower claim about SAR availability alone, it is omitted-variable bias.
+
+The behavioral literature makes this threat substantive. @camarena2020 show that rougher seas reduce Mediterranean arrivals and that smugglers help decide when boats leave. @deiana2024 show that SAR changed the weather sensitivity of departures and the use of unsafe boats. @hoffmannpham2024 show that the post-2017 interception regime affected crossings, diversion, and smuggler choices over boat size. The post-MoU interaction is therefore a reduced-form moderation parameter, interpreted through diagnostics on volume, composition, diversion, conflict, and reporting. These diagnostics can show whether observed proxies absorb the shift; they cannot prove that all behavioral margins are observed.
+
+Incomplete recording is the second major threat. The outcome includes only deaths that enter UNITED or IOM, and observed exposure captures only attempts detected by Frontex or intercepted by Libyan or Tunisian authorities. In the notation of @eq-decomp, $q(s_t,R_t)$ is below one and $A(s_t,R_t)$ is only partially observed through the constructed crossing measure $C_t$ (@eq-exposure). The post-MoU shift in $\beta_3$ is contaminated if recording changes differentially by sea state across regimes. The likely direction is attenuating: rough-weather shipwrecks are least likely to leave survivors or recoverable wrecks, so reduced rescue after 2017 should degrade recording more in rough weather than in calm. Estimating UNITED and IOM in parallel helps test whether the shift is driven by one registry's recording channel.
 
 \newpage
 
-## Empirical specification
+## Empirical specification {#sec-specification}
 
-The primary specification estimates daily deaths as
+The outcome is the daily count of recorded deaths in source $j$, $D^j_t$, with $j \in \{\text{UNITED}, \text{IOM}\}$. The primary specification estimates daily deaths as
 
 $$
 \mathbb{E}[D^j_t] = \exp\bigl(\alpha_{m(t)} + \beta_1 SWH_{t-1:t-5} + \beta_3 SWH_{t-1:t-5} \times Post_t\bigr).
 $$ {#eq-count}
 
-The month-year fixed effect $\alpha_{m(t)}$ absorbs seasonality and common monthly shocks. Identification of $\beta_3$ relies on within-month variation in lagged sea state and on the pre/post difference in how that variation maps into deaths. The specification does not estimate a separate post-MoU level shift. Results report the pre-period slope $\beta_1$, the shift $\beta_3$, and the implied post-period slope $\beta_1 + \beta_3$ with a delta-method standard error.
+Here $\beta_1$ is the pre-MoU SWH slope $\beta_{\text{pre}}$, $\beta_1 + \beta_3$ the post-MoU slope $\beta_{\text{post}}$, and $\beta_3 = \beta_{\text{post}} - \beta_{\text{pre}}$ the slope shift of @eq-shift, the empirical estimand. @sec-hypotheses predicts $\beta_3 > 0$ if the post-MoU regime weakened the buffer between rough seas and death. The month-year fixed effect $\alpha_{m(t)}$ absorbs seasonality and common monthly shocks. Identification of $\beta_3$ relies on within-month variation in lagged sea state and on the pre/post difference in how that variation maps into deaths. The specification does not estimate a separate post-MoU level shift. Results report the pre-period slope $\beta_1$, the shift $\beta_3$, and the implied post-period slope $\beta_1 + \beta_3$ with a delta-method standard error.
 
 This design is therefore closer to a hazard-sensitivity test than to a before--after comparison of death levels: the interaction term asks whether day-to-day weather sensitivity differs after the post-MoU regime, the dimension on which the SAR mechanism should operate if rescue buffers rough-weather lethality.
 
@@ -299,17 +299,7 @@ $$ {#eq-rate}
 
 estimated on days with $C_t > 0$. This specification asks whether the SWH slope shift remains after accounting for observed crossing volume.
 
-## Identification and threats
-
-The identifying argument has two layers. First, conditional on month-year fixed effects, day-to-day variation in lagged SWH is as-good-as random with respect to other determinants of recorded mortality. Second, the policy variable must be interpreted as the wider interception regime initiated by the MoU—expanded Libyan interceptions, NGO restrictions, and later Italian legal and administrative measures—not the legal memorandum alone. The main counterfactual problem is that the design does not observe how the same route's weather--mortality gradient would have evolved absent that regime.
-
-The sharpest omitted-variable threat is that the composition of crossings exposed to a given SWH may change endogenously across regimes. Let $B_t$ collect unobserved behavioral variables such as departure timing, route choice, boat quality, overcrowding, and choices around when to make a distress call. If $B_t$ is correlated with $SWH_{t-1:t-5} \times Post_t$ and also affects recorded deaths, $\beta_3$ mixes the SAR risk-reduction channel with behavioral adaptation. For the broad policy-regime estimand, such adaptation is part of the total regime response. For a narrower claim about SAR availability alone, it is omitted-variable bias.
-
-The behavioral literature makes this threat substantive. @camarena2020 show that rougher seas reduce Mediterranean arrivals and that smugglers help decide when boats leave. @deiana2024 show that SAR changed the weather sensitivity of departures and the use of unsafe boats. @hoffmannpham2024 show that the post-2017 interception regime affected crossings, diversion, and smuggler choices over boat size. The post-MoU interaction is therefore a reduced-form moderation parameter, interpreted through diagnostics on volume, composition, diversion, conflict, and reporting. These diagnostics can show whether observed proxies absorb the shift; they cannot prove that all behavioral margins are observed.
-
-Incomplete recording is the second major threat. The outcome includes only deaths that enter UNITED or IOM, and observed exposure captures only attempts detected by Frontex or intercepted by Libyan or Tunisian authorities. In the notation of @eq-decomp, $q(s_t,R_t)$ is below one and $A(s_t,R_t)$ is only partially observed through $C_t$. The post-MoU shift in $\beta_3$ is contaminated if recording changes differentially by sea state across regimes. The likely direction is attenuating: rough-weather shipwrecks are least likely to leave survivors or recoverable wrecks, so reduced rescue after 2017 should degrade recording more in rough weather than in calm. Estimating UNITED and IOM in parallel helps test whether the shift is driven by one registry's recording channel.
-
-## Mechanism and robustness specifications
+## Mechanism and robustness specifications {#sec-mechanism}
 
 The mechanism specification asks whether one component modified by the post-MoU regime, SAR availability, moves the weather--mortality gradient in the predicted direction. It replaces the binary policy interaction with continuous SAR-capacity moderators:
 
@@ -319,9 +309,9 @@ $$ {#eq-mechanism}
 
 where $R_{t-1:t-7}$ is a standardized weekly lagged SAR measure. Two versions are used: the previous-week share of Frontex incidents classified as SAR, whose monthly evolution is visible in the SAR-share line of panel (d) in Figure \ref{fig:panel-event-type}, and the log of one plus persons recorded in Frontex SAR events over the same week. Both proxies are endogenous to crossings, distress and operational choices, so they are mechanism checks rather than alternative identification strategies for the regime effect.
 
-Robustness checks target the main threats: spatial aggregation of sea state (Appendix B), past and future SWH windows (Appendix C), the UNITED--IOM cross-source comparison (Appendix D), fixed-effect and inference variants (Appendix E), boat-composition controls (Appendix F), Frontex SAR versus non-SAR event placebos (Appendix G), and ACLED push-factor decompositions (Appendix H). Section 5 also reports period and rolling-window specifications. These checks do not make the design experimental; they discipline the interpretation of $\beta_3$ against specific alternatives.
+Robustness checks target the main threats: spatial aggregation of sea state (Appendix B), past and future SWH windows (Appendix C), the UNITED--IOM cross-source comparison (Appendix D), fixed-effect and inference variants (Appendix E), boat-composition controls (Appendix F), Frontex SAR versus non-SAR event placebos (Appendix G), and ACLED push-factor decompositions (Appendix H). @sec-results also reports period and rolling-window specifications. These checks do not make the design experimental; they discipline the interpretation of $\beta_3$ against specific alternatives.
 
-# Analysis and Results
+# Analysis and Results {#sec-results}
 
 ## Reduced-form slope shift around the MoU
 
@@ -363,7 +353,7 @@ The pre-MoU baseline could in principle be driven by the Mare Nostrum sub-period
 
 ## Mechanism: continuous SAR proxies
 
-The main estimate treats the post-MoU period as a regime-level change. The mechanism specification asks whether one component modified by that regime, SAR availability, is consistent with the risk-reduction interpretation. If SAR is part of the channel, higher SAR availability should flatten the relationship between rough seas and recorded deaths. Equation&nbsp;\ref{eq-mechanism} tests this implication by replacing the post-MoU indicator with the two standardized, weekly-lagged SAR proxies defined in Section 4.6: the share of Frontex incidents classified as SAR, and the log of one plus persons in Frontex SAR events. Interaction coefficients are per one standard-deviation change in the proxy.
+The main estimate treats the post-MoU period as a regime-level change. The mechanism specification asks whether one component modified by that regime, SAR availability, is consistent with the risk-reduction interpretation. If SAR is part of the channel, higher SAR availability should flatten the relationship between rough seas and recorded deaths. Equation&nbsp;\ref{eq-mechanism} tests this implication by replacing the post-MoU indicator with the two standardized, weekly-lagged SAR proxies defined in @sec-mechanism: the share of Frontex incidents classified as SAR, and the log of one plus persons in Frontex SAR events. Interaction coefficients are per one standard-deviation change in the proxy.
 
 Both moderators yield negative SWH $\times$ SAR-proxy interactions across model families and mortality sources, with most coefficients significant at conventional levels (Table&nbsp;\ref{tab:mechanism}). The pattern appears in the primary UNITED series and in the IOM comparison series. This is the direction predicted by the risk-reduction mechanism: in weeks with more recorded SAR activity, the SWH--mortality slope is flatter.
 
