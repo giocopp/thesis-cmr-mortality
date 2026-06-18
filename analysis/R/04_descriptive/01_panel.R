@@ -435,13 +435,27 @@ p_share_lines_display <- p_share_lines_2x2 +
   legend_bottom_theme +
   guides(colour = guide_legend(nrow = 2, byrow = FALSE, title = NULL))
 
-panel_event_type <- cowplot::plot_grid(
-  p_cross_united_display,  p_etype_pct_display,
+# Build rows separately so legend-height padding stays within each row: the tall
+# (c) legend would otherwise pad (b)/(d) and leave a white band at the figure foot.
+panel_top <- cowplot::plot_grid(
+  p_cross_united_display, p_etype_pct_display,
+  ncol = 2, align = "h", axis = "tb"
+)
+panel_bottom <- cowplot::plot_grid(
   p_deaths_united_display, p_share_lines_display,
-  ncol = 2, align = "hv", axis = "tblr"
+  ncol = 2, align = "h", axis = "tb"
+)
+panel_event_type <- cowplot::plot_grid(
+  panel_top, panel_bottom,
+  ncol = 1, align = "v", axis = "lr"
 )
 
-panel_event_type_framed <- cowplot::ggdraw(panel_event_type) +
+# Small even inset so the content does not butt up against the frame.
+frame_pad <- 0.012
+panel_event_type_framed <- cowplot::ggdraw() +
+  cowplot::draw_plot(panel_event_type,
+                     x = frame_pad, y = frame_pad,
+                     width = 1 - 2 * frame_pad, height = 1 - 2 * frame_pad) +
   cowplot::draw_grob(grid::rectGrob(
     gp = grid::gpar(col = "black", fill = NA, lwd = 2)
   ))

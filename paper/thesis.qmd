@@ -190,6 +190,13 @@ The data used in the models are summarized in Table&nbsp;\ref{tab:data-summary}.
 
 *Sea state.* Daily SWH is the ERA5 spatial mean [@hersbach2020] over sea cells in the analysis polygon. The primary regressor is the lagged five-day mean $SWH_{t-1:t-5}$. A five-day window covers the sea state relevant to a day-$t$ recorded death: pre-departure conditions that shape smuggler launch decisions, in-voyage conditions on a crossing that can last from a day to several days, and the delay between an incident and its appearance in either registry. Daily SWH is also strongly autocorrelated (lag-1 $\rho \approx 0.73$), so the five-day mean summarizes persistent maritime hazard rather than smoothing out independent shocks. One-, three-, and seven-day lagged means are used for window-sensitivity checks in Appendix C; all return positive and significant slope shifts on UNITED (Table&nbsp;\ref{tab:appx-exposure}), so the choice of window does not drive the result. All exclude day-$t$ weather.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{../output/figures/04_descriptive/fig-panel-event-type.png}
+\caption{Observed crossing outcomes and interception composition, 2014--2023. Source: own elaboration.}
+\label{fig:panel-event-type}
+\end{figure}
+
 *Mortality.* Recorded deaths come from the UNITED *List of Refugee Deaths* and the IOM Missing Migrants Project [@rodriguezsanchez2023; @poole2020]. UNITED records are restricted to the analysis polygon, the five Central Mediterranean incident countries plus open-sea records coded as Mediterranean, and deaths by drowning or other/unknown causes. IOM records are restricted to the Central Mediterranean route, the same five countries, incident-type records inside the polygon, and drowning or mixed/unknown causes; split incidents are excluded. UNITED is the primary outcome and IOM a robustness check.
 
 *Frontex incident microdata.* Frontex JORA provides daily records of interceptions at sea and on European coasts. The 2014--2023 Central Mediterranean extract, released under PAD-194, covers Triton and Themis. The CMR sample retains departures from Libya, Tunisia, or Algeria and records SAR status, Frontex involvement, and the detecting or intercepting actor, allowing NGO-led rescues to be distinguished from interceptions by national assets.
@@ -199,15 +206,6 @@ The data used in the models are summarized in Table&nbsp;\ref{tab:data-summary}.
 *ACLED conflict.* A one-week-lagged Libya conflict composite from ACLED enters only the push-factor robustness check.
 
 Figure \ref{fig:panel-event-type} summarizes monthly crossing outcomes and interception composition over 2014--2023. The post-2017 compositional shift motivates keeping Frontex SAR, Frontex non-SAR, and LCG/TCG categories separate in the panel and combining them only in the lower-bound crossing-attempt series $C_t$ defined in @eq-exposure.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\textwidth]{../output/figures/04_descriptive/fig-panel-event-type.png}
-\caption{Observed crossing outcomes and interception composition, 2014--2023. Source: own elaboration.}
-\label{fig:panel-event-type}
-\end{figure}
-
-\newpage
 
 # Identification and Empirical Strategy {#sec-strategy}
 
@@ -264,8 +262,6 @@ The sharpest omitted-variable threat is that the composition of crossings expose
 The behavioral literature makes this threat substantive. @camarena2020 show that rougher seas reduce Mediterranean arrivals and that smugglers help decide when boats leave. @deiana2024 show that SAR changed the weather sensitivity of departures and the use of unsafe boats. @hoffmannpham2024 show that the post-2017 interception regime affected crossings, diversion, and smuggler choices over boat size. The post-MoU interaction is therefore a reduced-form moderation parameter, interpreted through diagnostics on volume, composition, diversion, conflict, and reporting. These diagnostics can show whether observed proxies absorb the shift; they cannot prove that all behavioral margins are observed.
 
 Incomplete recording is the second major threat. The outcome includes only deaths that enter UNITED or IOM, and observed exposure captures only attempts detected by Frontex or intercepted by Libyan or Tunisian authorities. In the notation of @eq-decomp, $q(s_t,R_t)$ is below one and $A(s_t,R_t)$ is only partially observed through the constructed crossing measure $C_t$ (@eq-exposure). The post-MoU shift in $\beta_3$ is contaminated if recording changes differentially by sea state across regimes. The likely direction is attenuating: rough-weather shipwrecks are least likely to leave survivors or recoverable wrecks, so reduced rescue after 2017 should degrade recording more in rough weather than in calm. Estimating UNITED and IOM in parallel helps test whether the shift is driven by one registry's recording channel.
-
-\newpage
 
 ## Empirical specification {#sec-specification}
 
